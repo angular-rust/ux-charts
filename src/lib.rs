@@ -1,6 +1,9 @@
 mod animation;
 pub use animation::*;
 
+mod backend;
+pub use backend::*;
+
 mod canvas;
 pub use canvas::*;
 

@@ -4,6 +4,45 @@ version = "0.1.0"
 authors = ["Victor Dudochkin <dudochkin.victor@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+web = ["wasm-bindgen", "wasm-bindgen-futures", "wasm-logger", "gloo", "js-sys", "wasm-bindgen-test"]
+cairo = ["cairo-rs", "png"]
+default = ["cairo"]
 
 [dependencies]
+log = "0.4"
+png = { version = "0.16", optional = true }
+cairo-rs = { version = "0.9", features = ["png"], optional = true }
+
+wasm-bindgen = { version = "0.2", optional = true }
+wasm-bindgen-futures = { version = "0.4", optional = true }
+wasm-logger = { version = "0.2", optional = true }
+gloo = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
+wasm-bindgen-test = { version = "0.3", optional = true }
+
+[dependencies.web-sys]
+version = "0.3"
+optional = true
+features = [
+  'KeyboardEvent',
+  "ValidityState",
+  "CustomEvent",
+  "Node",
+  "Element",
+  "HtmlElement",
+  "Window",
+  "Document",
+]
+
+[dev-dependencies]
+
+
+[[example]]
+name = "web-example"
+# crate-type = ["staticlib"]
+required-features = ["web"]
+
+[[example]]
+name = "cairo-example"
+required-features = ["cairo"]
