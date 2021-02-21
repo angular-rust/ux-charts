@@ -3,15 +3,18 @@ name = "ux-charts"
 version = "0.1.0"
 authors = ["Victor Dudochkin <dudochkin.victor@gmail.com>"]
 edition = "2018"
+license = "MPL-2.0"
 
 [features]
 web = ["wasm-bindgen", "wasm-bindgen-futures", "wasm-logger", "gloo", "js-sys", "wasm-bindgen-test"]
-cairo = ["cairo-rs", "png"]
+cairo = ["cairo-rs", "png", "gio", "gtk"]
 default = ["cairo"]
 
 [dependencies]
 log = "0.4"
 png = { version = "0.16", optional = true }
+gio = { version = "0.9", features = ["v2_58"], optional = true }
+gtk = { version = "0.9", features = ["v3_22"], optional = true }
 cairo-rs = { version = "0.9", features = ["png"], optional = true }
 
 wasm-bindgen = { version = "0.2", optional = true }
@@ -36,6 +39,8 @@ features = [
 ]
 
 [dev-dependencies]
+
+[build-dependencies]
 
 
 [[example]]
