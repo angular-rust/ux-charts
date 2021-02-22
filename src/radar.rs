@@ -6,113 +6,6 @@ use std::collections::HashMap;
 
 use crate::{CanvasContext, Chart, Drawable, Entity, Point, Rectangle};
 
-// let _radarChartDefaultOptions = {
-//   // Map - An object that controls the series.
-//   "series": {
-//     // num - The opacity of the area between a series and the x-axis.
-//     "fillOpacity": .25,
-
-//     // num - The line width of the series.
-//     "lineWidth": 2,
-
-//     // Map - An object that controls the series labels.
-//     "labels": {
-//       // bool - Whether to show the labels.
-//       "enabled": false,
-//       "style": {
-//         "color": "#212121",
-//         "fontFamily": _fontFamily,
-//         "fontSize": 13,
-//         "fontStyle": "normal"
-//       }
-//     },
-
-//     // Map - An object that controls the markers.
-//     "markers": {
-//       // bool - Whether markers are enabled.
-//       "enabled": true,
-
-//       // String - The fill color. If `null`, the stroke color of the series
-//       // will be used.
-//       "fillColor": null,
-
-//       // num - The line width of the markers.
-//       "lineWidth": 1,
-
-//       // String - The stroke color. If `null`, the stroke color of the series
-//       // will be used.
-//       "strokeColor": "white",
-
-//       // num - Size of the markers. To disable markers, set this to zero.
-//       "size": 4
-//     }
-//   },
-
-//   // Map - An object that controls the x-axis.
-//   "xAxis": {
-//     // String - The color of the horizontal grid lines.
-//     "gridLineColor": "#c0c0c0",
-
-//     // num - The width of the horizontal grid lines.
-//     "gridLineWidth": 1,
-
-//     // Map - An object that controls the axis labels.
-//     "labels": {
-//       "style": {
-//         // String - The labels" color.
-//         "color": "#212121",
-
-//         // String - The labels" font family.
-//         "fontFamily": _fontFamily,
-
-//         // String - The labels" font size.
-//         "fontSize": 13,
-
-//         // String - The labels" font style.
-//         "fontStyle": "normal"
-//       }
-//     },
-//   },
-
-//   // Map - An object that controls the y-axis.
-//   "yAxis": {
-//     // String - The color of the vertical grid lines.
-//     "gridLineColor": "#c0c0c0",
-
-//     // num - The width of the vertical grid lines.
-//     "gridLineWidth": 1,
-
-//     // num - The interval of the tick marks in axis unit. If `null`, this value
-//     // is automatically calculated.
-//     "interval": null,
-
-//     // Map - An object that controls the axis labels.
-//     "labels": {
-//       // (num value) -> String - A function that formats the labels.
-//       "formatter": null,
-
-//       // Map - An object that controls the styling of the axis labels.
-//       "style": {
-//         // String - The labels" color.
-//         "color": "#212121",
-
-//         // String - The labels" font family.
-//         "fontFamily": _fontFamily,
-
-//         // String - The labels" font size.
-//         "fontSize": 13,
-
-//         // String - The labels" font style.
-//         "fontStyle": "normal"
-//       }
-//     },
-
-//     // num - The minimum interval. If `null`, this value is automatically
-//     // calculated.
-//     "minInterval": null,
-//   }
-// };
-
 pub struct PolarPoint {
     old_radius: f64,
     old_angle: f64,
@@ -174,9 +67,10 @@ pub struct RadarChart {
 }
 
 impl RadarChart {
-    fn new() {
+    pub fn new() -> Self {
         // : super(container)
         // _defaultOptions = mergeMaps(globalOptions, _radarChartDefaultOptions);
+        unimplemented!()
     }
 
     // num _getAngle(i64 entityIndex) => entityIndex * _angleInterval - _pi_2;

@@ -136,8 +136,9 @@ impl DataColumn {
 //     table: DataTable,
 // }
 
-// E extends _TableEntity
-trait DataCollectionBase<E>/* : ListBase<E>*/ {
+trait DataCollectionBase<E>/* : ListBase<E>*/ 
+    where E: TableEntity
+{
     fn release_items(start: i64, end: i64) {
         // while (start < end) {
         //   _base[start]._table = null;
@@ -152,11 +153,6 @@ trait DataCollectionBase<E>/* : ListBase<E>*/ {
         //     .._table = _table
         //     .._index = start++;
         // }
-    }
-
-    fn new(table: DataTable) {
-        // : _base = <E>[],
-        //   _table = table;
     }
 
     // @override
@@ -261,6 +257,14 @@ trait DataCollectionBase<E>/* : ListBase<E>*/ {
 
 pub struct DataRowCollection;
 
+impl DataRowCollection {
+    pub fn new(table: &DataTable) -> Self {
+        // : _base = <E>[],
+        //   _table = table;
+        Self{}
+    }
+}
+
 impl<T> DataCollectionBase<DataRow<T>> for DataRowCollection {
     // DataRow _toDataRow(value) =>
     //     value is DataRow ? value : DataRow._internal(_table, value);
@@ -298,6 +302,14 @@ impl<T> DataCollectionBase<DataRow<T>> for DataRowCollection {
 
 pub struct DataColumnCollection;
 
+impl DataColumnCollection {
+    pub fn new(table: &DataTable) -> Self {
+        // : _base = <E>[],
+        //   _table = table;
+        Self{}
+    }
+}
+
 impl DataCollectionBase<DataColumn> for DataColumnCollection {
     // DataColumnCollection(DataTable table) : super(table);
 
@@ -308,9 +320,9 @@ impl DataCollectionBase<DataColumn> for DataColumnCollection {
 }
 
 pub struct DataTable {
-    column_index_by_name: HashMap<String, i64>,
-    columns: DataColumnCollection,
-    rows: DataRowCollection,
+    column_index_by_name: HashMap<String, usize>,
+    columns: Option<DataColumnCollection>,
+    rows: Option<DataRowCollection>,
 
     // cellChangeController: StreamController<DataCellChangeRecord>,
     // columnsChangeController: StreamController<DataCollectionChangeRecord>,
@@ -376,10 +388,16 @@ impl DataTable {
     /// All values in each column are expected to be of the same type,
     /// and all rows are expected to have the same length.
     // data is optional
-    fn new(data: Vec<Vec<String>>) {
-        // _columnIndexByName = <String, int>{};
-        // _rows = DataRowCollection(this);
-        // _columns = DataColumnCollection(this);
+    pub fn new(columns: Vec<&str>, data: Vec<Vec<&str>>) {
+        let data_table = DataTable {
+            column_index_by_name: Default::default(),
+            columns: None,
+            rows: None 
+        };
+
+        let column_index_by_name = HashMap::<String, usize>::new();
+        let rows: DataRowCollection = DataRowCollection::new(&data_table);
+        let columns: DataColumnCollection = DataColumnCollection::new(&data_table);
 
         // if (data == null) return;
 

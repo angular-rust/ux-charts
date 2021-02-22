@@ -1,6 +1,7 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
+use ux_charts::*;
 
 // let random = Random();
 
@@ -26,21 +27,21 @@ fn main() {
 
 // February
 fn create_bar_chart() {
-  // let table = DataTable([
-  //   ["Categories", "Long series name", "Series 2", "Series 3"],
-  //   ["January", 1, 3, 5],
-  //   ["February", 3, 4, 6],
-  //   ["March", 4, 3, 1],
-  //   ["April", null, 5, 1],
-  //   ["May", 3, 4, 2],
-  //   ["June", 5, 10, 4],
-  //   ["July", 4, 12, 8],
-  //   ["August", 1, 3, 5],
-  //   ["September", 3, 4, 6],
-  //   ["October", 4, 3, 1],
-  //   ["November", null, 5, 1],
-  //   ["December", 3, 4, 2],
-  // ]);
+  let table = DataTable::new(vec!["Categories", "Long series name", "Series 2", "Series 3"],
+  vec![
+    vec!["January"/* , 1, 3, 5*/],
+    vec!["February"/*, 3, 4, 6*/],
+    vec!["March"/* , 4, 3, 1*/],
+    vec!["April"/*, None, 5, 1*/],
+    vec!["May"/*, 3, 4, 2*/],
+    vec!["June"/*, 5, 10, 4*/],
+    vec!["July"/*, 4, 12, 8*/],
+    vec!["August"/*, 1, 3, 5*/],
+    vec!["September"/*, 3, 4, 6*/],
+    vec!["October"/*, 4, 3, 1*/],
+    vec!["November"/*, None, 5, 1*/],
+    vec!["December"/*, 3, 4, 2*/],
+  ]);
 
   // let changeDataButton = ButtonElement()..text = "Change data";
   // document.body.append(changeDataButton);
@@ -74,7 +75,7 @@ fn create_bar_chart() {
   //   "tooltip": {"valueFormatter": (value) => "$value units"}
   // };
 
-  // let chart = BarChart(container);
+  let chart = BarChart::new(/*container*/);
   // chart.draw(table, options);
 
   // fn disableAllButtons() {
@@ -166,7 +167,7 @@ fn create_line_chart() {
   //   "title": {"text": "Line Chart Demo"}
   // };
 
-  // let chart = LineChart(container);
+  let chart = LineChart::new(/*container*/);
   // chart.draw(table, options);
 
   // fn disableAllButtons() {
@@ -234,7 +235,8 @@ fn create_pie_chart() {
   //   ["Safari", 8],
   //   ["Other", 2]
   // ]);
-  // let chart = PieChart(container);
+
+  let chart = PieChart::new(/*container*/);
   // chart.draw(table, {
   //   "animation": {
   //     "onEnd": () {
@@ -319,7 +321,7 @@ fn create_radar_chart() {
   //   "tooltip": {"valueFormatter": (value) => "$value units"}
   // };
 
-  // let chart = RadarChart(container);
+  let chart = RadarChart::new(/*container*/);
   // chart.draw(table, options);
 
   // fn disableAllButtons() {
@@ -384,7 +386,7 @@ fn create_gauge_chart() {
 // //    ["CPU", 75],
 // //    ["Disk", 40]
 //   ]);
-//   let chart = GaugeChart(container);
+  let chart = GaugeChart::new(/*container*/);
 //   chart.draw(table, {
 //     "animation": {
 //       "easing": (f64 t) {

@@ -4,27 +4,9 @@
 
 use crate::{CanvasContext, Chart, Drawable, Entity, Point};
 
-// let _gaugeChartDefaultOptions = {
-//   // String - The background color of the gauges.
-//   "gaugeBackgroundColor": "#dbdbdb",
-
-//   // Map - An object that controls the gauge labels.
-//   "gaugeLabels": {
-//     // bool - Whether to show the labels.
-//     "enabled": true,
-
-//     // Map - An object that controls the styling of the gauge labels.
-//     "style": {
-//       "color": "#212121",
-//       "fontFamily": _fontFamily,
-//       "fontSize": 13,
-//       "fontStyle": "normal"
-//     }
-//   }
-// };
 
 // Gauge extends Pie
-struct Gauge {
+pub struct Gauge {
     background_color: String,
 }
 
@@ -71,7 +53,7 @@ where
     }
 }
 
-struct GaugeChart {
+pub struct GaugeChart {
     gauge_hop: f64,
     gauge_inner_radius: f64,
     gauge_outer_radius: f64,
@@ -150,15 +132,15 @@ impl GaugeChart {
         unimplemented!()
     }
 
-    fn new() {
+    pub fn new() -> Self {
         // super(container)
         // _defaultOptions = mergeMaps(globalOptions, _gaugeChartDefaultOptions);
         // _defaultOptions["legend"]["position"] = "none";
+        unimplemented!()
     }
 }
 
 impl Chart for GaugeChart {
-
     fn calculate_drawing_sizes() {
         // super._calculateDrawingSizes();
 

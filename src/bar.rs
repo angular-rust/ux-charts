@@ -2,176 +2,7 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use crate::{CanvasContext, Chart, Drawable};
-
-// let _barChartDefaultOptions = {
-//   // Map - An object that controls the series.
-//   "series": {
-//     // Map - An object that controls the series labels.
-//     "labels": {
-//       // bool - Whether to show the labels.
-//       "enabled": false,
-
-//       "style": {
-//         "color": "#212121",
-//         "fontFamily": _fontFamily,
-//         "fontSize": 13,
-//         "fontStyle": "normal"
-//       }
-//     }
-//   },
-
-//   // Map - An object that controls the x-axis.
-//   "xAxis": {
-//     // Map - An object that controls the crosshair.
-//     "crosshair": {
-//       // String - The fill color of the crosshair.
-//       "color": "rgba(0, 0, 0, .02)",
-
-//       // bool - Whether the crosshair is enabled.
-//       "enabled": false,
-//     },
-
-//     // String - The color of the horizontal grid lines.
-//     "gridLineColor": "#c0c0c0",
-
-//     // num - The width of the horizontal grid lines.
-//     "gridLineWidth": 1,
-
-//     // String - The color of the axis itself.
-//     "lineColor": "#c0c0c0",
-
-//     // num - The width of the axis itself.
-//     "lineWidth": 1,
-
-//     // Map - An object that controls the axis labels.
-//     "labels": {
-//       // num - The maximum rotation angle in degrees. Must be <= 90.
-//       "maxRotation": 0,
-
-//       // num - The minimum rotation angle in degrees. Must be >= -90.
-//       "minRotation": -90,
-
-//       "style": {
-//         // String - The labels" color.
-//         "color": "#212121",
-
-//         // String - The labels" font family.
-//         "fontFamily": _fontFamily,
-
-//         // num - The labels" font size.
-//         "fontSize": 13,
-
-//         // String - The labels" font style.
-//         "fontStyle": "normal"
-//       }
-//     },
-
-//     // String - The position of the axis relative to the chart area.
-//     // Supported values: "bottom".
-//     "position": "bottom",
-
-//     // Map - An object that controls the axis title.
-//     "title": {
-//       // Map - An object that controls the styling of the axis title.
-//       "style": {
-//         // String - The title"s color.
-//         "color": "#212121",
-
-//         // String - The title"s font family.
-//         "fontFamily": _fontFamily,
-
-//         // num - The title"s font size.
-//         "fontSize": 15,
-
-//         // String - The title"s font style.
-//         "fontStyle": "normal"
-//       },
-
-//       // The title text. A `null` value means the title is hidden.
-//       "text": null
-//     }
-//   },
-
-//   // Map - An object that controls the y-axis.
-//   "yAxis": {
-//     // String - The color of the vertical grid lines.
-//     "gridLineColor": "#c0c0c0",
-
-//     // num - The width of the vertical grid lines.
-//     "gridLineWidth": 0,
-
-//     // String - The color of the axis itself.
-//     "lineColor": "#c0c0c0",
-
-//     // num - The width of the axis itself.
-//     "lineWidth": 0,
-
-//     // num - The interval of the tick marks in axis unit. If `null`, this value
-//     // is automatically calculated.
-//     "interval": null,
-
-//     // Map - An object that controls the axis labels.
-//     "labels": {
-//       // (num value) -> String - A function that formats the labels.
-//       "formatter": null,
-
-//       // Map - An object that controls the styling of the axis labels.
-//       "style": {
-//         // String - The labels" color.
-//         "color": "#212121",
-
-//         // String - The labels" font family.
-//         "fontFamily": _fontFamily,
-
-//         // num - The labels" font size.
-//         "fontSize": 13,
-
-//         // String - The labels" font style.
-//         "fontStyle": "normal"
-//       },
-//     },
-
-//     // num - The desired maximum value on the axis. If set, the calculated value
-//     // is guaranteed to be >= this value.
-//     "maxValue": null,
-
-//     // num - The minimum interval. If `null`, this value is automatically
-//     // calculated.
-//     "minInterval": null,
-
-//     // num - The desired minimum value on the axis. If set, the calculated value
-//     // is guaranteed to be <= this value.
-//     "minValue": null,
-
-//     // String - The position of the axis relative to the chart area.
-//     // Supported values: "left".
-//     "position": "left",
-
-//     // Map - An object that controls the axis title.
-//     "title": {
-//       // Map - An object that controls the styling of the axis title.
-//       "style": {
-//         // String - The title"s color.
-//         "color": "#212121",
-
-//         // String - The title"s font family.
-//         "fontFamily": _fontFamily,
-
-//         // num - The title"s font size.
-//         "fontSize": 15,
-
-//         // String - The title"s font style.
-//         "fontStyle": "normal"
-//       },
-
-//       // The title text. A `null` value means the title is hidden.
-//       "text": null
-//     }
-//   }
-// };
-
-use crate::{Entity, TwoAxisChart};
+use crate::{CanvasContext, Chart, Drawable, Entity, TwoAxisChart};
 
 pub struct Bar {
     old_left: f64,
@@ -187,8 +18,9 @@ impl Bar {
     // num get right => left + width;
 }
 
-impl<C> Drawable<C> for Bar 
-  where C: CanvasContext
+impl<C> Drawable<C> for Bar
+where
+    C: CanvasContext,
 {
     fn draw(ctx: C, percent: f64, highlight: bool) {
         // let x = lerp(oldLeft, left, percent);
@@ -226,7 +58,7 @@ pub struct BarChart {
 }
 
 impl BarChart {
-    pub fn new() -> BarChart {
+    pub fn new() -> Self {
         // : super(container)
         // _defaultOptions = mergeMaps(globalOptions, _barChartDefaultOptions);
         unimplemented!()
@@ -321,7 +153,7 @@ impl BarChart {
     //     //   ..width = _barWidth;
     //     unimplemented!()
     // }
-    
+
     fn series_visibility_changed(index: usize) {
         // _updateBarWidth();
         // _updateSeries();
@@ -330,7 +162,6 @@ impl BarChart {
 }
 
 impl Chart for BarChart {
-
     fn calculate_drawing_sizes() {
         // super._calculateDrawingSizes();
         // barGroupWidth = 0.618 * _xLabelHop; // Golden ratio.

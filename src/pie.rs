@@ -4,37 +4,6 @@
 
 use crate::{CanvasContext, Chart, DataCollectionChangeRecord, Drawable, Entity, Point};
 
-// let _pieChartDefaultOptions = {
-//   // num - If between 0 and 1, displays a donut chart. The hole will have a
-//   // radius equal to this value times the radius of the chart.
-//   "pieHole": 0,
-
-//   // Map - An object that controls the series.
-//   "series": {
-//     /// bool - Whether to draw the slices counterclockwise.
-//     "counterclockwise": false,
-
-//     // Map - An object that controls the series labels.
-//     "labels": {
-//       // bool - Whether to show the labels.
-//       "enabled": false,
-
-//       // (num) -> String - A function used to format the labels.
-//       "formatter": null,
-
-//       "style": {
-//         "color": "white",
-//         "fontFamily": _fontFamily,
-//         "fontSize": 13,
-//         "fontStyle": "normal"
-//       },
-//     },
-
-//     // num - The start angle in degrees. Default is -90, which is 12 o"clock.
-//     "startAngle": -90,
-//   },
-// };
-
 const CLOCKWISE: i64 = 1;
 const COUNTERCLOCKWISE: i64 = -1;
 const HIGHLIGHT_OUTER_RADIUS_FACTOR: f64 = 1.05;
@@ -146,9 +115,10 @@ pub struct PieChart {
 }
 
 impl PieChart {
-    pub fn new() {
+    pub fn new() -> Self {
         // : super(container)
         // _defaultOptions = mergeMaps(globalOptions, _pieChartDefaultOptions);
+        unimplemented!()
     }
 
     fn data_rows_changed(record: DataCollectionChangeRecord) {

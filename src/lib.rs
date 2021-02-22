@@ -10,12 +10,6 @@ pub use canvas::*;
 mod color;
 pub use color::*;
 
-mod text;
-pub use text::*;
-
-mod math;
-pub use math::*;
-
 mod bar;
 pub use bar::*;
 
@@ -29,13 +23,22 @@ mod gauge;
 pub use gauge::*;
 
 mod line;
-pub use gauge::*;
+pub use line::*;
+
+mod math;
+pub use math::*;
+
+mod options;
+pub use options::*;
 
 mod pie;
 pub use pie::*;
 
 mod radar;
 pub use radar::*;
+
+mod text;
+pub use text::*;
 
 mod utils;
 pub use utils::*;
