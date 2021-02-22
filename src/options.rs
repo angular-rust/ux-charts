@@ -18,7 +18,7 @@ pub struct LegendOptions<'a> {
 
     /// The position of the legend relative to the chart area.
     /// Supported values: "left", "top", "bottom", "right", "none".
-    pub position: String,
+    pub position: &'a str,
 
     /// An object that controls the styling of the legend.
     pub style: StyleOption<'a>,
@@ -27,13 +27,13 @@ pub struct LegendOptions<'a> {
 pub struct TitleOptions<'a> {
     /// The position of the title relative to the chart area.
     /// Supported values: "above", "below", "middle", "none";
-    pub position: String,
+    pub position: &'a str,
 
     /// An object that controls the styling of the chart title.
     pub style: StyleOption<'a>,
 
     /// The title text. A `null` value means the title is hidden.
-    pub text: Option<String>,
+    pub text: Option<&'a str>,
 }
 
 pub struct TooltipOptions<'a> {
@@ -56,11 +56,11 @@ pub struct GlobalOptions<'a> {
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background_color: String,
+    pub background_color: &'a str,
 
     /// The color list used to render the series. If there are more series than
     /// colors, the colors will be reused.
-    pub colors: Vec<String>,
+    pub colors: Vec<&'a str>,
 
     /// An object that controls the legend.
     pub legend: LegendOptions<'a>,
@@ -74,43 +74,34 @@ pub struct GlobalOptions<'a> {
 
 impl<'a> Default for GlobalOptions<'a> {
     fn default() -> Self {
-        // Self {
-        // animation: AnimationOptions {
-        //       duration: 800,
-        //       easing: "easeOutQuint".into(),
-        //       on_end: None
-        // },
-        // background_color: "white",
-        // colors: vec![
-        //     "#7cb5ec",
-        //     "#434348",
-        //     "#90ed7d",
-        //     "#f7a35c",
-        //     "#8085e9",
-        //     "#f15c80",
-        //     "#e4d354",
-        //     "#8085e8",
-        //     "#8d4653",
-        //     "#91e8e1"
-        // ],
-        // legend: {
-        //     label_formatter: None,
-        //     position: "right",
-        //     style: StyleOption
-        // },
-        // title: TitleOption {
-        //     position: "above",
-        //     style: StyleOption,
-        //     text: None
-        // },
-        // tooltip: TooltipOptions {
-        //     enabled: true,
-        //     label_formatter: None,
-        //     style: StyleOption,
-        //     value_formatter: None
-        // }
-        // }
-        todo!()
+        Self {
+            animation: AnimationOptions {
+                duration: 800,
+                easing: "easeOutQuint".into(),
+                on_end: None,
+            },
+            background_color: "white",
+            colors: vec![
+                "#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354",
+                "#8085e8", "#8d4653", "#91e8e1",
+            ],
+            legend: LegendOptions {
+                label_formatter: None,
+                position: "right",
+                style: Default::default(),
+            },
+            title: TitleOptions {
+                position: "above",
+                style: Default::default(),
+                text: None,
+            },
+            tooltip: TooltipOptions {
+                enabled: true,
+                label_formatter: None,
+                style: Default::default(),
+                value_formatter: None,
+            },
+        }
     }
 }
 
@@ -140,13 +131,13 @@ pub struct BarChartXAxisOptions<'a> {
     pub crosshair: Option<BarChartCrosshairOptions>,
 
     /// The color of the horizontal grid lines.
-    pub grid_line_color: String,
+    pub grid_line_color: &'a str,
 
     /// The width of the horizontal grid lines.
     pub grid_line_width: usize,
 
     /// The color of the axis itself.
-    pub line_color: String,
+    pub line_color: &'a str,
 
     /// The width of the axis itself.
     pub line_width: usize,
@@ -156,7 +147,7 @@ pub struct BarChartXAxisOptions<'a> {
 
     /// The position of the axis relative to the chart area.
     /// Supported values: "bottom".
-    pub position: String,
+    pub position: &'a str,
 
     /// An object that controls the axis title.
     pub title: TitleOption<'a>,
@@ -172,13 +163,13 @@ pub struct BarChartYAxisLabelsOptions<'a> {
 
 pub struct BarChartYAxisOptions<'a> {
     /// The color of the vertical grid lines.
-    pub grid_line_color: String,
+    pub grid_line_color: &'a str,
 
     /// The width of the vertical grid lines.
     pub grid_line_width: usize,
 
     /// The color of the axis itself.
-    pub line_color: String,
+    pub line_color: &'a str,
 
     /// The width of the axis itself.
     pub line_width: usize,
@@ -204,7 +195,7 @@ pub struct BarChartYAxisOptions<'a> {
 
     /// The position of the axis relative to the chart area.
     /// Supported values: "left".
-    pub position: String,
+    pub position: &'a str,
 
     /// An object that controls the axis title.
     pub title: TitleOption<'a>,
@@ -226,59 +217,50 @@ pub struct TitleOption<'a> {
     pub style: StyleOption<'a>,
 
     /// The title text. A `null` value means the title is hidden.
-    pub text: Option<String>,
+    pub text: Option<&'a str>,
 }
 
 impl<'a> Default for BarChartOptions<'a> {
     fn default() -> Self {
-        // Self {
-        //   series: {
-        //       labels: {
-        //           enabled: false,
-        //           style: StyleOption
-        //       }
-        //   },
-        //   x_axis: {
-        //       crosshair: {
-        //           color: "rgba(0, 0, 0, .02)",
-        //           enabled: false,
-        //       },
-        //       grid_line_color: "#c0c0c0",
-        //       grid_line_width: 1,
-        //       line_color: "#c0c0c0",
-        //       line_width: 1,
-        //       labels: {
-        //           max_rotation: 0,
-        //           min_rotation: -90,
-        //           style: StyleOption
-        //       },
-        //       position: "bottom",
-        //       title: {
-        //           style: StyleOption,
-        //           text: None
-        //       }
-        //   },
-        //   y_axis: {
-        //       grid_line_color: "#c0c0c0",
-        //       grid_line_width: 0,
-        //       line_color: "#c0c0c0",
-        //       line_width: 0,
-        //       interval: None,
-        //       labels: {
-        //           formatter: None,
-        //           style: StyleOption,
-        //       },
-        //       max_value: None,
-        //       min_interval: None,
-        //       min_value: None,
-        //       position: "left",
-        //       title: {
-        //           style: StyleOption,
-        //           text: None
-        //       }
-        //   }
-        // }
-        todo!()
+        Self {
+            series: BarChartSeriesOptions { labels: None },
+            x_axis: BarChartXAxisOptions {
+                crosshair: None,
+                grid_line_color: "#c0c0c0",
+                grid_line_width: 1,
+                line_color: "#c0c0c0",
+                line_width: 1,
+                labels: BarChartXAxisLabelsOptions {
+                    max_rotation: 0,
+                    min_rotation: -90,
+                    style: Default::default(),
+                },
+                position: "bottom",
+                title: TitleOption {
+                    style: Default::default(),
+                    text: None,
+                },
+            },
+            y_axis: BarChartYAxisOptions {
+                grid_line_color: "#c0c0c0",
+                grid_line_width: 0,
+                line_color: "#c0c0c0",
+                line_width: 0,
+                interval: None,
+                labels: BarChartYAxisLabelsOptions {
+                    formatter: None,
+                    style: Default::default(),
+                },
+                max_value: None,
+                min_interval: None,
+                min_value: None,
+                position: "left",
+                title: TitleOption {
+                    style: Default::default(),
+                    text: None,
+                },
+            },
+        }
     }
 }
 
@@ -298,16 +280,15 @@ pub struct StyleOption<'a> {
 
 impl<'a> Default for StyleOption<'a> {
     fn default() -> Self {
-        // Self {
-        // background_color: "",
-        // border_color: "",
-        // border_width: 0_f32,
-        // color: "",
-        // font_family: "",
-        // font_size: 0_f32,
-        // font_style: "normal", // "normal"
-        // }
-        todo!()
+        Self {
+            background_color: "",
+            border_color: "",
+            border_width: 0_f32,
+            color: "",
+            font_family: "",
+            font_size: 0_f32,
+            font_style: "normal", // "normal"
+        }
     }
 }
 
@@ -323,28 +304,27 @@ pub struct GaugeChartOptions<'a> {
 
 impl<'a> Default for GaugeChartOptions<'a> {
     fn default() -> Self {
-        // Self {
-        // background_color: "#dbdbdb",
-        // labels: Default::default()
-        // }
-        todo!()
+        Self {
+            background_color: "#dbdbdb",
+            labels: Default::default(),
+        }
     }
 }
 
-pub struct LineChartSeriesMarkersOptions {
+pub struct LineChartSeriesMarkersOptions<'a> {
     /// bool - Whether markers are enabled.
     pub enabled: bool,
 
     /// The fill color. If `null`, the stroke color of the series
     /// will be used.
-    pub fill_color: Option<String>,
+    pub fill_color: Option<&'a str>,
 
     /// The line width of the markers.
     pub line_width: usize,
 
     /// The stroke color. If `null`, the stroke color of the series
     /// will be used.
-    pub stroke_color: String,
+    pub stroke_color: &'a str,
 
     /// Size of the markers.
     pub size: usize,
@@ -366,7 +346,7 @@ pub struct LineChartSeriesOptions<'a> {
     pub labels: Option<StyleOption<'a>>,
 
     /// An object that controls the markers.
-    pub markers: LineChartSeriesMarkersOptions,
+    pub markers: LineChartSeriesMarkersOptions<'a>,
 }
 
 pub struct LineChartXAxisLabelsOptions<'a> {
@@ -381,13 +361,13 @@ pub struct LineChartXAxisLabelsOptions<'a> {
 
 pub struct LineChartXAxisOptions<'a> {
     /// The color of the horizontal grid lines.
-    pub grid_line_color: String,
+    pub grid_line_color: &'a str,
 
     /// The width of the horizontal grid lines.
     pub grid_line_width: usize,
 
     /// The color of the axis itself.
-    pub line_color: String,
+    pub line_color: &'a str,
 
     /// The width of the axis itself.
     pub line_width: usize,
@@ -397,7 +377,7 @@ pub struct LineChartXAxisOptions<'a> {
 
     /// The position of the axis relative to the chart area.
     /// Supported values: "bottom".
-    pub position: String,
+    pub position: &'a str,
 
     /// An object that controls the axis title.
     pub title: TitleOption<'a>,
@@ -412,13 +392,13 @@ pub struct LineChartYAxisLabelsOptions<'a> {
 }
 pub struct LineChartYAxisOptions<'a> {
     /// The color of the vertical grid lines.
-    pub grid_line_color: String,
+    pub grid_line_color: &'a str,
 
     /// The width of the vertical grid lines.
     pub grid_line_width: usize,
 
     /// The color of the axis itself.
-    pub line_color: String,
+    pub line_color: &'a str,
 
     /// The width of the axis itself.
     pub line_width: usize,
@@ -444,7 +424,7 @@ pub struct LineChartYAxisOptions<'a> {
 
     /// The position of the axis relative to the chart area.
     /// Supported values: "left".
-    pub position: String,
+    pub position: &'a str,
 
     /// An object that controls the axis title.
     pub title: TitleOption<'a>,
@@ -463,60 +443,56 @@ pub struct LineChartOptions<'a> {
 
 impl<'a> Default for LineChartOptions<'a> {
     fn default() -> Self {
-        // Self {
-        //   series: {
-        //       curve_tension: .4,
-        //       fill_opacity: .25,
-        //       line_width: 2,
-        //       labels: {
-        //           enabled: false,
-        //           style: StyleOption
-        //       },
-        //       markers: {
-        //           enabled: true,
-        //           fill_color: None,
-        //           line_width: 1,
-        //           stroke_color: "white",
-        //           size: 4
-        //       }
-        //   },
-        //   x_axis: {
-        //       grid_line_color: "#c0c0c0",
-        //       grid_line_width: 1,
-        //       line_color: "#c0c0c0",
-        //       line_width: 1,
-        //       labels: {
-        //           max_rotation: 0,
-        //           min_rotation: -90,
-        //           style: StyleOption
-        //       },
-        //       position: "bottom",
-        //       title: {
-        //           style: StyleOption,
-        //           text: None
-        //       }
-        //   },
-        //   y_axis: {
-        //       grid_line_color: "#c0c0c0",
-        //       grid_line_width: 0,
-        //       line_color: "#c0c0c0",
-        //       line_width: 0,
-        //       interval: None,
-        //       labels: {
-        //           formatter: None,
-        //           style: StyleOption
-        //       },
-        //       max_value: None,
-        //       min_interval: None,
-        //       min_value: None,
-        //       position: "left",
-        //       title: {
-        //           style: StyleOption,
-        //           text: None
-        //       }
-        //   }
-        // }
-        todo!()
+        Self {
+            series: LineChartSeriesOptions {
+                curve_tension: 0.4,
+                fill_opacity: 0.25,
+                line_width: 2_f64,
+                labels: None,
+                markers: LineChartSeriesMarkersOptions {
+                    enabled: true,
+                    fill_color: None,
+                    line_width: 1,
+                    stroke_color: "white",
+                    size: 4,
+                },
+            },
+            x_axis: LineChartXAxisOptions {
+                grid_line_color: "#c0c0c0",
+                grid_line_width: 1,
+                line_color: "#c0c0c0",
+                line_width: 1,
+                labels: LineChartXAxisLabelsOptions {
+                    max_rotation: 0,
+                    min_rotation: -90,
+                    style: Default::default(),
+                },
+                position: "bottom",
+                title: TitleOption {
+                    style: Default::default(),
+                    text: None,
+                },
+            },
+            y_axis: LineChartYAxisOptions {
+                grid_line_color: "#c0c0c0",
+                grid_line_width: 0,
+                line_color: "#c0c0c0",
+                line_width: 0,
+                interval: None,
+                labels: LineChartYAxisLabelsOptions {
+                    formatter: None,
+                    style: Default::default(),
+                },
+                max_value: None,
+                min_interval: None,
+                min_value: None,
+                position: "left",
+                title: TitleOption {
+                    style: Default::default(),
+                    text: None,
+                },
+            },
+        }
     }
 }
 
@@ -552,36 +528,35 @@ pub struct PieChartOptions<'a> {
 
 impl<'a> Default for PieChartOptions<'a> {
     fn default() -> Self {
-        // Self {
-        //   pie_hole: 0,
-        //   series: {
-        //       counterclockwise: false,
-        //       labels: {
-        //           enabled: false,
-        //           formatter: None,
-        //           style: StyleOption,
-        //       },
-        //       start_angle: -90,
-        //   }
-        // }
-        todo!()
+        Self {
+            pie_hole: 0,
+            series: PieChartSeriesOptions {
+                counterclockwise: false,
+                labels: PieChartSeriesLabelsOptions {
+                    enabled: false,
+                    formatter: None,
+                    style: Default::default(),
+                },
+                start_angle: -90,
+            },
+        }
     }
 }
 
-pub struct RadarChartSeriesMarkersOptions {
+pub struct RadarChartSeriesMarkersOptions<'a> {
     /// bool - Whether markers are enabled.
     pub enabled: bool,
 
     /// The fill color. If `null`, the stroke color of the series
     /// will be used.
-    pub fill_color: Option<String>,
+    pub fill_color: Option<&'a str>,
 
     /// The line width of the markers.
     pub line_width: usize,
 
     /// The stroke color. If `null`, the stroke color of the series
     /// will be used.
-    pub stroke_color: String,
+    pub stroke_color: &'a str,
 
     /// Size of the markers. To disable markers, set this to zero.
     pub size: usize,
@@ -599,12 +574,12 @@ pub struct RadarChartSeriesOptions<'a> {
     pub labels: Option<StyleOption<'a>>,
 
     /// An object that controls the markers.
-    pub markers: RadarChartSeriesMarkersOptions,
+    pub markers: RadarChartSeriesMarkersOptions<'a>,
 }
 
 pub struct RadarChartXAxisOptions<'a> {
     /// The color of the horizontal grid lines.
-    pub grid_line_color: String,
+    pub grid_line_color: &'a str,
 
     /// The width of the horizontal grid lines.
     pub grid_line_width: f64,
@@ -623,7 +598,7 @@ pub struct RadarChartYAxisLabelsOptions<'a> {
 
 pub struct RadarChartYAxisOptions<'a> {
     /// The color of the vertical grid lines.
-    pub grid_line_color: String,
+    pub grid_line_color: &'a str,
 
     /// The width of the vertical grid lines.
     pub grid_line_width: f64,
@@ -653,40 +628,34 @@ pub struct RadarChartOptions<'a> {
 
 impl<'a> Default for RadarChartOptions<'a> {
     fn default() -> Self {
-        // Self {
-        //   series: {
-        //       fill_opacity: .25,
-        //       line_width: 2,
-        //       labels: {
-        //           enabled: false,
-        //           style: StyleOption
-        //       },
-        //       markers: {
-        //           enabled: true,
-        //           fill_color: None,
-        //           line_width: 1,
-        //           stroke_color: "white",
-        //           size: 4
-        //       }
-        //   },
-        //   x_axis: {
-        //       grid_line_color: "#c0c0c0",
-        //       grid_line_width: 1,
-        //       labels: {
-        //           style: StyleOption
-        //       },
-        //   },
-        //   y_axis: {
-        //       grid_line_color: "#c0c0c0",
-        //       grid_line_width: 1,
-        //       interval: None,
-        //       labels: {
-        //           formatter: None,
-        //           style: StyleOption
-        //       },
-        //       min_interval: None,
-        //   }
-        // }
-        todo!()
+        Self {
+            series: RadarChartSeriesOptions {
+                fill_opacity: 0.25,
+                line_width: 2,
+                labels: None,
+                markers: RadarChartSeriesMarkersOptions {
+                    enabled: true,
+                    fill_color: None,
+                    line_width: 1,
+                    stroke_color: "white",
+                    size: 4,
+                },
+            },
+            x_axis: RadarChartXAxisOptions {
+                grid_line_color: "#c0c0c0",
+                grid_line_width: 1_f64,
+                labels: Some(Default::default()),
+            },
+            y_axis: RadarChartYAxisOptions {
+                grid_line_color: "#c0c0c0",
+                grid_line_width: 1_f64,
+                interval: None,
+                labels: RadarChartYAxisLabelsOptions {
+                    formatter: None,
+                    style: Default::default(),
+                },
+                min_interval: None,
+            },
+        }
     }
 }

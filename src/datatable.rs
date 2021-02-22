@@ -4,8 +4,9 @@
 
 use std::{collections::HashMap, fmt};
 
-pub struct DataCellChangeRecord<T> 
-    where T: fmt::Display
+pub struct DataCellChangeRecord<T>
+where
+    T: fmt::Display,
 {
     row_index: i64,
     column_index: i64,
@@ -13,21 +14,23 @@ pub struct DataCellChangeRecord<T>
     new_value: T,
 }
 
-impl<T> DataCellChangeRecord<T> 
-    where T: fmt::Display
+impl<T> DataCellChangeRecord<T>
+where
+    T: fmt::Display,
 {
     fn new(row_index: i64, column_index: i64, old_value: T, new_value: T) -> Self {
         Self {
-            row_index, 
-            column_index, 
-            old_value, 
+            row_index,
+            column_index,
+            old_value,
             new_value,
         }
     }
 }
 
-impl<T> fmt::Display for DataCellChangeRecord<T> 
-    where T: fmt::Display
+impl<T> fmt::Display for DataCellChangeRecord<T>
+where
+    T: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -49,7 +52,7 @@ impl DataCollectionChangeRecord {
         Self {
             index,
             added_count,
-            removed_count
+            removed_count,
         }
     }
 }
@@ -69,7 +72,7 @@ pub trait TableEntity {}
 
 pub struct DataRow<T> {
     index: i64,
-    table: DataTable,
+    // table: DataTable,
     /// The list that stores the actual data.
     cells: Vec<T>,
 }
@@ -115,22 +118,18 @@ impl<T> DataRow<T> {
     // List toList({bool growable: true}) => _cells.toList(growable: growable);
 }
 
-pub struct DataType;
-
 pub struct DataColumn<'a> {
     index: i64,
     // table: DataTable,
     /// The name of the column.
     name: &'a str,
-    // /// The type of data stored in the column.
-    // data_type: DataType,
 }
 
 impl<'a> TableEntity for DataColumn<'a> {}
 
 impl<'a> DataColumn<'a> {
-    fn new(name: &'a str, data_type: DataType) {
-        unimplemented!()
+    fn new(name: &'a str) -> Self {
+        Self { index: 0, name }
     }
 }
 
@@ -210,20 +209,21 @@ where
     fn remove_range(&self, start: i64, end: i64);
 }
 
-pub struct DataRowCollection {
-    //     base: Vec<E>,
-//     table: DataTable,
+pub struct DataRowCollection<T> {
+    base: Vec<DataRow<T>>,
+    //     table: DataTable,
 }
 
-impl DataRowCollection {
+impl<T> DataRowCollection<T> {
     pub fn new(table: &DataTable) -> Self {
-        // : _base = <E>[],
         //   _table = table;
-        Self {}
+        Self {
+            base: Default::default(),
+        }
     }
 }
 
-impl<T> DataCollectionBase<DataRow<T>> for DataRowCollection {
+impl<T> DataCollectionBase<DataRow<T>> for DataRowCollection<T> {
     fn release_items(&self, start: i64, end: i64) {
         // while (start < end) {
         //   _base[start]._table = null;
@@ -380,20 +380,21 @@ impl<T> DataCollectionBase<DataRow<T>> for DataRowCollection {
     // }
 }
 
-pub struct DataColumnCollection {
-    //     base: Vec<E>,
-//     table: DataTable,
+pub struct DataColumnCollection<'a> {
+    base: Vec<DataColumn<'a>>,
+    //     table: DataTable,
 }
 
-impl DataColumnCollection {
+impl<'a> DataColumnCollection<'a> {
     pub fn new(table: &DataTable) -> Self {
-        // : _base = <E>[],
         //   _table = table;
-        Self {}
+        Self {
+            base: Default::default(),
+        }
     }
 }
 
-impl<'a> DataCollectionBase<DataColumn<'a>> for DataColumnCollection {
+impl<'a> DataCollectionBase<DataColumn<'a>> for DataColumnCollection<'a> {
     fn release_items(&self, start: i64, end: i64) {
         // while (start < end) {
         //   _base[start]._table = null;
@@ -522,16 +523,16 @@ impl<'a> DataCollectionBase<DataColumn<'a>> for DataColumnCollection {
     // }
 }
 
-pub struct DataTable {
+pub struct DataTable<'a> {
     column_index_by_name: HashMap<String, usize>,
-    columns: Option<DataColumnCollection>,
-    rows: Option<DataRowCollection>,
+    columns: Option<DataColumnCollection<'a>>,
+    rows: Option<DataRowCollection<String>>,
     // cellChangeController: StreamController<DataCellChangeRecord>,
     // columnsChangeController: StreamController<DataCollectionChangeRecord>,
     // rowsChangeController: StreamController<DataCollectionChangeRecord>,
 }
 
-impl DataTable {
+impl<'a> DataTable<'a> {
     fn on_cell_changed(row_index: i64, column_index: i64, old_value: String, new_value: String) {
         // if (_cellChangeController != null) {
         //   let record =
@@ -600,7 +601,7 @@ impl DataTable {
         };
 
         let column_index_by_name = HashMap::<String, usize>::new();
-        let rows: DataRowCollection = DataRowCollection::new(&data_table);
+        let rows: DataRowCollection<String> = DataRowCollection::new(&data_table);
         let columns: DataColumnCollection = DataColumnCollection::new(&data_table);
 
         let col_count = metadata.len();

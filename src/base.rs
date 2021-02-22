@@ -117,7 +117,7 @@ where
 }
 
 /// Base class for all charts.
-pub struct BaseChart<C, E>
+pub struct BaseChart<'a, C, E>
 where
     C: CanvasContext,
     E: Entity,
@@ -133,7 +133,7 @@ where
     /// Row 0 contains column names.
     /// Column 0 contains x-axis/pie labels.
     /// Column 1..n - 1 contain series data.
-    data_table: DataTable,
+    data_table: DataTable<'a>,
 
     easing_function: EasingFunction,
 
@@ -231,7 +231,7 @@ pub trait Chart {
     }
 }
 
-impl<C, E> BaseChart<C, E>
+impl<'a, C, E> BaseChart<'a, C, E>
 where
     C: CanvasContext,
     E: Entity,
