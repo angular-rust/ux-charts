@@ -1,3 +1,1 @@
-pub trait MatrixInterface {
-
-}
+pub struct Matrix;
