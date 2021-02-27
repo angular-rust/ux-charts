@@ -2,7 +2,9 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use crate::{CanvasContext, Chart, Drawable, Entity, Point};
+use ux_primitives::canvas::CanvasContext;
+
+use crate::{Chart, Drawable, Entity, Point};
 
 
 // Gauge extends Pie

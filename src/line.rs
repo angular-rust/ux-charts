@@ -2,7 +2,9 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use crate::{CanvasContext, Chart, Drawable, Entity, TwoAxisChart};
+use ux_primitives::canvas::CanvasContext;
+
+use crate::{Chart, Drawable, Entity, TwoAxisChart};
 
 struct Point {
     old_x: f64,

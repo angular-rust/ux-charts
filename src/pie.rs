@@ -2,7 +2,9 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use crate::{CanvasContext, Chart, DataCollectionChangeRecord, Drawable, Entity, Point};
+use ux_primitives::canvas::CanvasContext;
+
+use crate::{Chart, DataCollectionChangeRecord, Drawable, Entity, Point};
 
 const CLOCKWISE: i64 = 1;
 const COUNTERCLOCKWISE: i64 = -1;

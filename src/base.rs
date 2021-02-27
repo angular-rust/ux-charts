@@ -3,11 +3,9 @@
 #![allow(dead_code)]
 
 use std::collections::HashMap;
+use ux_primitives::canvas::CanvasContext;
 
-use crate::{
-    canvas::CanvasContext, DataCellChangeRecord, DataCollectionChangeRecord, DataTable,
-    EasingFunction,
-};
+use crate::{DataCellChangeRecord, DataCollectionChangeRecord, DataTable, EasingFunction};
 
 /// The 2*pi constant.
 // const 2pi: f64 = 2 * pi;

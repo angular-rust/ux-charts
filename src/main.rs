@@ -1,6 +1,10 @@
 #![allow(unused_variables)]
+#![allow(unused_imports)]
 #![allow(dead_code)]
 
+use std::{collections::HashMap, fmt};
+
+use ux_primitives::datatable::*;
 use ux_charts::*;
 
 // let random = Random();
@@ -8,11 +12,11 @@ use ux_charts::*;
 // i64 rand(i64 min, i64 max) => random.nextInt(max - min) + min;
 
 fn main() {
-  create_bar_chart();
-  create_line_chart();
-  create_pie_chart();
-  create_radar_chart();
-  create_gauge_chart();
+    create_bar_chart();
+    create_line_chart();
+    create_pie_chart();
+    create_radar_chart();
+    create_gauge_chart();
 }
 
 // fn createContainer() -> Element {
@@ -27,406 +31,469 @@ fn main() {
 
 // February
 fn create_bar_chart() {
-  let table = DataTable::new(vec!["Categories", "Long series name", "Series 2", "Series 3"],
-  vec![
-    vec!["January"/* , 1, 3, 5*/],
-    vec!["February"/*, 3, 4, 6*/],
-    vec!["March"/* , 4, 3, 1*/],
-    vec!["April"/*, None, 5, 1*/],
-    vec!["May"/*, 3, 4, 2*/],
-    vec!["June"/*, 5, 10, 4*/],
-    vec!["July"/*, 4, 12, 8*/],
-    vec!["August"/*, 1, 3, 5*/],
-    vec!["September"/*, 3, 4, 6*/],
-    vec!["October"/*, 4, 3, 1*/],
-    vec!["November"/*, None, 5, 1*/],
-    vec!["December"/*, 3, 4, 2*/],
-  ]);
+ 
+    let metadata = vec![
+        FlowMeta {
+            name: "Categories",
+            tag: 0,
+            visible: true,
+        },
+        FlowMeta {
+            name: "Long series name",
+            tag: 1,
+            visible: true,
+        },
+        FlowMeta {
+            name: "Series 2",
+            tag: 2,
+            visible: true,
+        },
+        FlowMeta {
+            name: "Series 3",
+            tag: 3,
+            visible: true,
+        },
+    ];
 
-  // let changeDataButton = ButtonElement()..text = "Change data";
-  // document.body.append(changeDataButton);
+    // Zero stream tag is allways metric
+    let mut stream = vec![
+      DataFrame {
+        metric: "January",
+        data: [(1, 1), (2, 3), (3, 5)]
+          .iter()
+          .cloned()
+          .collect()
+      }
+    ];
 
-  // let insertRemoveColumnButton = ButtonElement()
-  //   ..text = "Insert/remove data column";
-  // document.body.append(insertRemoveColumnButton);
+    stream.push(DataFrame {
+      metric: "February",
+      data: [(1, 3), (2, 4), (3, 6)]
+        .iter()
+        .cloned()
+        .collect()
+    });
 
-  // let insertRemoveRowButton = ButtonElement()..text = "Insert/remove data row";
-  // document.body.append(insertRemoveRowButton);
+    stream.push(DataFrame {
+      metric: "March",
+      data: [(1, 4), (2, 3), (3, 1)]
+        .iter()
+        .cloned()
+        .collect()
+    });
 
-  // let container = createContainer();
+    // let skip one stream flow
+    stream.push(DataFrame {
+      metric: "April",
+      data: [(2, 5), (3, 1)]
+        .iter()
+        .cloned()
+        .collect()
+    });
 
-  // let options = {
-  //   "animation": {
-  //     "onEnd": () {
-  //       changeDataButton.disabled = false;
-  //       insertRemoveColumnButton.disabled = false;
-  //       insertRemoveRowButton.disabled = false;
-  //     }
-  //   },
-  //   "series": {
-  //     "labels": {"enabled": true}
-  //   },
-  //   "xAxis": {
-  //     "crosshair": {"enabled": true},
-  //     "labels": {"maxRotation": 90, "minRotation": 0}
-  //   },
-  //   "yAxis": {"minValue": 0, "minInterval": 5},
-  //   "title": {"text": "Bar Chart Demo"},
-  //   "tooltip": {"valueFormatter": (value) => "$value units"}
-  // };
 
-  let chart = BarChart::new(/*container*/);
-  // chart.draw(table, options);
+    let table = DataTable::new(
+        vec!["Categories", "Long series name", "Series 2", "Series 3"],
+        vec![
+            vec!["January" /* , 1, 3, 5*/],
+            vec!["February" /*, 3, 4, 6*/],
+            vec!["March" /* , 4, 3, 1*/],
+            vec!["April" /*, None, 5, 1*/],
+            vec!["May" /*, 3, 4, 2*/],
+            vec!["June" /*, 5, 10, 4*/],
+            vec!["July" /*, 4, 12, 8*/],
+            vec!["August" /*, 1, 3, 5*/],
+            vec!["September" /*, 3, 4, 6*/],
+            vec!["October" /*, 4, 3, 1*/],
+            vec!["November" /*, None, 5, 1*/],
+            vec!["December" /*, 3, 4, 2*/],
+        ],
+    );
 
-  // fn disableAllButtons() {
-  //   changeDataButton.disabled = true;
-  //   insertRemoveColumnButton.disabled = true;
-  //   insertRemoveRowButton.disabled = true;
-  // }
+    // let changeDataButton = ButtonElement()..text = "Change data";
+    // document.body.append(changeDataButton);
 
-  // changeDataButton.onClick.listen((_) {
-  //   disableAllButtons();
-  //   for (let row in table.rows) {
-  //     for (let i = 1; i < table.columns.length; i++) {
-  //       row[i] = rand(2, 20);
-  //     }
-  //   }
-  //   chart.update();
-  // });
+    // let insertRemoveColumnButton = ButtonElement()
+    //   ..text = "Insert/remove data column";
+    // document.body.append(insertRemoveColumnButton);
 
-  // let insertColumn = true;
-  // insertRemoveColumnButton.onClick.listen((_) {
-  //   disableAllButtons();
-  //   if (insertColumn) {
-  //     table.columns.insert(2, DataColumn("New series", num));
-  //     for (let row in table.rows) {
-  //       row[2] = rand(2, 20);
-  //     }
-  //   } else {
-  //     table.columns.removeAt(2);
-  //   }
-  //   insertColumn = !insertColumn;
-  //   chart.update();
-  // });
+    // let insertRemoveRowButton = ButtonElement()..text = "Insert/remove data row";
+    // document.body.append(insertRemoveRowButton);
 
-  // let insertRow = true;
-  // insertRemoveRowButton.onClick.listen((_) {
-  //   disableAllButtons();
-  //   if (insertRow) {
-  //     let values = <dynamic>["New"];
-  //     for (let i = 1; i < table.columns.length; i++) {
-  //       values.add(rand(2, 20));
-  //     }
-  //     table.rows.insert(2, values);
-  //   } else {
-  //     table.rows.removeAt(2);
-  //   }
-  //   insertRow = !insertRow;
-  //   chart.update();
-  // });
-  unimplemented!()
+    // let container = createContainer();
+
+    // let options = {
+    //   "animation": {
+    //     "onEnd": () {
+    //       changeDataButton.disabled = false;
+    //       insertRemoveColumnButton.disabled = false;
+    //       insertRemoveRowButton.disabled = false;
+    //     }
+    //   },
+    //   "series": {
+    //     "labels": {"enabled": true}
+    //   },
+    //   "xAxis": {
+    //     "crosshair": {"enabled": true},
+    //     "labels": {"maxRotation": 90, "minRotation": 0}
+    //   },
+    //   "yAxis": {"minValue": 0, "minInterval": 5},
+    //   "title": {"text": "Bar Chart Demo"},
+    //   "tooltip": {"valueFormatter": (value) => "$value units"}
+    // };
+
+    let chart = BarChart::new(/*container*/);
+    // chart.draw(table, options);
+
+    // fn disableAllButtons() {
+    //   changeDataButton.disabled = true;
+    //   insertRemoveColumnButton.disabled = true;
+    //   insertRemoveRowButton.disabled = true;
+    // }
+
+    // changeDataButton.onClick.listen((_) {
+    //   disableAllButtons();
+    //   for (let row in table.rows) {
+    //     for (let i = 1; i < table.columns.length; i++) {
+    //       row[i] = rand(2, 20);
+    //     }
+    //   }
+    //   chart.update();
+    // });
+
+    // let insertColumn = true;
+    // insertRemoveColumnButton.onClick.listen((_) {
+    //   disableAllButtons();
+    //   if (insertColumn) {
+    //     table.columns.insert(2, DataColumn("New series", num));
+    //     for (let row in table.rows) {
+    //       row[2] = rand(2, 20);
+    //     }
+    //   } else {
+    //     table.columns.removeAt(2);
+    //   }
+    //   insertColumn = !insertColumn;
+    //   chart.update();
+    // });
+
+    // let insertRow = true;
+    // insertRemoveRowButton.onClick.listen((_) {
+    //   disableAllButtons();
+    //   if (insertRow) {
+    //     let values = <dynamic>["New"];
+    //     for (let i = 1; i < table.columns.length; i++) {
+    //       values.add(rand(2, 20));
+    //     }
+    //     table.rows.insert(2, values);
+    //   } else {
+    //     table.rows.removeAt(2);
+    //   }
+    //   insertRow = !insertRow;
+    //   chart.update();
+    // });
+    unimplemented!()
 }
 
 fn create_line_chart() {
-  // let table = DataTable([
-  //   ["Categories", "Series 1", "Series 2", "Series 3"],
-  //   ["Monday", 1, 3, 5],
-  //   ["Tuesday", 3, 4, 6],
-  //   ["Wednesday", 4, 3, 1],
-  //   ["Thursday", null, 5, 1],
-  //   ["Friday", 3, 4, 2],
-  //   ["Saturday", 5, 10, 4],
-  //   ["Sunday", 4, 12, 8]
-  // ]);
+    // let table = DataTable([
+    //   ["Categories", "Series 1", "Series 2", "Series 3"],
+    //   ["Monday", 1, 3, 5],
+    //   ["Tuesday", 3, 4, 6],
+    //   ["Wednesday", 4, 3, 1],
+    //   ["Thursday", null, 5, 1],
+    //   ["Friday", 3, 4, 2],
+    //   ["Saturday", 5, 10, 4],
+    //   ["Sunday", 4, 12, 8]
+    // ]);
 
-  // let changeDataButton = ButtonElement()..text = "Change data";
-  // document.body.append(changeDataButton);
+    // let changeDataButton = ButtonElement()..text = "Change data";
+    // document.body.append(changeDataButton);
 
-  // let insertRemoveColumnButton = ButtonElement()
-  //   ..text = "Insert/remove data column";
-  // document.body.append(insertRemoveColumnButton);
+    // let insertRemoveColumnButton = ButtonElement()
+    //   ..text = "Insert/remove data column";
+    // document.body.append(insertRemoveColumnButton);
 
-  // let insertRemoveRowButton = ButtonElement()..text = "Insert/remove data row";
-  // document.body.append(insertRemoveRowButton);
+    // let insertRemoveRowButton = ButtonElement()..text = "Insert/remove data row";
+    // document.body.append(insertRemoveRowButton);
 
-  // let container = createContainer();
+    // let container = createContainer();
 
-  // let options = {
-  //   "animation": {
-  //     "onEnd": () {
-  //       changeDataButton.disabled = false;
-  //       insertRemoveColumnButton.disabled = false;
-  //       insertRemoveRowButton.disabled = false;
-  //     }
-  //   },
-  //   "series": {
-  //     "fillOpacity": 0.25,
-  //     "labels": {"enabled": true},
-  //   },
-  //   "yAxis": {"minInterval": 5},
-  //   "title": {"text": "Line Chart Demo"}
-  // };
+    // let options = {
+    //   "animation": {
+    //     "onEnd": () {
+    //       changeDataButton.disabled = false;
+    //       insertRemoveColumnButton.disabled = false;
+    //       insertRemoveRowButton.disabled = false;
+    //     }
+    //   },
+    //   "series": {
+    //     "fillOpacity": 0.25,
+    //     "labels": {"enabled": true},
+    //   },
+    //   "yAxis": {"minInterval": 5},
+    //   "title": {"text": "Line Chart Demo"}
+    // };
 
-  let chart = LineChart::new(/*container*/);
-  // chart.draw(table, options);
+    let chart = LineChart::new(/*container*/);
+    // chart.draw(table, options);
 
-  // fn disableAllButtons() {
-  //   changeDataButton.disabled = true;
-  //   insertRemoveColumnButton.disabled = true;
-  //   insertRemoveRowButton.disabled = true;
-  // }
+    // fn disableAllButtons() {
+    //   changeDataButton.disabled = true;
+    //   insertRemoveColumnButton.disabled = true;
+    //   insertRemoveRowButton.disabled = true;
+    // }
 
-  // changeDataButton.onClick.listen((_) {
-  //   disableAllButtons();
-  //   for (let row in table.rows) {
-  //     for (let i = 1; i < table.columns.length; i++) {
-  //       row[i] = rand(2, 20);
-  //     }
-  //   }
-  //   chart.update();
-  // });
+    // changeDataButton.onClick.listen((_) {
+    //   disableAllButtons();
+    //   for (let row in table.rows) {
+    //     for (let i = 1; i < table.columns.length; i++) {
+    //       row[i] = rand(2, 20);
+    //     }
+    //   }
+    //   chart.update();
+    // });
 
-  // let insertColumn = true;
-  // insertRemoveColumnButton.onClick.listen((_) {
-  //   disableAllButtons();
-  //   if (insertColumn) {
-  //     table.columns.insert(2, DataColumn("New series", num));
-  //     for (let row in table.rows) {
-  //       row[2] = rand(2, 20);
-  //     }
-  //   } else {
-  //     table.columns.removeAt(2);
-  //   }
-  //   insertColumn = !insertColumn;
-  //   chart.update();
-  // });
+    // let insertColumn = true;
+    // insertRemoveColumnButton.onClick.listen((_) {
+    //   disableAllButtons();
+    //   if (insertColumn) {
+    //     table.columns.insert(2, DataColumn("New series", num));
+    //     for (let row in table.rows) {
+    //       row[2] = rand(2, 20);
+    //     }
+    //   } else {
+    //     table.columns.removeAt(2);
+    //   }
+    //   insertColumn = !insertColumn;
+    //   chart.update();
+    // });
 
-  // let insertRow = true;
-  // insertRemoveRowButton.onClick.listen((_) {
-  //   disableAllButtons();
-  //   if (insertRow) {
-  //     let values = <Object>["New"];
-  //     for (let i = 1; i < table.columns.length; i++) {
-  //       values.add(rand(2, 20));
-  //     }
-  //     table.rows.insert(2, values);
-  //   } else {
-  //     table.rows.removeAt(2);
-  //   }
-  //   insertRow = !insertRow;
-  //   chart.update();
-  // });
+    // let insertRow = true;
+    // insertRemoveRowButton.onClick.listen((_) {
+    //   disableAllButtons();
+    //   if (insertRow) {
+    //     let values = <Object>["New"];
+    //     for (let i = 1; i < table.columns.length; i++) {
+    //       values.add(rand(2, 20));
+    //     }
+    //     table.rows.insert(2, values);
+    //   } else {
+    //     table.rows.removeAt(2);
+    //   }
+    //   insertRow = !insertRow;
+    //   chart.update();
+    // });
 }
 
 fn create_pie_chart() {
-  // let changeDataButton = ButtonElement()..text = "Change data";
-  // document.body.append(changeDataButton);
+    // let changeDataButton = ButtonElement()..text = "Change data";
+    // document.body.append(changeDataButton);
 
-  // let insertRemoveRowButton = ButtonElement()..text = "Insert/remove data row";
-  // document.body.append(insertRemoveRowButton);
+    // let insertRemoveRowButton = ButtonElement()..text = "Insert/remove data row";
+    // document.body.append(insertRemoveRowButton);
 
-  // let container = createContainer();
-  // let table = DataTable([
-  //   ["Browser", "Share"],
-  //   ["Chrome", 35],
-  //   ["Firefox", 20],
-  //   ["IE", 30],
-  //   ["Opera", 5],
-  //   ["Safari", 8],
-  //   ["Other", 2]
-  // ]);
+    // let container = createContainer();
+    // let table = DataTable([
+    //   ["Browser", "Share"],
+    //   ["Chrome", 35],
+    //   ["Firefox", 20],
+    //   ["IE", 30],
+    //   ["Opera", 5],
+    //   ["Safari", 8],
+    //   ["Other", 2]
+    // ]);
 
-  let chart = PieChart::new(/*container*/);
-  // chart.draw(table, {
-  //   "animation": {
-  //     "onEnd": () {
-  //       changeDataButton.disabled = false;
-  //       insertRemoveRowButton.disabled = false;
-  //     }
-  //   },
-  //   "pieHole": .5,
-  //   "series": {
-  //     "counterclockwise": true,
-  //     "labels": {"enabled": true},
-  //     "startAngle": 90 + 10 * 360,
-  //   },
-  //   "title": {"text": "Pie Chart Demo"},
-  // });
+    let chart = PieChart::new(/*container*/);
+    // chart.draw(table, {
+    //   "animation": {
+    //     "onEnd": () {
+    //       changeDataButton.disabled = false;
+    //       insertRemoveRowButton.disabled = false;
+    //     }
+    //   },
+    //   "pieHole": .5,
+    //   "series": {
+    //     "counterclockwise": true,
+    //     "labels": {"enabled": true},
+    //     "startAngle": 90 + 10 * 360,
+    //   },
+    //   "title": {"text": "Pie Chart Demo"},
+    // });
 
-  // fn disableAllButtons() {
-  //   changeDataButton.disabled = true;
-  //   insertRemoveRowButton.disabled = true;
-  // }
+    // fn disableAllButtons() {
+    //   changeDataButton.disabled = true;
+    //   insertRemoveRowButton.disabled = true;
+    // }
 
-  // changeDataButton.onClick.listen((_) {
-  //   disableAllButtons();
-  //   for (let row in table.rows) {
-  //     for (let i = 1; i < table.columns.length; i++) {
-  //       row[i] = rand(2, 25);
-  //     }
-  //   }
-  //   chart.update();
-  // });
+    // changeDataButton.onClick.listen((_) {
+    //   disableAllButtons();
+    //   for (let row in table.rows) {
+    //     for (let i = 1; i < table.columns.length; i++) {
+    //       row[i] = rand(2, 25);
+    //     }
+    //   }
+    //   chart.update();
+    // });
 
-  // let insertRow = true;
-  // insertRemoveRowButton.onClick.listen((_) {
-  //   insertRemoveRowButton.disabled = true;
-  //   if (insertRow) {
-  //     let values = ["New", 6];
-  //     table.rows.insert(2, values);
-  //   } else {
-  //     table.rows.removeAt(2);
-  //   }
-  //   insertRow = !insertRow;
-  //   chart.update();
-  // });
+    // let insertRow = true;
+    // insertRemoveRowButton.onClick.listen((_) {
+    //   insertRemoveRowButton.disabled = true;
+    //   if (insertRow) {
+    //     let values = ["New", 6];
+    //     table.rows.insert(2, values);
+    //   } else {
+    //     table.rows.removeAt(2);
+    //   }
+    //   insertRow = !insertRow;
+    //   chart.update();
+    // });
 }
 
 fn create_radar_chart() {
-  // let table = DataTable([
-  //   ["Categories", "Series 1"],
-  //   ["Monday", 8],
-  //   ["Tuesday", 17],
-  //   ["Wednesday", 7],
-  //   ["Thursday", 16],
-  //   ["Friday", 12],
-  //   ["Saturday", 5],
-  //   ["Sunday", 14]
-  // ]);
+    // let table = DataTable([
+    //   ["Categories", "Series 1"],
+    //   ["Monday", 8],
+    //   ["Tuesday", 17],
+    //   ["Wednesday", 7],
+    //   ["Thursday", 16],
+    //   ["Friday", 12],
+    //   ["Saturday", 5],
+    //   ["Sunday", 14]
+    // ]);
 
-  // let changeDataButton = ButtonElement()..text = "Change data";
-  // document.body.append(changeDataButton);
+    // let changeDataButton = ButtonElement()..text = "Change data";
+    // document.body.append(changeDataButton);
 
-  // let insertRemoveColumnButton = ButtonElement()
-  //   ..text = "Insert/remove data column";
-  // document.body.append(insertRemoveColumnButton);
+    // let insertRemoveColumnButton = ButtonElement()
+    //   ..text = "Insert/remove data column";
+    // document.body.append(insertRemoveColumnButton);
 
-  // let insertRemoveRowButton = ButtonElement()..text = "Insert/remove data row";
-  // document.body.append(insertRemoveRowButton);
+    // let insertRemoveRowButton = ButtonElement()..text = "Insert/remove data row";
+    // document.body.append(insertRemoveRowButton);
 
-  // let container = createContainer();
+    // let container = createContainer();
 
-  // let options = {
-  //   "animation": {
-  //     "onEnd": () {
-  //       changeDataButton.disabled = false;
-  //       insertRemoveColumnButton.disabled = false;
-  //       insertRemoveRowButton.disabled = false;
-  //     }
-  //   },
-  //   "series": {
-  //     "labels": {"enabled": true}
-  //   },
-  //   "title": {"text": "Radar Chart Demo"},
-  //   "tooltip": {"valueFormatter": (value) => "$value units"}
-  // };
+    // let options = {
+    //   "animation": {
+    //     "onEnd": () {
+    //       changeDataButton.disabled = false;
+    //       insertRemoveColumnButton.disabled = false;
+    //       insertRemoveRowButton.disabled = false;
+    //     }
+    //   },
+    //   "series": {
+    //     "labels": {"enabled": true}
+    //   },
+    //   "title": {"text": "Radar Chart Demo"},
+    //   "tooltip": {"valueFormatter": (value) => "$value units"}
+    // };
 
-  let chart = RadarChart::new(/*container*/);
-  // chart.draw(table, options);
+    let chart = RadarChart::new(/*container*/);
+    // chart.draw(table, options);
 
-  // fn disableAllButtons() {
-  //   changeDataButton.disabled = true;
-  //   insertRemoveColumnButton.disabled = true;
-  //   insertRemoveRowButton.disabled = true;
-  // }
+    // fn disableAllButtons() {
+    //   changeDataButton.disabled = true;
+    //   insertRemoveColumnButton.disabled = true;
+    //   insertRemoveRowButton.disabled = true;
+    // }
 
-  // changeDataButton.onClick.listen((_) {
-  //   disableAllButtons();
-  //   for (let row in table.rows) {
-  //     for (let i = 1; i < table.columns.length; i++) {
-  //       row[i] = rand(5, 20);
-  //     }
-  //   }
-  //   chart.update();
-  // });
+    // changeDataButton.onClick.listen((_) {
+    //   disableAllButtons();
+    //   for (let row in table.rows) {
+    //     for (let i = 1; i < table.columns.length; i++) {
+    //       row[i] = rand(5, 20);
+    //     }
+    //   }
+    //   chart.update();
+    // });
 
-  // let insertColumn = true;
-  // insertRemoveColumnButton.onClick.listen((_) {
-  //   disableAllButtons();
-  //   if (insertColumn) {
-  //     table.columns.insert(2, DataColumn("New series", num));
-  //     for (let row in table.rows) {
-  //       row[2] = rand(5, 20);
-  //     }
-  //   } else {
-  //     table.columns.removeAt(2);
-  //   }
-  //   insertColumn = !insertColumn;
-  //   chart.update();
-  // });
+    // let insertColumn = true;
+    // insertRemoveColumnButton.onClick.listen((_) {
+    //   disableAllButtons();
+    //   if (insertColumn) {
+    //     table.columns.insert(2, DataColumn("New series", num));
+    //     for (let row in table.rows) {
+    //       row[2] = rand(5, 20);
+    //     }
+    //   } else {
+    //     table.columns.removeAt(2);
+    //   }
+    //   insertColumn = !insertColumn;
+    //   chart.update();
+    // });
 
-  // let insertRow = true;
-  // insertRemoveRowButton.onClick.listen((_) {
-  //   disableAllButtons();
-  //   if (insertRow) {
-  //     let values = <Object>["New"];
-  //     for (let i = 1; i < table.columns.length; i++) {
-  //       values.add(rand(5, 20));
-  //     }
-  //     table.rows.insert(2, values);
-  //   } else {
-  //     table.rows.removeAt(2);
-  //   }
-  //   insertRow = !insertRow;
-  //   chart.update();
-  // });
+    // let insertRow = true;
+    // insertRemoveRowButton.onClick.listen((_) {
+    //   disableAllButtons();
+    //   if (insertRow) {
+    //     let values = <Object>["New"];
+    //     for (let i = 1; i < table.columns.length; i++) {
+    //       values.add(rand(5, 20));
+    //     }
+    //     table.rows.insert(2, values);
+    //   } else {
+    //     table.rows.removeAt(2);
+    //   }
+    //   insertRow = !insertRow;
+    //   chart.update();
+    // });
 }
 
 fn create_gauge_chart() {
-//   let changeDataButton = ButtonElement()..text = "Change data";
-//   document.body.append(changeDataButton);
+    //   let changeDataButton = ButtonElement()..text = "Change data";
+    //   document.body.append(changeDataButton);
 
-//   let insertRemoveRowButton = ButtonElement()..text = "Insert/remove data row";
-//   document.body.append(insertRemoveRowButton);
+    //   let insertRemoveRowButton = ButtonElement()..text = "Insert/remove data row";
+    //   document.body.append(insertRemoveRowButton);
 
-//   let container = createContainer();
-//   let table = DataTable([
-//     ["Browser", "Share"],
-//     ["Memory", 25],
-// //    ["CPU", 75],
-// //    ["Disk", 40]
-//   ]);
-  let chart = GaugeChart::new(/*container*/);
-//   chart.draw(table, {
-//     "animation": {
-//       "easing": (f64 t) {
-//         t = 4 * t - 2;
-//         return (t * t * t - t) / 12 + .5;
-//       },
-//       "onEnd": () {
-//         changeDataButton.disabled = false;
-//         insertRemoveRowButton.disabled = false;
-//       }
-//     },
-//     "gaugeLabels": {"enabled": false},
-//     "title": {"text": "Gauge Chart Demo"},
-//   });
+    //   let container = createContainer();
+    //   let table = DataTable([
+    //     ["Browser", "Share"],
+    //     ["Memory", 25],
+    // //    ["CPU", 75],
+    // //    ["Disk", 40]
+    //   ]);
+    let chart = GaugeChart::new(/*container*/);
+    //   chart.draw(table, {
+    //     "animation": {
+    //       "easing": (f64 t) {
+    //         t = 4 * t - 2;
+    //         return (t * t * t - t) / 12 + .5;
+    //       },
+    //       "onEnd": () {
+    //         changeDataButton.disabled = false;
+    //         insertRemoveRowButton.disabled = false;
+    //       }
+    //     },
+    //     "gaugeLabels": {"enabled": false},
+    //     "title": {"text": "Gauge Chart Demo"},
+    //   });
 
-//   fn disableAllButtons() {
-//     changeDataButton.disabled = true;
-//     insertRemoveRowButton.disabled = true;
-//   }
+    //   fn disableAllButtons() {
+    //     changeDataButton.disabled = true;
+    //     insertRemoveRowButton.disabled = true;
+    //   }
 
-//   changeDataButton.onClick.listen((_) {
-//     disableAllButtons();
-//     for (let row in table.rows) {
-//       for (let i = 1; i < table.columns.length; i++) {
-//         row[i] = rand(0, 101);
-//       }
-//     }
-//     chart.update();
-//   });
+    //   changeDataButton.onClick.listen((_) {
+    //     disableAllButtons();
+    //     for (let row in table.rows) {
+    //       for (let i = 1; i < table.columns.length; i++) {
+    //         row[i] = rand(0, 101);
+    //       }
+    //     }
+    //     chart.update();
+    //   });
 
-//   let insertRow = true;
-//   insertRemoveRowButton.onClick.listen((_) {
-//     insertRemoveRowButton.disabled = true;
-//     if (insertRow) {
-//       let values = ["New", rand(0, 101)];
-//       table.rows.insert(1, values);
-//     } else {
-//       table.rows.removeAt(1);
-//     }
-//     insertRow = !insertRow;
-//     chart.update();
-//   });
+    //   let insertRow = true;
+    //   insertRemoveRowButton.onClick.listen((_) {
+    //     insertRemoveRowButton.disabled = true;
+    //     if (insertRow) {
+    //       let values = ["New", rand(0, 101)];
+    //       table.rows.insert(1, values);
+    //     } else {
+    //       table.rows.removeAt(1);
+    //     }
+    //     insertRow = !insertRow;
+    //     chart.update();
+    //   });
 }

@@ -2,13 +2,17 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
+#![cfg(feature = "cairo")]
+
 use cairo;
 use gio::prelude::*;
 use gtk::prelude::*;
 
-use crate::{
-    CanvasContext, CanvasGradientInterface, CanvasPatternInterface, CanvasStyle, Color, Direction,
-    Matrix, TextAlign,
+use ux_primitives::{
+    canvas::{
+        CanvasContext, CanvasGradientInterface, CanvasPatternInterface, CanvasStyle, Direction,
+    },
+    math::Matrix, text::TextAlign, color::Color,
 };
 
 pub struct CairoCanvas {
@@ -36,6 +40,7 @@ impl CanvasContext for CairoCanvas {
 
     // fn get_current_transform(&self) -> Matrix;
     fn set_current_transform(&mut self, value: Matrix) {
+        // self.ctx.get_matrix()
         unimplemented!()
     }
     fn get_direction(&self) -> Direction {
@@ -69,9 +74,11 @@ impl CanvasContext for CairoCanvas {
     }
 
     fn get_font(&self) -> String {
+        // self.ctx.get_font_face(font_face)
         unimplemented!()
     }
-    fn set_font(&mut self, value: String) {
+    fn set_font(&mut self, value: &str) {
+        // self.ctx.set_font_face(font_face)
         unimplemented!()
     }
 
@@ -85,17 +92,17 @@ impl CanvasContext for CairoCanvas {
     fn get_global_composite_operation(&self) -> String {
         unimplemented!()
     }
-    fn set_global_composite_operation(&mut self, value: String) {
+    fn set_global_composite_operation(&mut self, value: &str) {
         unimplemented!()
     }
 
-    // The hash code for this object.
-    fn get_hash_code(&self) -> u64 {
-        unimplemented!()
-    }
-    fn set_hash_code(&mut self, value: u64) {
-        unimplemented!()
-    }
+    // // The hash code for this object.
+    // fn get_hash_code(&self) -> u64 {
+    //     unimplemented!()
+    // }
+    // fn set_hash_code(&mut self, value: u64) {
+    //     unimplemented!()
+    // }
 
     // Whether images and patterns on this canvas will be smoothed when this canvas is scaled.
     // imageSmoothingEnabled
@@ -106,47 +113,53 @@ impl CanvasContext for CairoCanvas {
         unimplemented!()
     }
 
-    fn get_image_smoothing_quality(&self) -> String {
-        unimplemented!()
-    }
-    fn set_image_smoothing_quality(&mut self, value: String) {
-        unimplemented!()
-    }
+    // fn get_image_smoothing_quality(&self) -> String {
+    //     unimplemented!()
+    // }
+    // fn set_image_smoothing_quality(&mut self, value: &str) {
+    //     unimplemented!()
+    // }
 
     fn get_line_cap(&self) -> String {
+        // self.ctx.get_line_cap()
         unimplemented!()
     }
-    fn set_line_cap(&mut self, value: String) {
+    fn set_line_cap(&mut self, value: &str) {
+        // self.ctx.set_line_cap()
         unimplemented!()
     }
 
     // @SupportedBrowser(SupportedBrowser.CHROME), @SupportedBrowser(SupportedBrowser.IE, '11'), @SupportedBrowser(SupportedBrowser.SAFARI), @Unstable()
     fn get_line_dash_offset(&self) -> f64 {
+        // self.ctx.get_dash_offset()
         unimplemented!()
     }
     fn set_line_dash_offset(&mut self, value: f64) {
+        // self.ctx.set_dash_offset()
         unimplemented!()
     }
 
     fn get_line_join(&self) -> String {
+        // self.ctx.get_line_join(arg)
         unimplemented!()
     }
-    fn set_line_join(&mut self, value: String) {
+    fn set_line_join(&mut self, value: &str) {
+        // self.ctx.set_line_join(arg)
         unimplemented!()
     }
 
     fn get_line_width(&self) -> f64 {
-        unimplemented!()
+        self.ctx.get_line_width()
     }
     fn set_line_width(&mut self, value: f64) {
-        unimplemented!()
+        self.ctx.set_line_width(value);
     }
 
     fn get_miter_limit(&self) -> f64 {
-        unimplemented!()
+        self.ctx.get_miter_limit()
     }
     fn set_miter_limit(&mut self, value: f64) {
-        unimplemented!()
+        self.ctx.set_miter_limit(value);
     }
 
     // // A representation of the runtime type of the object.
@@ -162,7 +175,7 @@ impl CanvasContext for CairoCanvas {
     fn get_shadow_color(&self) -> String {
         unimplemented!()
     }
-    fn set_shadow_color(&mut self, value: String) {
+    fn set_shadow_color(&mut self, value: &str) {
         unimplemented!()
     }
 
@@ -194,17 +207,17 @@ impl CanvasContext for CairoCanvas {
     //     unimplemented!()
     // }
 
-    fn get_text_align(&mut self) -> TextAlign {
+    fn get_text_align(&mut self) -> String {
         unimplemented!()
     }
-    fn set_text_align(&mut self, value: TextAlign) {
+    fn set_text_align(&mut self, value: &str) {
         unimplemented!()
     }
 
     fn get_text_baseline(&self) -> String {
         unimplemented!()
     }
-    fn set_text_baseline(&mut self, value: String) {
+    fn set_text_baseline(&mut self, value: &str) {
         unimplemented!()
     }
 
@@ -222,15 +235,17 @@ impl CanvasContext for CairoCanvas {
         end_angle: f64,
         anticlockwise: bool,
     ) {
-        unimplemented!()
+        self.ctx.arc(x, y, radius, start_angle, end_angle);
+        // self.ctx.arc_negative(x, y, radius, start_angle, end_angle);
     }
     fn arc_to(&self, x1: f64, y1: f64, x2: f64, y2: f64, radius: f64) {
         unimplemented!()
     }
     fn begin_path(&self) {
-        unimplemented!()
+        self.ctx.new_path();
     }
     fn bezier_curve_to(&self, cp1x: f64, cp1y: f64, cp2x: f64, cp2y: f64, x: f64, y: f64) {
+        self.ctx.curve_to(cp1x, cp1y, cp2x, cp2y, x, y);
         unimplemented!()
     }
     fn clear_hit_regions(&self) {
@@ -242,7 +257,9 @@ impl CanvasContext for CairoCanvas {
 
     // [path_OR_winding: dynamic, winding: String]
     // fn clip(path_OR_winding: dynamic, winding: String); // TODO:
-    // fn close_path(&self); // TODO:
+    fn close_path(&self) {
+        self.ctx.close_path();
+    }
 
     // @Creates('ImageData|=Object')
     // [int? sh_OR_sw, dynamic imageDataColorSettings_OR_sh, Map? imageDataColorSettings]
@@ -257,19 +274,19 @@ impl CanvasContext for CairoCanvas {
     // [Element? element]
     // fn drawFocusIfNeeded(element_OR_path: dynamic, element: Element); // TODO:
 
-    // Draws an image from a CanvasImageSource to this canvas. 
+    // Draws an image from a CanvasImageSource to this canvas.
     // @JSName('drawImage')
     // fn drawImage(source: CanvasImageSource, destX: f64, destY: f64); // TODO:
 
-    // Draws an image from a CanvasImageSource to an area of this canvas. 
+    // Draws an image from a CanvasImageSource to an area of this canvas.
     // @JSName('drawImage')
     // fn drawImageScaled(source: CanvasImageSource, destX: f64, destY: f64, destWidth: f64, destHeight: f64); // TODO:
 
-    // Draws an image from a CanvasImageSource to an area of this canvas. 
+    // Draws an image from a CanvasImageSource to an area of this canvas.
     // @JSName('drawImage')
     // fn drawImageScaledFromSource(source: CanvasImageSource, sourceX: f64, sourceY: f64, sourceWidth: f64, sourceHeight: f64, destX: f64, destY: f64, destWidth: f64, destHeight: f64); // TODO:
 
-    // Draws an image from a CanvasImageSource to an area of this canvas. 
+    // Draws an image from a CanvasImageSource to an area of this canvas.
     // {Rectangle<f64>? sourceRect}
     // fn drawImageToRect(source: CanvasImageSource, destRect: Rectangle<f64>, sourceRect: Rectangle<f64>); // TODO:
 
@@ -284,18 +301,23 @@ impl CanvasContext for CairoCanvas {
         end_angle: f64,
         anticlockwise: bool,
     ) {
+        // self.ctx.arc(x, y, radius, angle1, angle2)
         unimplemented!()
     }
 
     // [dynamic path_OR_winding, String? winding]
     // fn fill(path_OR_winding: dynamic, winding: String); // TODO:
     fn fill_rect(&self, x: f64, y: f64, width: f64, height: f64) {
+        // TODO: complete it
+        // self.ctx.rectangle(x, y, width, height);
         unimplemented!()
     }
 
-    // Draws text to the canvas. 
+    // Draws text to the canvas.
     // [f64? max_width]
-    fn fill_text(&self, text: String, x: f64, y: f64, max_width: f64) {
+    fn fill_text(&self, text: &str, x: f64, y: f64, max_width: f64) {
+        // TODO: complete it
+        // self.ctx.text_extents(text);
         unimplemented!()
     }
 
@@ -306,6 +328,7 @@ impl CanvasContext for CairoCanvas {
 
     // @SupportedBrowser(SupportedBrowser.CHROME), @SupportedBrowser(SupportedBrowser.IE, '11'), @SupportedBrowser(SupportedBrowser.SAFARI), @Unstable()
     fn get_line_dash(&self) -> Vec<f64> {
+        // self.ctx.get_dash()
         unimplemented!()
     }
 
@@ -332,25 +355,26 @@ impl CanvasContext for CairoCanvas {
         unimplemented!()
     }
     fn rect(&self, x: f64, y: f64, width: f64, height: f64) {
-        unimplemented!()
+        // TODO: complete it
+        self.ctx.rectangle(x, y, width, height);
     }
-    fn remove_hit_region(&self, id: String) {
+    fn remove_hit_region(&self, id: &str) {
         unimplemented!()
     }
     fn reset_transform(&self) {
         unimplemented!()
     }
     fn restore(&self) {
-        unimplemented!()
+        self.ctx.restore();
     }
     fn rotate(&self, angle: f64) {
-        unimplemented!()
+        self.ctx.rotate(angle);
     }
     fn save(&self) {
-        unimplemented!()
+        self.ctx.save();
     }
     fn scale(&self, x: f64, y: f64) {
-        unimplemented!()
+        self.ctx.scale(x, y);
     }
 
     // [Path2D? path]
@@ -370,6 +394,7 @@ impl CanvasContext for CairoCanvas {
 
     // @SupportedBrowser(SupportedBrowser.CHROME), @SupportedBrowser(SupportedBrowser.IE, '11'), @SupportedBrowser(SupportedBrowser.SAFARI), @Unstable()
     fn set_line_dash(&self, dash: Vec<f64>) {
+        // self.ctx.set_dash(dashes, offset)
         unimplemented!()
     }
 
@@ -386,23 +411,29 @@ impl CanvasContext for CairoCanvas {
     }
 
     fn set_transform(&self, a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) {
-        unimplemented!()
+        // TODO: complete it
+        let m = cairo::Matrix::new(a, b, c, d, e, f);
+        self.ctx.transform(m);
     }
 
     // [Path2D? path]
     // fn stroke(path: Path2D); // TODO:
     fn stroke_rect(&self, x: f64, y: f64, width: f64, height: f64) {
-        unimplemented!()
+        // TODO: complete it
+        self.ctx.rectangle(x, y, width, height);
     }
     // [f64? max_width]
-    fn stroke_text(&self, text: String, x: f64, y: f64, max_width: f64) {
-        unimplemented!()
+    fn stroke_text(&self, text: &str, x: f64, y: f64, max_width: f64) {
+        // TODO: complete it
+        self.ctx.text_extents(text);
     }
 
     fn transform(&self, a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) {
-        unimplemented!()
+        // TODO: complete it
+        let m = cairo::Matrix::new(a, b, c, d, e, f);
+        self.ctx.transform(m);
     }
     fn translate(&self, x: f64, y: f64) {
-        unimplemented!()
+        self.ctx.translate(x, y);
     }
 }

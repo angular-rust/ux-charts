@@ -4,7 +4,9 @@
 
 use std::collections::HashMap;
 
-use crate::{CanvasContext, Chart, Drawable, Entity, Point, Rectangle};
+use ux_primitives::canvas::CanvasContext;
+
+use crate::{Chart, Drawable, Entity, Point, Rectangle};
 
 pub struct PolarPoint {
     old_radius: f64,

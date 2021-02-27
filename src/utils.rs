@@ -2,9 +2,14 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::collections::HashMap;
-use std::f64::consts::PI;
-use crate::{CanvasContext, DataTable, Point};
+use std::{
+    collections::HashMap,
+    f64::consts::PI
+};
+
+use ux_primitives::canvas::CanvasContext;
+
+use crate::{DataTable, Point};
 
 /// Converts [angle] in radians to degrees.
 fn rad2deg(angle: f64) -> f64 {

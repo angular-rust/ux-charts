@@ -4,12 +4,6 @@ pub use animation::*;
 mod backend;
 pub use backend::*;
 
-mod canvas;
-pub use canvas::*;
-
-mod color;
-pub use color::*;
-
 mod bar;
 pub use bar::*;
 
@@ -25,9 +19,6 @@ pub use gauge::*;
 mod line;
 pub use line::*;
 
-mod math;
-pub use math::*;
-
 mod options;
 pub use options::*;
 
@@ -36,9 +27,6 @@ pub use pie::*;
 
 mod radar;
 pub use radar::*;
-
-mod text;
-pub use text::*;
 
 mod utils;
 pub use utils::*;
