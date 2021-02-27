@@ -7,7 +7,7 @@ homepage = "https://angular-rust.github.io/ux-charts"
 repository = "https://github.com/angular-rust/ux-charts"
 documentation = "https://docs.rs/ux-charts"
 description = "Backend and runtime agnostic chart library"
-keywords = ["wasm", "web", "webassembly", "awesome", "graphics", "gtk", "cairo"]
+keywords = ["web", "webassembly", "graphics", "gtk", "cairo"]
 categories = ["multimedia", "wasm", "web-programming", "gui"]
 edition = "2018"
 license = "MPL-2.0"
@@ -22,7 +22,7 @@ default = ["cairo"]
 
 [dependencies]
 log = "0.4"
-ux-primitives = { git = "https://github.com/angular-rust/ux-primitives.git" }
+ux-primitives = { version = "0.1", git = "https://github.com/angular-rust/ux-primitives.git" }
 
 png = { version = "0.16", optional = true }
 gio = { version = "0.9", features = ["v2_58"], optional = true }
