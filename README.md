@@ -35,7 +35,7 @@ Install Angular Rust:
 
 ## Learn More
 
-* [Manual, Samples, Godocs, etc](https://angular-rust.github.io/)
+* [Manual, Samples, Docs, etc](https://angular-rust.github.io/)
 * [Apps using Angular Rust](https://github.com/angular-rust/ux-charts/wiki/Apps-in-the-Wild)
 * [Articles Featuring Angular Rust](https://github.com/angular-rust/ux-charts/wiki/Articles)
 
