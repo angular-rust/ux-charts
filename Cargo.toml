@@ -16,13 +16,14 @@ license = "MPL-2.0"
 maintenance = { status = "actively-developed" }
 
 [features]
-web = ["wasm-bindgen", "wasm-bindgen-futures", "wasm-logger", "gloo", "js-sys", "wasm-bindgen-test", "web-sys"]
-cairo = ["cairo-rs", "png", "gio", "gtk"]
+web = ["wasm-bindgen", "wasm-bindgen-futures", "wasm-logger", "gloo", "js-sys", "wasm-bindgen-test", "web-sys", "ux-animate", "ux-animate/web"]
+cairo = ["cairo-rs", "png", "gio", "gtk", "ux-animate", "ux-animate/cairo"]
 default = ["cairo"]
 
 [dependencies]
 log = "0.4"
-ux-primitives = { version = "0.1", git = "https://github.com/angular-rust/ux-primitives.git" }
+ux-primitives = { version = "0.1" }
+ux-animate = { version = "0.1", default-features = false, optional = true }
 
 png = { version = "0.16", optional = true }
 gio = { version = "0.9", features = ["v2_58"], optional = true }
@@ -35,6 +36,7 @@ wasm-logger = { version = "0.2", optional = true }
 gloo = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true }
 wasm-bindgen-test = { version = "0.3", optional = true }
+
 
 [dependencies.web-sys]
 version = "0.3"

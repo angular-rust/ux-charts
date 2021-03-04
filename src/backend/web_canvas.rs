@@ -41,7 +41,7 @@ impl CanvasContext for WebCanvas {
     // fn get_transform(&self) -> Matrix {
     //    self.ctx.get_transform() -> Result<DomMatrix, JsValue>
     // };
-    fn set_current_transform(&mut self, value: Matrix) {
+    fn set_current_transform(&mut self, value: Matrix<f64>) {
         // self.ctx.set_transform(value.a, value.b, value.c, value.d, value.e, value.f);
         unimplemented!() // FIXME: adjust ux-primitives
     }
@@ -218,7 +218,6 @@ impl CanvasContext for WebCanvas {
     }
 
     // Methods
-    // options is opt
     // fn add_hit_region(options: Map); // TODO:
 
     // anticlockwise: bool = false
@@ -435,8 +434,10 @@ impl CanvasContext for WebCanvas {
         let _ = self.ctx.set_transform(a, b, c, d, e, f);
     }
 
-    // [Path2D? path]
-    // fn stroke(path: Path2D); // TODO:
+    fn stroke(&self) {
+        unimplemented!()
+    }
+    
     fn stroke_rect(&self, x: f64, y: f64, width: f64, height: f64) {
         self.ctx.stroke_rect(x, y, width, height);
     }

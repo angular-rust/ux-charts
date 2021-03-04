@@ -39,7 +39,7 @@ impl CanvasContext for CairoCanvas {
     // fn get_canvas(&self) -> CanvasElement;
 
     // fn get_current_transform(&self) -> Matrix;
-    fn set_current_transform(&mut self, value: Matrix) {
+    fn set_current_transform(&mut self, value: Matrix<f64>) {
         // self.ctx.get_matrix()
         unimplemented!()
     }
@@ -222,7 +222,6 @@ impl CanvasContext for CairoCanvas {
     }
 
     // Methods
-    // options is opt
     // fn add_hit_region(options: Map); // TODO:
 
     // anticlockwise: bool = false
@@ -416,8 +415,10 @@ impl CanvasContext for CairoCanvas {
         self.ctx.transform(m);
     }
 
-    // [Path2D? path]
-    // fn stroke(path: Path2D); // TODO:
+    fn stroke(&self) {
+        unimplemented!()
+    }
+    
     fn stroke_rect(&self, x: f64, y: f64, width: f64, height: f64) {
         // TODO: complete it
         self.ctx.rectangle(x, y, width, height);

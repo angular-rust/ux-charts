@@ -1,3 +1,12 @@
+pub trait BaseOption<'a> {
+    fn animation(&self) -> AnimationOptions;
+    fn colors(&self) -> Vec<&'a str>;
+    fn title(&self) -> TitleOptions<'a>;
+    fn legeng(&self) -> LegendOptions<'a>;
+    fn tooltip(&self) -> TooltipOptions<'a>;
+    fn background(&self) -> &'a str;
+}
+
 pub struct AnimationOptions {
     /// The animation duration in ms.
     pub duration: usize,
@@ -105,6 +114,7 @@ impl<'a> Default for GlobalOptions<'a> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct BarChartSeriesOptions<'a> {
     /// An object that controls the series labels.
     /// bool - Whether to show the labels.
@@ -212,6 +222,32 @@ pub struct BarChartOptions<'a> {
     pub y_axis: BarChartYAxisOptions<'a>,
 }
 
+impl<'a> BaseOption<'a> for BarChartOptions<'a> {
+    fn animation(&self) -> AnimationOptions {
+        unimplemented!()
+    }
+
+    fn colors(&self) -> Vec<&'a str> {
+        unimplemented!()
+    }
+
+    fn title(&self) -> TitleOptions<'a> {
+        unimplemented!()
+    }
+
+    fn legeng(&self) -> LegendOptions<'a> {
+        unimplemented!()
+    }
+
+    fn tooltip(&self) -> TooltipOptions<'a> {
+        unimplemented!()
+    }
+
+    fn background(&self) -> &'a str {
+        unimplemented!()
+    }
+}
+
 pub struct TitleOption<'a> {
     /// An object that controls the styling of the axis title.
     pub style: StyleOption<'a>,
@@ -264,6 +300,7 @@ impl<'a> Default for BarChartOptions<'a> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct StyleOption<'a> {
     pub background_color: &'a str,
     pub border_color: &'a str,
@@ -300,6 +337,32 @@ pub struct GaugeChartOptions<'a> {
     /// Whether to show the labels
     /// An object that controls the styling of the gauge labels
     pub labels: Option<StyleOption<'a>>,
+}
+
+impl<'a> BaseOption<'a> for GaugeChartOptions<'a> {
+    fn animation(&self) -> AnimationOptions {
+        unimplemented!()
+    }
+
+    fn colors(&self) -> Vec<&'a str> {
+        unimplemented!()
+    }
+
+    fn title(&self) -> TitleOptions<'a> {
+        unimplemented!()
+    }
+
+    fn legeng(&self) -> LegendOptions<'a> {
+        unimplemented!()
+    }
+
+    fn tooltip(&self) -> TooltipOptions<'a> {
+        unimplemented!()
+    }
+
+    fn background(&self) -> &'a str {
+        unimplemented!()
+    }
 }
 
 impl<'a> Default for GaugeChartOptions<'a> {
@@ -441,6 +504,32 @@ pub struct LineChartOptions<'a> {
     pub y_axis: LineChartYAxisOptions<'a>,
 }
 
+impl<'a> BaseOption<'a> for LineChartOptions<'a> {
+    fn animation(&self) -> AnimationOptions {
+        unimplemented!()
+    }
+
+    fn colors(&self) -> Vec<&'a str> {
+        unimplemented!()
+    }
+
+    fn title(&self) -> TitleOptions<'a> {
+        unimplemented!()
+    }
+
+    fn legeng(&self) -> LegendOptions<'a> {
+        unimplemented!()
+    }
+
+    fn tooltip(&self) -> TooltipOptions<'a> {
+        unimplemented!()
+    }
+
+    fn background(&self) -> &'a str {
+        unimplemented!()
+    }
+}
+
 impl<'a> Default for LineChartOptions<'a> {
     fn default() -> Self {
         Self {
@@ -524,6 +613,32 @@ pub struct PieChartOptions<'a> {
 
     /// An object that controls the series.
     pub series: PieChartSeriesOptions<'a>,
+}
+
+impl<'a> BaseOption<'a> for PieChartOptions<'a> {
+    fn animation(&self) -> AnimationOptions {
+        unimplemented!()
+    }
+
+    fn colors(&self) -> Vec<&'a str> {
+        unimplemented!()
+    }
+
+    fn title(&self) -> TitleOptions<'a> {
+        unimplemented!()
+    }
+
+    fn legeng(&self) -> LegendOptions<'a> {
+        unimplemented!()
+    }
+
+    fn tooltip(&self) -> TooltipOptions<'a> {
+        unimplemented!()
+    }
+
+    fn background(&self) -> &'a str {
+        unimplemented!()
+    }
 }
 
 impl<'a> Default for PieChartOptions<'a> {
@@ -624,6 +739,32 @@ pub struct RadarChartOptions<'a> {
 
     /// An object that controls the y-axis.
     pub y_axis: RadarChartYAxisOptions<'a>,
+}
+
+impl<'a> BaseOption<'a> for RadarChartOptions<'a> {
+    fn animation(&self) -> AnimationOptions {
+        unimplemented!()
+    }
+
+    fn colors(&self) -> Vec<&'a str> {
+        unimplemented!()
+    }
+
+    fn title(&self) -> TitleOptions<'a> {
+        unimplemented!()
+    }
+
+    fn legeng(&self) -> LegendOptions<'a> {
+        unimplemented!()
+    }
+
+    fn tooltip(&self) -> TooltipOptions<'a> {
+        unimplemented!()
+    }
+
+    fn background(&self) -> &'a str {
+        unimplemented!()
+    }
 }
 
 impl<'a> Default for RadarChartOptions<'a> {

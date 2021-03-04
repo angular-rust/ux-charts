@@ -1,17 +1,24 @@
-mod animation;
-pub use animation::*;
+#![allow(unused_imports)]
+#![allow(unused_variables)]
+
+use std::{collections::HashMap, fmt, rc::Rc, cell::RefCell};
+use ux_primitives::{canvas::*, math::*};
+
+// was named before "animation"
+mod easing;
+pub use easing::*;
 
 mod backend;
 pub use backend::*;
 
+mod basechart;
+pub use basechart::*;
+
 mod bar;
 pub use bar::*;
 
-mod base;
-pub use base::*;
-
-mod datatable;
-pub use datatable::*;
+mod datastream;
+pub use datastream::*;
 
 mod gauge;
 pub use gauge::*;
@@ -31,6 +38,204 @@ pub use radar::*;
 mod utils;
 pub use utils::*;
 
+/// The 2*pi constant - TAU
+pub const TAU: f64 = 6.28318530717958647692528676655900577_f64;
+
+/// The pi/2 constant.
+pub const PI_2: f64 = 1.57079632679489661923132169163975144_f64;
+
+pub const FONT_FAMILY: &str = r#""Segoe UI", "Open Sans", Verdana, Arial"#;
+
+/// The padding of the chart itself.
+pub const CHART_PADDING: usize = 12;
+
+/// The margin between the legend and the chart-axes box in pixels.
+pub const LEGEND_MARGIN: usize = 12;
+
+pub const CHART_TITLE_MARGIN: usize = 12;
+
+/// The padding around the chart title and axis titles.
+pub const TITLE_PADDING: usize = 6;
+
+/// The top-and/or-bottom margin of x-axis labels and the right-and/or-left
+/// margin of y-axis labels.
+///
+/// x-axis labels always have top margin. If the x-axis title is N/A, x-axis
+/// labels also have bottom margin.
+///
+/// y-axis labels always have right margin. If the y-axis title is N/A, y-axis
+/// labels also have left margin.
+pub const AXIS_LABEL_MARGIN: usize = 12;
+
+pub type LabelFormatter = fn(label: String) -> String;
+
+pub type ValueFormatter = fn(value: f64) -> String;
+
+pub fn default_label_formatter(label: String) -> String {
+    label
+}
+
+pub fn default_value_formatter(value: f64) -> String {
+    format!("{}", value)
+}
+
+#[derive(Debug, Clone)]
+pub enum Visibility {
+    Hidden,
+    Hidding,
+    Showing,
+    Shown,
+}
+
+impl Default for Visibility {
+    fn default() -> Self {
+        Visibility::Hidden
+    }
+}
+
+pub struct MouseEvent;
+
+/// A chart entity such as a point, a bar, a pie...
+pub trait Entity: Default {
+    fn free(&mut self);
+    fn save(&self);
+}
+
+pub trait Drawable<C>
+where
+    C: CanvasContext,
+{
+    fn draw(&self, ctx: C, percent: f64, highlight: bool);
+}
+
+#[derive(Default, Debug, Clone)]
+pub struct Series<E>
+where
+    E: Entity,
+{
+    name: String,
+    color: String,
+    highlight_color: String,
+    entities: Vec<E>,
+}
+
+impl<E> Series<E>
+where
+    E: Entity,
+{
+    pub fn new(name: &str, color: String, highlight_color: String, entities: Vec<E>) -> Self {
+        Self {
+            name: name.into(),
+            color,
+            highlight_color,
+            entities,
+        }
+    }
+
+    // end is optional
+    pub fn free_entities(&self, start: usize, end: Option<usize>) {
+        let end = match end {
+            Some(end) => end,
+            None => self.entities.len(),
+        };
+
+        let mut start = start;
+        while start < end {
+            //   self.entities[start].free();
+            start = start + 1;
+        }
+        unimplemented!()
+    }
+}
+
+pub trait Chart<E>
+where
+    E: Entity,
+{
+    /// Calculates various drawing sizes.
+    ///
+    /// Overriding methods must call this method first to have [series_and_axes_box]
+    /// calculated.
+    ///
+    /// To be overridden.
+    fn calculate_drawing_sizes(&self);
+
+    /// Updates the series at index [index]. If [index] is `null`, updates all
+    /// series.
+    ///
+    /// To be overridden.
+    // index is opt
+    fn update_series(&self, index: usize) {}
+
+    /// Draws the axes and the grid.
+    ///
+    /// To be overridden.
+    fn draw_axes_and_grid(&self) {}
+
+    /// Draws the series given the current animation percent [percent].
+    ///
+    /// If this method returns `false`, the animation is continued until [percent]
+    /// reaches 1.0.
+    ///
+    /// If this method returns `true`, the animation is stopped immediately.
+    /// This is useful as there are cases where no animation is expected.
+    /// In those cases, the overriding method will return `true` to stop the
+    /// animation.
+    ///
+    /// To be overridden.
+    fn draw_series(&self, percent: f64) -> bool {
+        true
+    }
+
+    // when we impl for concrete chart implementation then it call concrete
+    fn create_entities(
+        &self,
+        series_index: i64,
+        start: i64,
+        end: i64,
+        color: String,
+        highlight_color: String,
+    ) -> Vec<E> {
+        let result = Vec::new();
+        // while (start < end) {
+        //   let value = data_table.rows[start][seriesIndex + 1];
+        //   let e = create_entity(seriesIndex, start, value, color, highlightColor);
+        //   e.chart = this;
+        //   result.add(e);
+        //   start++;
+        // }
+        result
+    }
+
+    fn create_entity(
+        &self,
+        series_index: usize,
+        entity_index: usize,
+        value: String,
+        color: String,
+        highlight_color: String,
+    ) -> E;
+
+    fn create_series_list(&self, start: usize, end: usize) -> Vec<Series<E>> {
+        let result = Vec::new();
+        // let entityCount = data_table.rows.length;
+        // while (start < end) {
+        //   let name = data_table.columns[start + 1].name;
+        //   let color = get_color(start);
+        //   let highlightColor = get_highlight_color(color);
+        //   let entities =
+        //       create_entities(start, 0, entityCount, color, highlightColor);
+        //   result.add(Series(name, color, highlightColor, entities));
+        //   start++;
+        // }
+        result
+    }
+
+    /// Returns the position of the tooltip based on [focused_entity_index].
+    /// To be overridden.
+    fn get_tooltip_position(&self) -> Point<f64>;
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -38,61 +243,3 @@ mod tests {
         assert_eq!(2 + 2, 4);
     }
 }
-
-// DataTable createDataTable() => DataTable([
-//       ["Browser", "Share"],
-//       ["Chrome", 35],
-//       ["IE", 30],
-//       ["Firefox", 20]
-//     ]);
-
-
-//   test("columns", || {
-//     let table = createDataTable();
-//     expect(table.columns.length, equals(2));
-//     expect(table.columns[0].name, equals("Browser"));
-//   });
-
-//   test("getColumnIndexByName", || {
-//     let table = createDataTable();
-//     expect(table.getColumnIndexByName("Share"), equals(1));
-//     expect(table.getColumnIndexByName("X"), equals(-1));
-//   });
-
-//   test("getColumnValues", || {
-//     let table = createDataTable();
-//     expect(table.getColumnValues(1), orderedEquals([35, 30, 20]));
-//   });
-
-//   test("rows", || {
-//     let table = createDataTable();
-//     expect(table.rows.length, equals(3));
-//     expect(table.rows[1].toList(), orderedEquals(["IE", 30]));
-//   });
-
-//   test("columns.insert", || {
-//     let table = createDataTable();
-//     table.columns.insert(1, DataColumn("Latest Version", num));
-//     expect(table.columns.length, equals(3));
-//     expect(table.columns[1].name, equals("Latest Version"));
-//   });
-
-//   test("rows.add", || {
-//     let table = createDataTable();
-//     table.rows.add(["Opera", 10, "discarded"]);
-//     expect(table.rows.length, equals(4));
-//     expect(table.rows.last.toList(), orderedEquals(["Opera", 10]));
-//   });
-
-//   test("rows.removeRange", || {
-//     let table = createDataTable();
-//     table.rows.removeRange(0, 3);
-//     expect(table.rows, isEmpty);
-//   });
-
-//   test("cells", || {
-//     let table = createDataTable();
-//     expect(table.rows[0][0], equals("Chrome"));
-//     table.rows[0][0] = "Unknown";
-//     expect(table.rows[0][0], equals("Unknown"));
-//   });

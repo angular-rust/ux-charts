@@ -2,35 +2,103 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use ux_primitives::canvas::CanvasContext;
+use std::fmt;
+use ux_primitives::{canvas::*, math::*};
 
-use crate::{Chart, Drawable, Entity, Point};
+use crate::*;
 
+#[derive(Default, Clone)]
+pub struct GaugeEntity {
+    // Chart chart,
+    // String color,
+    // String highlightColor,
+    // String formattedValue,
+    index: usize,
+    old_value: f64,
+    value: f64,
 
-// Gauge extends Pie
-pub struct Gauge {
+    old_start_angle: f64,
+    old_end_angle: f64,
+    start_angle: f64,
+    end_angle: f64,
+
+    center: Point<f64>,
+    inner_radius: f64,
+    outer_radius: f64,
+
+    // [Series] field.
+    name: String,
+
     background_color: String,
+    base: PieEntity,
 }
 
-impl<C> Drawable<C> for Gauge
+impl GaugeEntity {
+    pub fn is_empty(&self) -> bool {
+        self.start_angle == self.end_angle
+    }
+
+    pub fn contains_point(&self, p: Point<f64>) -> bool {
+        // let p = p - center;
+        let mag = p.magnitude();
+        if mag > self.outer_radius || mag < self.inner_radius {
+            return false;
+        }
+
+        let angle = f64::atan2(p.y, p.x);
+        // let chartStartAngle = (chart as dynamic)._startAngle;
+
+        // Make sure [angle] is in range [chartStartAngle]..[chartStartAngle] + TAU.
+        // angle = (angle - chartStartAngle) % TAU + chartStartAngle;
+
+        // If counterclockwise, make sure [angle] is in range
+        // [start] - 2*pi..[start].
+        // if startAngle > endAngle {
+        //     angle -= angle - TAU;
+        // }
+
+        // if (startAngle <= endAngle) {
+        //   // Clockwise.
+        //   return isInRange(angle, startAngle, endAngle);
+        // } else {
+        //   // Counterclockwise.
+        //   return isInRange(angle, endAngle, startAngle);
+        // }
+        unimplemented!()
+    }
+}
+
+impl Entity for GaugeEntity {
+    fn free(&mut self) {
+        // chart = null;
+    }
+
+    fn save(&self) {
+        // self.old_start_angle = self.start_angle;
+        // self.old_end_angle = self.end_angle;
+        // self.old_value = self.value;
+    }
+}
+
+impl<C> Drawable<C> for GaugeEntity
 where
     C: CanvasContext,
 {
-    fn draw(ctx: C, percent: f64, highlight: bool) {
+    fn draw(&self, ctx: C, percent: f64, highlight: bool) {
         // let tmpColor = color;
         // let tmpEndAngle = endAngle;
 
         // // Draw the background.
 
-        // endAngle = startAngle + _2pi;
+        // endAngle = startAngle + TAU;
         // color = backgroundColor;
-        // super.draw(ctx, 1.0, false);
+        // self.base.draw(ctx, 1.0, false);
 
         // // Draw the foreground.
 
         // color = tmpColor;
         // endAngle = tmpEndAngle;
-        // super.draw(ctx, percent, highlight);
+        // self.base.draw(ctx, percent, highlight);
 
         // // Draw the percent.
 
@@ -55,122 +123,103 @@ where
     }
 }
 
-pub struct GaugeChart {
+pub struct GaugeChart<'a, C, M, D>
+where
+    C: CanvasContext,
+    M: fmt::Display,
+    D: fmt::Display,
+{
     gauge_hop: f64,
     gauge_inner_radius: f64,
     gauge_outer_radius: f64,
     gauge_center_y: f64,
-    start_angle: f64, // = -_pi_2;
+    start_angle: f64, // = -f64::FRAC_PI_2;
+
+    base: BaseChart<'a, C, GaugeEntity, M, D, GaugeChartOptions<'a>>,
 }
 
-impl GaugeChart {
-    fn get_gauge_center(index: i64) -> Point {
-        // Point((index + 0.5) * _gaugeHop, _gaugeCenterY)
+impl<'a, C, M, D> GaugeChart<'a, C, M, D>
+where
+    C: CanvasContext,
+    M: fmt::Display,
+    D: fmt::Display,
+{
+    pub fn new(options: GaugeChartOptions<'a>) -> Self {
+        // default_options["legend"]["position"] = "none";
+        Self {
+            gauge_hop: 0.0,
+            gauge_inner_radius: 0.0,
+            gauge_outer_radius: 0.0,
+            gauge_center_y: 0.0,
+            start_angle: 0.0, // = -f64::FRAC_PI_2;
+            base: BaseChart::new(options),
+        }
+    }
+
+    fn get_gauge_center(&self, index: i64) -> Point<D> {
+        // Point((index + 0.5) * gauge_hop, gauge_center_y)
         unimplemented!()
     }
 
-    fn value_to_angle(value: f64) -> f64 {
-        // value * _2pi / 100
+    fn value_to_angle(&self, value: f64) -> f64 {
+        // value * TAU / 100
         unimplemented!()
     }
 
-    // fn create_entity(
-    //     seriesIndex: i64,
-    //     entityIndex: i64,
-    //     value: i64,
-    //     color: String,
-    //     highlightColor: String,
-    // ) -> Entity {
-    //     // // Override the colors.
-    //     // color = _getColor(entityIndex);
-    //     // highlightColor = _changeColorAlpha(color, .5);
-
-    //     // let name = _dataTable.rows[entityIndex][0];
-    //     // return _Gauge()
-    //     //   ..index = entityIndex
-    //     //   ..value = value
-    //     //   ..name = name
-    //     //   ..color = color
-    //     //   ..backgroundColor = _options["gaugeBackgroundColor"]
-    //     //   ..highlightColor = highlightColor
-    //     //   ..oldValue = 0
-    //     //   ..oldStartAngle = _startAngle
-    //     //   ..oldEndAngle = _startAngle
-    //     //   ..center = _getGaugeCenter(entityIndex)
-    //     //   ..innerRadius = _gaugeInnerRadius
-    //     //   ..outerRadius = _gaugeOuterRadius
-    //     //   ..startAngle = _startAngle
-    //     //   ..endAngle = _startAngle + _valueToAngle(value);
-    //     unimplemented!()
-    // }
-
-    fn update_tooltip_content() {
-        // let gauge = _seriesList[0].entities[_focusedEntityIndex] as _Gauge;
-        // _tooltip.style
+    fn update_tooltip_content(&self) {
+        // let gauge = series_list[0].entities[focused_entity_index] as _Gauge;
+        // tooltip.style
         //   ..borderColor = gauge.color
         //   ..padding = "4px 12px";
-        // let label = _tooltipLabelFormatter(gauge.name);
-        // let value = _tooltipValueFormatter(gauge.value);
-        // _tooltip.innerHtml = "$label: <strong>$value%</strong>";
+        // let label = tooltip_label_formatter(gauge.name);
+        // let value = tooltip_value_formatter(gauge.value);
+        // tooltip.innerHtml = "$label: <strong>$value%</strong>";
     }
 
-    fn get_entity_group_index(x: f64, y: f64) -> i64 {
+    fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
         // let p = Point(x, y);
-        // for (_Gauge g in _seriesList[0].entities) {
+        // for (_Gauge g in series_list[0].entities) {
         //   if (g.containsPoint(p)) return g.index;
         // }
         // return -1;
         unimplemented!()
     }
-
-    fn get_tooltip_position() -> Point {
-        // let gauge = _seriesList[0].entities[_focusedEntityIndex] as _Gauge;
-        // let x = gauge.center.x - _tooltip.offsetWidth ~/ 2;
-        // let y = gauge.center.y -
-        //     _highlightOuterRadiusFactor * gauge.outerRadius -
-        //     _tooltip.offsetHeight -
-        //     5;
-        // return Point(x, y);
-        unimplemented!()
-    }
-
-    pub fn new() -> Self {
-        // super(container)
-        // _defaultOptions = mergeMaps(globalOptions, _gaugeChartDefaultOptions);
-        // _defaultOptions["legend"]["position"] = "none";
-        unimplemented!()
-    }
 }
 
-impl Chart for GaugeChart {
-    fn calculate_drawing_sizes() {
-        // super._calculateDrawingSizes();
+impl<'a, C, M, D> Chart<GaugeEntity> for GaugeChart<'a, C, M, D>
+where
+    C: CanvasContext,
+    M: fmt::Display,
+    D: fmt::Display,
+{
+    fn calculate_drawing_sizes(&self) {
+        self.base.calculate_drawing_sizes();
 
-        // let gaugeCount = _dataTable.rows.length;
+        // let gaugeCount = data_table.rows.length;
         // let labelTotalHeight = 0;
-        // if (_options["gaugeLabels"]["enabled"]) {
+        // if (options["gaugeLabels"]["enabled"]) {
         //   labelTotalHeight =
-        //       _axisLabelMargin + _options["gaugeLabels"]["style"]["fontSize"];
+        //       axis_label_margin + options["gaugeLabels"]["style"]["fontSize"];
         // }
 
-        // _gaugeCenterY = _seriesAndAxesBox.top + .5 * _seriesAndAxesBox.height;
-        // _gaugeHop = _seriesAndAxesBox.width / gaugeCount;
+        // gauge_center_y = seriesAndAxesBox.top + .5 * seriesAndAxesBox.height;
+        // gauge_hop = series_and_axes_box.width / gaugeCount;
 
-        // let availW = .618 * _gaugeHop; // Golden ratio.
-        // let availH = _seriesAndAxesBox.height - 2 * labelTotalHeight;
-        // _gaugeOuterRadius = .5 * min(availW, availH) / _highlightOuterRadiusFactor;
-        // _gaugeInnerRadius = .5 * _gaugeOuterRadius;
+        // let availW = .618 * gauge_hop; // Golden ratio.
+        // let availH = series_and_axes_box.height - 2 * labelTotalHeight;
+        // gaugeOuterRadius = .5 * min(availW, availH) / highlightOuterRadiusFactor;
+        // gaugeInnerRadius = .5 * gaugeOuterRadius;
     }
 
-    fn draw_series(percent: f64) -> bool {
-        // let style = _options["gaugeLabels"]["style"];
-        // let labelsEnabled = _options["gaugeLabels"]["enabled"];
-        // _seriesContext
+    fn draw_series(&self, percent: f64) -> bool {
+        // let style = options["gaugeLabels"]["style"];
+        // let labelsEnabled = options["gaugeLabels"]["enabled"];
+        // series_context
         //   ..strokeStyle = "white"
         //   ..textAlign = "center";
-        // for (_Gauge gauge in _seriesList[0].entities) {
-        //   let highlight = gauge.index == _focusedEntityIndex;
-        //   gauge.draw(_seriesContext, percent, highlight);
+        // for (_Gauge gauge in series_list[0].entities) {
+        //   let highlight = gauge.index == focused_entity_index;
+        //   gauge.draw(series_context, percent, highlight);
 
         //   if (!labelsEnabled) continue;
 
@@ -178,10 +227,10 @@ impl Chart for GaugeChart {
         //   let y = gauge.center.y +
         //       gauge.outerRadius +
         //       style["fontSize"] +
-        //       _axisLabelMargin;
-        //   _seriesContext
+        //       axis_label_margin;
+        //   series_context
         //     ..fillStyle = style["color"]
-        //     ..font = _getFont(style)
+        //     ..font = get_font(style)
         //     ..textAlign = "center"
         //     ..fillText(gauge.name, x, y);
         // }
@@ -189,21 +238,63 @@ impl Chart for GaugeChart {
         unimplemented!()
     }
 
-    fn update_series(index: usize) {
-        // let n = _dataTable.rows.length;
+    fn update_series(&self, index: usize) {
+        // let n = data_table.rows.length;
         // for (let i = 0; i < n; i++) {
-        //   let gauge = _seriesList[0].entities[i] as _Gauge;
-        //   let color = _getColor(i);
-        //   let highlightColor = _changeColorAlpha(color, .5);
+        //   let gauge = series_list[0].entities[i] as Gauge;
+        //   let color = get_color(i);
+        //   let highlightColor = change_color_alpha(color, .5);
         //   gauge
         //     ..index = i
-        //     ..name = _dataTable.rows[i][0]
+        //     ..name = data_table.rows[i][0]
         //     ..color = color
         //     ..highlightColor = highlightColor
-        //     ..center = _getGaugeCenter(i)
-        //     ..innerRadius = _gaugeInnerRadius
-        //     ..outerRadius = _gaugeOuterRadius
-        //     ..endAngle = _startAngle + _valueToAngle(gauge.value);
+        //     ..center = getGaugeCenter(i)
+        //     ..innerRadius = gaugeInnerRadius
+        //     ..outerRadius = gaugeOuterRadius
+        //     ..endAngle = startAngle + valueToAngle(gauge.value);
         // }
+    }
+
+    fn create_entity(
+        &self,
+        series_index: usize,
+        entity_index: usize,
+        value: String,
+        color: String,
+        highlight_color: String,
+    ) -> GaugeEntity {
+        // Override the colors.
+        // let color = self.get_color(entity_index);
+        // let highlight_color = self.change_color_alpha(color, .5);
+
+        // let name = data_table.rows[entityIndex][0];
+        // Gauge()
+        //   ..index = entityIndex
+        //   ..value = value
+        //   ..name = name
+        //   ..color = color
+        //   ..backgroundColor = options["gaugeBackgroundColor"]
+        //   ..highlightColor = highlightColor
+        //   ..oldValue = 0
+        //   ..oldStartAngle = startAngle
+        //   ..oldEndAngle = startAngle
+        //   ..center = _getGaugeCenter(entityIndex)
+        //   ..innerRadius = gaugeInnerRadius
+        //   ..outerRadius = gaugeOuterRadius
+        //   ..startAngle = startAngle
+        //   ..endAngle = startAngle + valueToAngle(value);
+        unimplemented!()
+    }
+
+    fn get_tooltip_position(&self) -> Point<f64> {
+        // let gauge = series_list[0].entities[focused_entity_index] as _Gauge;
+        // let x = gauge.center.x - tooltip.offsetWidth ~/ 2;
+        // let y = gauge.center.y -
+        //     highlightOuterRadiusFactor * gauge.outerRadius -
+        //     tooltip.offsetHeight -
+        //     5;
+        // return Point(x, y);
+        unimplemented!()
     }
 }
