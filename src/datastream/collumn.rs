@@ -42,7 +42,7 @@ impl<'a> DataColumn<'a> {
 // {
 //     fn release_items(&self, start: i64, end: i64) {
 //         // while (start < end) {
-//         //   _base[start]._table = null;
+//         //   base[start].table = null;
 //         //   start++;
 //         // }
 //         unimplemented!()
@@ -51,9 +51,9 @@ impl<'a> DataColumn<'a> {
 //     fn update_items(&self, start: i64) {
 //         // let len = length;
 //         // while (start < len) {
-//         //   _base[start]
-//         //     .._table = _table
-//         //     .._index = start++;
+//         //   base[start]
+//         //     ..table = table
+//         //     ..index = start++;
 //         // }
 //         unimplemented!()
 //     }
@@ -62,16 +62,16 @@ impl<'a> DataColumn<'a> {
 //     // Iterator<E> get iterator => DataCollectionIterator<E>(this);
 
 //     // @override
-//     // E get first => _base.first;
+//     // E get first => base.first;
 
 //     // @override
-//     // E get last => _base.last;
+//     // E get last => base.last;
 
 //     // @override
-//     // E get single => _base.single;
+//     // E get single => base.single;
 
 //     // @override
-//     // i64 get length => _base.length;
+//     // i64 get length => base.length;
 
 //     // fn set length(&self, i64 value) {
 //     //   // TODO: implement.
@@ -79,7 +79,7 @@ impl<'a> DataColumn<'a> {
 //     // }
 
 //     // @override
-//     // E operator [](i64 index) => _base[index];
+//     // E operator [](i64 index) => base[index];
 
 //     // @override
 //     // operator []=(i64 index, E value) {
@@ -89,37 +89,37 @@ impl<'a> DataColumn<'a> {
 
 //     fn add(&self, value: DataColumn<'a>) {
 //         // let index = length;
-//         // _base.add(value);
-//         // _updateItems(index);
-//         // _table._onRowsOrColumnsInserted(this, index, 1);
+//         // base.add(value);
+//         // updateItems(index);
+//         // table.onRowsOrColumnsInserted(this, index, 1);
 //         unimplemented!()
 //     }
 
 //     // fn add_all(&self, iterable: Iterator<DataColumn<'a>>) {
 //     // //     // let index = length;
-//     // //     // _base.addAll(iterable);
-//     // //     // _updateItems(index);
-//     // //     // _table._onRowsOrColumnsInserted(this, index, iterable.length);
+//     // //     // base.addAll(iterable);
+//     // //     // updateItems(index);
+//     // //     // table.onRowsOrColumnsInserted(this, index, iterable.length);
 //     // }
 
 //     // @override
-//     // E elementAt(&self, i64 index) => _base[index];
+//     // E elementAt(&self, i64 index) => base[index];
 
 //     fn insert(&self, index: i64, value: DataColumn<'a>) {
-//         // _base.insert(index, value);
-//         // _updateItems(index);
-//         // _table._onRowsOrColumnsInserted(this, index, 1);
+//         // base.insert(index, value);
+//         // updateItems(index);
+//         // table.onRowsOrColumnsInserted(this, index, 1);
 //         unimplemented!()
 //     }
 
 //     // fn insert_all(&self, index: i64, iterable: Iterable<DataColumn<'a>>) {
-//     //     // _base.insertAll(index, iterable);
-//     //     // _updateItems(index);
-//     //     // _table._onRowsOrColumnsInserted(this, index, iterable.length);
+//     //     // base.insertAll(index, iterable);
+//     //     // updateItems(index);
+//     //     // table.onRowsOrColumnsInserted(this, index, iterable.length);
 //     // }
 
 //     fn remove(&self, element: DataColumn<'a>) -> bool {
-//         // let index = _base.indexOf(element);
+//         // let index = base.indexOf(element);
 //         // if (index == -1) return false;
 //         // removeAt(index);
 //         // return true;
@@ -129,34 +129,34 @@ impl<'a> DataColumn<'a> {
 //     fn clear(&self) {
 //         // let len = length;
 //         // if (len == 0) return;
-//         // _releaseItems(0, len);
-//         // _base.clear();
-//         // _table._onRowsOrColumnsRemoved(this, 0, len);
+//         // releaseItems(0, len);
+//         // base.clear();
+//         // table.onRowsOrColumnsRemoved(this, 0, len);
 //         unimplemented!()
 //     }
 
 //     fn remove_at(&self, index: i64) -> DataColumn<'a> {
-//         // let e = _base.removeAt(index);
-//         // e._table = null;
-//         // _updateItems(index);
-//         // _table._onRowsOrColumnsRemoved(this, index, 1);
+//         // let e = base.removeAt(index);
+//         // e.table = null;
+//         // updateItems(index);
+//         // table.onRowsOrColumnsRemoved(this, index, 1);
 //         // return e;
 //         unimplemented!()
 //     }
 
 //     fn remove_last(&self) -> DataColumn<'a> {
-//         // let e = _base.removeLast();
-//         // e._table = null;
-//         // _table._onRowsOrColumnsRemoved(this, length, 1);
+//         // let e = base.removeLast();
+//         // e.table = null;
+//         // table.onRowsOrColumnsRemoved(this, length, 1);
 //         // return e;
 //         unimplemented!()
 //     }
 
 //     fn remove_range(&self, start: i64, end: i64) {
-//         // _releaseItems(start, end);
-//         // _base.remove_range(start, end);
-//         // _updateItems(start);
-//         // _table._onRowsOrColumnsRemoved(this, start, end - start);
+//         // releaseItems(start, end);
+//         // base.remove_range(start, end);
+//         // updateItems(start);
+//         // table.onRowsOrColumnsRemoved(this, start, end - start);
 //         unimplemented!()
 //     }
 

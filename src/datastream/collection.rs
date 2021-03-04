@@ -3,29 +3,29 @@ use std::fmt;
 use super::TableEntity;
 
 // class DataCollectionIterator<E extends TableEntity> implements Iterator<E> {
-//   let DataCollectionBase<E> _iterable;
-//   let i64 _length;
-//   i64 _index;
-//   E _current;
+//   let DataCollectionBase<E> iterable;
+//   let i64 length;
+//   i64 index;
+//   E current;
 
 //   DataCollectionIterator(DataCollectionBase<E> iterable)
-//       : _iterable = iterable,
-//         _length = iterable.length,
-//         _index = 0;
+//       : iterable = iterable,
+//         length = iterable.length,
+//         index = 0;
 
-//   E get current => _current;
+//   E get current => current;
 
 //   bool moveNext() {
-//     i64 length = _iterable.length;
-//     if (_length != length) {
-//       throw ConcurrentModificationError(_iterable);
+//     i64 length = iterable.length;
+//     if (length != length) {
+//       throw ConcurrentModificationError(iterable);
 //     }
-//     if (_index >= length) {
-//       _current = null;
+//     if (index >= length) {
+//       current = null;
 //       return false;
 //     }
-//     _current = _iterable.elementAt(_index);
-//     _index++;
+//     current = iterable.elementAt(index);
+//     index++;
 //     return true;
 //   }
 // }
@@ -40,17 +40,17 @@ where
 
     // fn get_iterator() -> Iterator<E> => DataCollectionIterator<E>(this);
 
-    // fn first() -> E  => _base.first;
+    // fn first() -> E  => base.first;
 
-    // fn last() -> E => _base.last;
+    // fn last() -> E => base.last;
 
-    // fn single() -> E => _base.single;
+    // fn single() -> E => base.single;
 
-    // fn get_length() -> usize => _base.length;
+    // fn get_length() -> usize => base.length;
 
     // fn set length(&self, i64 value);
 
-    // E operator [](i64 index) => _base[index];
+    // E operator [](i64 index) => base[index];
 
     // operator []=(i64 index, E value) {
     //   // TODO: implement.

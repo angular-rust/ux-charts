@@ -1,10 +1,7 @@
 use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use ux_primitives::{canvas::*, math::*};
 
-use super::{
-    BaseOption, Chart, DataCollectionChangeRecord, DataStream, Easing, EasingFunction, Entity,
-    LabelFormatter, MouseEvent, Series, ValueFormatter, Visibility,
-};
+use super::*;
 
 /// Base class for all charts.
 #[derive(Default, Clone)]
@@ -33,7 +30,6 @@ where
 
     // /// The default drawing options initialized in the constructor.
     // default_options: O,
-
     /// The drawing options initialized in the constructor.
     pub options: O,
 
@@ -57,7 +53,6 @@ where
     // legendItemSubscriptionTracker: StreamSubscriptionTracker, // = StreamSubscriptionTracker();
 
     // mouseMoveSub: StreamSubscription,
-
     /// The tooltip element. To position the tooltip, change its transform CSS.
     tooltip: Option<bool>, //Element,
     /// The function used to format series names to display in the tooltip.
@@ -143,7 +138,6 @@ where
     /// Creates a new color by combining the R, G, B components of [color] with
     /// [alpha].
     pub fn change_color_alpha(&self, color: &str, alpha: f64) -> String {
-
         let o = self.options.animation();
 
         let key = format!("{}{}", color, alpha);
@@ -218,60 +212,70 @@ where
     ///
     /// To be overridden.
     pub fn calculate_drawing_sizes(&self) {
-        // let title = options["title"];
-        let title_x = 0;
-        let title_y = 0;
-        let title_w = 0;
-        let title_h = 0;
-        // if (title["position"] != "none" && title["text"] != null) {
-        //   titleH = title["style"]["fontSize"] + 2 * title_padding;
-        // }
-        // series_and_axes_box = MutableRectangle(chart_padding, chart_padding,
-        //     _width - 2 * chart_padding, _height - 2 * chart_padding);
+        let title = self.options.title();
+        let title_x = 0.0;
+        let mut title_y = 0.0;
+        let title_w = 0.0;
+        let mut title_h = 0.0;
+        if title.position != "none" && title.text.is_some() {
+            title_h = title.style.font_size + 2.0 * TITLE_PADDING;
+        }
+        // self.series_and_axes_box = MutableRectangle(CHART_PADDING, CHART_PADDING,
+        //     width - 2 * CHART_PADDING, height - 2 * CHART_PADDING);
 
         // // Consider the title.
 
-        // if (titleH > 0) {
-        //   switch (title["position"]) {
-        //     case "above":
-        //       titleY = chart_padding;
-        //       series_and_axes_box.top += titleH + chart_title_margin;
-        //       series_and_axes_box.height -= titleH + chart_title_margin;
-        //       break;
-        //     case "middle":
-        //       titleY = (_height - titleH) ~/ 2;
-        //       break;
-        //     case "below":
-        //       titleY = _height - titleH - chart_padding;
-        //       series_and_axes_box.height -= titleH + chart_title_margin;
-        //       break;
-        //   }
-        //   context.font = get_font(title["style"]);
-        //   titleW =
-        //       context.measureText(title["text"]).width.round() + 2 * title_padding;
-        //   titleX = (_width - titleW - 2 * title_padding) ~/ 2;
-        // }
-        // title_box = Rectangle(titleX, titleY, titleW, titleH);
+        if title_h > 0.0 {
+            match title.position {
+                "above" => {
+                    title_y = CHART_PADDING;
+                    //   self.series_and_axes_box.top += title_h + CHART_TITLE_MARGIN;
+                    //   self.series_and_axes_box.height -= title_h + CHART_TITLE_MARGIN;
+                }
+                "middle" => {
+                    //   title_y = (height - title_h) ~/ 2;
+                }
+                "below" => {
+                    title_y = *self.height.borrow() - title_h - CHART_PADDING;
+                    //   self.series_and_axes_box.height -= title_h + CHART_TITLE_MARGIN;
+                }
+                _ => {}
+            }
+
+            // FIXME: complete
+            // let context = self.context.unwrap();
+            //   context.set_font(get_font(title.style).as_str());
+            //   title_w =
+            //       context.measureText(title["text"]).width.round() + 2 * TITLE_PADDING;
+            //   title_x = (width - titleW - 2 * TITLE_PADDING) ~/ 2;
+        }
+
+        let title_box = Rectangle {
+            left: title_x,
+            top: title_y,
+            width: title_w,
+            height: title_h,
+        };
 
         // // Consider the legend.
 
         // if (self.legend != null) {
         //   let lwm = self.legend.offsetWidth + legend_margin;
         //   let lhm = self.legend.offsetHeight + legend_margin;
-        //   switch (options["legend"]["position"]) {
+        //   switch (self.options.legend().position) {
         //     case "right":
-        //       series_and_axes_box.width -= lwm;
+        //       self.series_and_axes_box.width -= lwm;
         //       break;
         //     case "bottom":
-        //       series_and_axes_box.height -= lhm;
+        //       self.series_and_axes_box.height -= lhm;
         //       break;
         //     case "left":
-        //       series_and_axes_box.left += lwm;
-        //       series_and_axes_box.width -= lwm;
+        //       self.series_and_axes_box.left += lwm;
+        //       self.series_and_axes_box.width -= lwm;
         //       break;
         //     case "top":
-        //       series_and_axes_box.top += lhm;
-        //       series_and_axes_box.height -= lhm;
+        //       self.series_and_axes_box.top += lhm;
+        //       self.series_and_axes_box.height -= lhm;
         //       break;
         //   }
         // }
@@ -287,7 +291,7 @@ where
     //     //       : null;
     //     //   series_list[record.columnIndex - 1].entities[record.rowIndex]
     //     //     ..value = record.newValue
-    //     //     ..formattedValue = f;
+    //     //     ..formatted_value = f;
     //     // }
     // }
 
@@ -295,21 +299,21 @@ where
     pub fn data_rows_changed(&self, record: DataCollectionChangeRecord) {
         self.calculate_drawing_sizes();
         // let entityCount = data_table.rows.length;
-        // let removedEnd = record.index + record.removedCount;
-        // let addedEnd = record.index + record.addedCount;
+        // let removedEnd = record.index + record.removed_count;
+        // let addedEnd = record.index + record.added_count;
         // for (let i = 0; i < series_list.length; i++) {
         //   let series = series_list[i];
 
         //   // Remove old entities.
-        //   if (record.removedCount > 0) {
+        //   if (record.removed_count > 0) {
         //     series.freeEntities(record.index, removedEnd);
         //     series.entities.remove_range(record.index, removedEnd);
         //   }
 
         //   // Insert new entities.
-        //   if (record.addedCount > 0) {
+        //   if (record.added_count > 0) {
         //     let newEntities = create_entities(
-        //         i, record.index, addedEnd, series.color, series.highlightColor);
+        //         i, record.index, addedEnd, series.color, series.highlight_color);
         //     series.entities.insertAll(record.index, newEntities);
 
         //     // Update entity indexes.
@@ -334,7 +338,7 @@ where
         }
 
         if record.added_count > 0 {
-            //   let list = create_series_list(start, start + record.addedCount);
+            //   let list = create_series_list(start, start + record.added_count);
             //   self.series_list.insertAll(start, list);
         }
         self.update_legend_content();
@@ -364,7 +368,7 @@ where
     /// If [time] is `null`, draws the last frame (i.e. no animation).
     pub fn draw_frame(&mut self, time: Option<f64>) {
         let percent = 1.0;
-        // let duration = options["animation"]["duration"];
+        let duration = self.options.animation().duration;
         if let None = self.animation_start_time {
             self.animation_start_time = time
         }
@@ -386,33 +390,33 @@ where
         //   }
         // }
 
-        // context.fillStyle = options["backgroundColor"];
-        // context.fillRect(0, 0, _width, _height);
-        // series_context.clearRect(0, 0, _width, _height);
-        // _drawSeries(_easingFunction(percent));
-        // context.drawImageScaled(axes_context.canvas, 0, 0, _width, _height);
-        // context.drawImageScaled(series_context.canvas, 0, 0, _width, _height);
-        // _drawTitle();
+        // context.fillStyle = self.options.background();
+        // context.fillRect(0, 0, width, height);
+        // series_context.clearRect(0, 0, width, height);
+        // drawSeries(easingFunction(percent));
+        // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
+        // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
+        // drawTitle();
 
         // if (percent < 1.0) {
         //   animation_frame_id = window.requestAnimationFrame(draw_frame);
         // } else if (time != null) {
-        //   _animationEnd();
+        //   animationEnd();
         // }
     }
 
     /// Draws the chart title using the main rendering context.
     pub fn draw_title(&self) {
-        // let title = options["title"];
+        let title = self.options.title();
         // if (title["text"] == null) return;
 
         // let x = (title_box.left + title_box.right) ~/ 2;
-        // let y = title_box.bottom - title_padding;
+        // let y = title_box.bottom - TITLE_PADDING;
         // context
         //   ..font = get_font(title["style"])
         //   ..fillStyle = title["style"]["color"]
         //   ..textAlign = "center"
-        //   ..fillText(title["text"], x, y);
+        //   ..fill_text(title["text"], x, y);
     }
 
     pub fn initialize_legend(&self) {
@@ -425,9 +429,11 @@ where
         //   self.legend = null;
         // }
 
-        // if (options["legend"]["position"] == "none") return;
+        if self.options.legend().position == "none" {
+            return;
+        }
 
-        // self.legend = create_tooltip_or_legend(options["legend"]["style"]);
+        // self.legend = create_tooltip_or_legend(self.options.legend().style);
         // self.legend.style.lineHeight = "180%";
         // update_legend_content();
         // container.append(self.legend);
@@ -439,15 +445,15 @@ where
         // if (self.legend == null) return;
 
         // let s = self.legend.style;
-        // switch (options["legend"]["position"]) {
+        // switch (self.options.legend().position) {
         //   case "right":
-        //     s.right = "${chart_padding}px";
+        //     s.right = "${CHART_PADDING}px";
         //     s.top = "50%";
         //     s.transform = "translateY(-50%)";
         //     break;
         //   case "bottom":
-        //     let bottom = chart_padding;
-        //     if (options["title"]["position"] == "below" && title_box.height > 0) {
+        //     let bottom = CHART_PADDING;
+        //     if (self.options.title().position == "below" && title_box.height > 0) {
         //       bottom += title_box.height;
         //     }
         //     s.bottom = "${bottom}px";
@@ -455,13 +461,13 @@ where
         //     s.transform = "translateX(-50%)";
         //     break;
         //   case "left":
-        //     s.left = "${chart_padding}px";
+        //     s.left = "${CHART_PADDING}px";
         //     s.top = "50%";
         //     s.transform = "translateY(-50%)";
         //     break;
         //   case "top":
-        //     let top = chart_padding;
-        //     if (options["title"]["position"] == "above" && title_box.height > 0) {
+        //     let top = CHART_PADDING;
+        //     if (self.options.title().position == "above" && title_box.height > 0) {
         //       top += title_box.height;
         //     }
         //     s.top = "${top}px";
@@ -474,7 +480,7 @@ where
     pub fn update_legend_content(&self) {
         let labels = self.get_legend_labels();
         // let formatter =
-        //     options["legend"]["labelFormatter"] ?? default_label_formatter;
+        //     self.options.legend().labelFormatter ?? default_label_formatter;
         // legend_item_subscription_tracker.clear();
         // legend.innerHtml = "";
         // for (let i = 0; i < labels.length; i++) {
@@ -499,7 +505,7 @@ where
 
         //   // Display the items in one row if the legend"s position is "top" or
         //   // "bottom".
-        //   let pos = options["legend"]["position"];
+        //   let pos = self.options.legend().position;
         //   if (pos == "top" || pos == "bottom") {
         //     e.style.display = "inline-block";
         //   }
@@ -576,7 +582,7 @@ where
         // let rect = context.canvas.getBoundingClientRect();
         // let x = e.client.x - rect.left;
         // let y = e.client.y - rect.top;
-        // let index = _getEntityGroupIndex(x, y);
+        // let index = getEntityGroupIndex(x, y);
 
         // if (index != focused_entity_index) {
         //   focused_entity_index = index;
@@ -598,21 +604,21 @@ where
         //   tooltip = null;
         // }
 
-        // let opt = options["tooltip"];
+        // let opt = self.options.tooltip;
         // if (!opt["enabled"]) return;
 
         // tooltip_label_formatter = opt["labelFormatter"] ?? default_label_formatter;
-        // tooltip_value_formatter = opt["valueFormatter"] ?? _defaultValueFormatter;
+        // tooltip_value_formatter = opt["value_formatter"] ?? default_value_formatter;
         // tooltip = create_tooltip_or_legend(opt["style"])
         //   ..hidden = true
         //   ..style.left = "0"
         //   ..style.top = "0"
         //   ..style.boxShadow = "4px 4px 4px rgba(0,0,0,.25)"
         //   ..style.transition = "transform .4s cubic-bezier(.4,1,.4,1)";
-        // container.append(_tooltip);
+        // container.append(tooltip);
 
         // mouse_move_sub?.cancel();
-        // mouse_move_sub = container.onMouseMove.listen(_mouseMove);
+        // mouse_move_sub = container.onMouseMove.listen(mouseMove);
     }
 
     pub fn update_tooltip_content(&self) {
@@ -654,7 +660,7 @@ where
     //     //   ..style.borderWidth = "${style["borderWidth"]}px"
     //     //   ..style.color = style["color"]
     //     //   ..style.fontFamily = style["fontFamily"]
-    //     //   ..style.fontSize = "${style["fontSize"]}px"
+    //     //   ..style.font_size = "${style["fontSize"]}px"
     //     //   ..style.fontStyle = style["fontStyle"]
     //     //   ..style.position = "absolute";
     // }
@@ -726,11 +732,11 @@ where
         self.dispose();
         self.data_table = data_table;
         // data_tableSubscriptionTracker
-        //   ..add(dataTable.onCellChange.listen(_data_cell_changed))
-        //   ..add(dataTable.onColumnsChange.listen(_dataColumnsChanged))
-        //   ..add(dataTable.onRowsChange.listen(_dataRowsChanged));
+        //   ..add(dataTable.onCellChange.listen(data_cell_changed))
+        //   ..add(dataTable.onColumnsChange.listen(dataColumnsChanged))
+        //   ..add(dataTable.onRowsChange.listen(data_rows_changed));
         // options = mergeMaps(default_options, options);
-        // self.easing_function = get_easing(options["animation"]["easing"]);
+        // self.easing_function = get_easing(self.options.animation().easing);
         self.initialize_legend();
         self.initialize_tooltip();
         // self.resize(container.clientWidth, container.clientHeight, true);

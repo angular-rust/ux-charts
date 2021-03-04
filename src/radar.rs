@@ -10,9 +10,9 @@ use crate::*;
 #[derive(Default, Clone)]
 pub struct PolarPointEntity {
     // Chart chart,
-    // String color,
-    // String highlightColor,
-    // String formattedValue,
+    color: String,
+    highlight_color: String,
+    formatted_value: String,
     index: usize,
     old_value: f64,
     value: f64,
@@ -39,13 +39,13 @@ where
         let p = polar2cartesian(&self.center, r, a);
         if highlight {
             // ctx.set_fill_style_color(value)
-            //   ctx.fillStyle = highlightColor;
-            //   ctx.beginPath();
+            //   ctx.fillStyle = highlight_color;
+            //   ctx.begin_path();
             //   ctx.arc(p.x, p.y, 2 * pr, 0, TAU);
             //   ctx.fill();
         }
         // ctx.fillStyle = color;
-        // ctx.beginPath();
+        // ctx.begin_path();
         // ctx.arc(p.x, p.y, pr, 0, TAU);
         // ctx.fill();
         // ctx.stroke();
@@ -118,7 +118,7 @@ where
     }
 
     fn calculate_bounding_boxes(&self) {
-        // if (!options["tooltip"]["enabled"]) return;
+        // if !self.base.options.tooltip.enabled return;
 
         // let seriesCount = series_list.length;
         // let entityCount = series_list.first.entities.length;
@@ -153,12 +153,12 @@ where
     //     // let w = ctx.measureText(text).width;
     //     // let x = center.x + cos(angle) * (radius + .5 * w);
     //     // let y = center.y + sin(angle) * (radius + .5 * fontSize);
-    //     // ctx.fillText(text, x, y);
+    //     // ctx.fill_text(text, x, y);
     // }
 
     fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
         // let p = Point(x - center.x, y - center.y);
-        // if (p.magnitude >= _radius) return -1;
+        // if (p.magnitude >= radius) return -1;
         // let angle = atan2(p.y, p.x);
         // let points = series_list.first.entities.cast<PolarPoint>();
         // for (let i = points.length - 1; i >= 0; i--) {
@@ -174,7 +174,7 @@ where
 
     fn series_visibility_changed(&self, index: usize) {
         // let visible = series_states[index].index >= Visibility::showing.index;
-        // let markerSize = options["series"]["markers"]["size"];
+        // let markerSize = self.base.options.series.markers.size;
         // for (PolarPoint p in series_list[index].entities) {
         //   if (visible) {
         //     p.radius = value2radius(p.value);
@@ -202,31 +202,31 @@ where
     D: fmt::Display,
 {
     fn calculate_drawing_sizes(&self) {
-        // self.base.calculate_drawing_sizes();
+        self.base.calculate_drawing_sizes();
 
         // x_labels = data_table.getColumnValues<String>(0);
         // angle_interval = TAU / x_labels.length;
 
-        // let rect = series_and_axes_box;
-        // let xLabelFontSize = options["xAxis"]["labels"]["style"]["fontSize"];
+        let rect = &self.base.series_and_axes_box;
+        // let xLabelFontSize = self.base.options.x_axis.labels.style.font_size;
 
         // // [_radius]*factor equals the height of the largest polygon.
         // let factor = 1 + sin((x_labels.length >> 1) * angle_interval - PI_2);
-        // _radius = min(rect.width, rect.height) / factor -
+        // radius = min(rect.width, rect.height) / factor -
         //     factor * (xLabelFontSize + axis_label_margin);
-        // _center =
+        // center =
         //     Point(rect.left + rect.width / 2, rect.top + rect.height / factor);
 
         // // The minimum value on the y-axis is always zero.
-        // let yInterval = options["yAxis"]["interval"];
+        // let yInterval = self.base.options.y_axis.interval;
         // if (yInterval == null) {
-        //   let yMinInterval = options["yAxis"]["minInterval"];
+        //   let yMinInterval = self.base.options.y_axis.min_interval;
         //   y_max_value = findMaxValue(data_table);
         //   yInterval = calculateInterval(y_max_value, 3, yMinInterval);
         //   y_max_value = (y_max_value / yInterval).ceilToDouble() * yInterval;
         // }
 
-        // y_label_formatter = options["yAxis"]["labels"]["formatter"];
+        // y_label_formatter = self.base.options.y_axis.labels.formatter;
         // if (y_label_formatter == null) {
         //   let decimalPlaces = getDecimalPlaces(yInterval);
         //   let numberFormat = NumberFormat.decimalPattern()
@@ -243,12 +243,12 @@ where
         //   value += yInterval;
         // }
 
-        // y_label_hop = _radius / (y_labels.length - 1);
+        // y_label_hop = radius / (y_labels.length - 1);
 
         // // Tooltip.
 
         // tooltip_value_formatter =
-        //     options["tooltip"]["valueFormatter"] ?? y_label_formatter;
+        //     self.base.options.tooltip.value_formatter ?? y_label_formatter;
         unimplemented!()
     }
 
@@ -258,18 +258,18 @@ where
 
         // x-axis grid lines (i.e. concentric equilateral polygons).
 
-        // let line_width = options["xAxis"]["gridLineWidth"];
+        // let line_width = self.base.options.x_axis.grid_line_width;
         // if (lineWidth > 0) {
         //   axes_context
         //     ..lineWidth = lineWidth
-        //     ..strokeStyle = options["xAxis"]["gridLineColor"]
-        //     ..beginPath();
-        //   let radius = _radius;
+        //     ..strokeStyle = self.base.options.x_axis.grid_line_color
+        //     ..begin_path();
+        //   let radius = radius;
         //   for (let i = yLabelCount - 1; i >= 1; i--) {
         //     let angle = -PI_2 + angle_interval;
-        //     axes_context.moveTo(_center.x, _center.y - radius);
+        //     axes_context.moveTo(center.x, center.y - radius);
         //     for (let j = 0; j < xLabelCount; j++) {
-        //       let point = polarToCartesian(_center, radius, angle);
+        //       let point = polarToCartesian(center, radius, angle);
         //       axes_context.lineTo(point.x, point.y);
         //       angle += angle_interval;
         //     }
@@ -280,17 +280,17 @@ where
 
         // // y-axis grid lines (i.e. radii from the center to the x-axis labels).
 
-        // lineWidth = options["yAxis"]["gridLineWidth"];
+        // lineWidth = self.base.options.y_axis.grid_line_width;
         // if (lineWidth > 0) {
         //   axes_context
         //     ..lineWidth = lineWidth
-        //     ..strokeStyle = options["yAxis"]["gridLineColor"]
-        //     ..beginPath();
+        //     ..strokeStyle = self.base.options.y_axis.grid_line_color
+        //     ..begin_path();
         //   let angle = -PI_2;
         //   for (let i = 0; i < xLabelCount; i++) {
-        //     let point = polarToCartesian(_center, _radius, angle);
+        //     let point = polarToCartesian(center, radius, angle);
         //     axes_context
-        //       ..moveTo(_center.x, _center.y)
+        //       ..moveTo(center.x, center.y)
         //       ..lineTo(point.x, point.y);
         //     angle += angle_interval;
         //   }
@@ -299,22 +299,22 @@ where
 
         // // y-axis labels - don"t draw the first (at center) and the last ones.
 
-        // let style = options["yAxis"]["labels"]["style"];
-        // let x = _center.x - axis_label_margin;
-        // let y = _center.y - y_label_hop;
+        // let style = self.base.options.y_axis.labels.style;
+        // let x = center.x - axis_label_margin;
+        // let y = center.y - y_label_hop;
         // axes_context
         //   ..fillStyle = style["color"]
         //   ..font = get_font(style)
         //   ..textAlign = "right"
         //   ..textBaseline = "middle";
         // for (let i = 1; i <= yLabelCount - 2; i++) {
-        //   axes_context.fillText(y_labels[i], x, y);
+        //   axes_context.fill_text(y_labels[i], x, y);
         //   y -= y_label_hop;
         // }
 
         // // x-axis labels.
 
-        // style = options["xAxis"]["labels"]["style"];
+        // style = self.base.options.x_axis.labels.style;
         // axes_context
         //   ..fillStyle = style["color"]
         //   ..font = get_font(style)
@@ -322,18 +322,18 @@ where
         //   ..textBaseline = "middle";
         // let fontSize = style["fontSize"];
         // let angle = -PI_2;
-        // let radius = _radius + axis_label_margin;
+        // let radius = radius + axis_label_margin;
         // for (let i = 0; i < xLabelCount; i++) {
-        //   _drawText(axes_context, x_labels[i], radius, angle, fontSize);
+        //   drawText(axes_context, x_labels[i], radius, angle, fontSize);
         //   angle += angle_interval;
         // }
         unimplemented!()
     }
 
     fn draw_series(&self, percent: f64) -> bool {
-        // let fillOpacity = options["series"]["fillOpacity"];
-        // let seriesLineWidth = options["series"]["lineWidth"];
-        // let markerOptions = options["series"]["markers"];
+        // let fillOpacity = self.base.options.series.fill_opacity;
+        // let seriesLineWidth = self.base.options.series.line_width;
+        // let markerOptions = self.base.options.series.markers;
         // let markerSize = markerOptions["size"];
         // let pointCount = x_labels.length;
 
@@ -348,13 +348,13 @@ where
         //   series_context
         //     ..lineWidth = scale * seriesLineWidth
         //     ..strokeStyle = series.color
-        //     ..beginPath();
+        //     ..begin_path();
         //   for (let j = 0; j < pointCount; j++) {
         //     let point = series.entities[j] as PolarPoint;
         //     // TODO: Optimize.
         //     let radius = lerp(point.oldRadius, point.radius, percent);
         //     let angle = lerp(point.oldAngle, point.angle, percent);
-        //     let p = polarToCartesian(_center, radius, angle);
+        //     let p = polarToCartesian(center, radius, angle);
         //     if (j > 0) {
         //       series_context.lineTo(p.x, p.y);
         //     } else {
@@ -401,18 +401,18 @@ where
         // for (let i = 0; i < series_list.length; i++) {
         //   let series = series_list[i];
         //   let color = get_color(i);
-        //   let highlightColor = get_highlight_color(color);
+        //   let highlight_color = get_highlight_color(color);
         //   let visible = series_states[i].index >= Visibility::showing.index;
         //   series.color = color;
-        //   series.highlightColor = highlightColor;
+        //   series.highlight_color = highlight_color;
         //   for (let j = 0; j < entityCount; j++) {
         //     let p = series.entities[j] as PolarPoint;
         //     p.index = j;
-        //     p.center = _center;
+        //     p.center = center;
         //     p.radius = visible ? value2radius(p.value) : 0.0;
         //     p.angle = get_angle(j);
         //     p.color = color;
-        //     p.highlightColor = highlightColor;
+        //     p.highlight_color = highlight_color;
         //   }
         // }
     }
@@ -430,25 +430,25 @@ where
         //   ..index = entityIndex
         //   ..value = value
         //   ..color = color
-        //   ..highlightColor = highlightColor
-        //   ..center = _center
+        //   ..highlight_color = highlight_color
+        //   ..center = center
         //   ..oldRadius = 0
         //   ..oldAngle = angle
         //   ..oldPointRadius = 0
         //   ..radius = value2radius(value)
         //   ..angle = angle
-        //   ..pointRadius = options["series"]["markers"]["size"];
+        //   ..pointRadius = self.base.options.series.markers.size;
         unimplemented!()
     }
 
     fn get_tooltip_position(&self) -> Point<f64> {
         // FIXME: as usize
         let bbox = &self.bounding_boxes[self.base.focused_entity_index as usize];
-        // let offset = options["series"]["markers"]["size"] * 2 + 5;
+        // let offset = self.base.options.series.markers.size * 2 + 5;
         // let x = box.right + offset;
-        // let y = box.top + (box.height - _tooltip.offsetHeight) ~/ 2;
-        // if (x + tooltip.offsetWidth > _width)
-        //   x = box.left - _tooltip.offsetWidth - offset;
+        // let y = box.top + (box.height - tooltip.offsetHeight) ~/ 2;
+        // if (x + tooltip.offsetWidth > width)
+        //   x = box.left - tooltip.offsetWidth - offset;
         // return Point(x, y);
         unimplemented!()
     }

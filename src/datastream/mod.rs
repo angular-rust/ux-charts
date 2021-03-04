@@ -147,97 +147,97 @@ where
     }
 
     fn on_cell_changed(row_index: i64, column_index: i64, old_value: String, new_value: String) {
-        // if (_cellChangeController != null) {
+        // if (cellChangeController != null) {
         //   let record =
         //       DataCellChangeRecord(rowIndex, columnIndex, oldValue, newValue);
-        //   _cellChangeController.add(record);
+        //   cellChangeController.add(record);
         // }
     }
 
     // fn onRowsOrColumnsInserted(source: DataCollectionBase, index: i64, count: i64) {
     //     // let record = DataCollectionChangeRecord(index, count, 0);
-    //     // if (source == _columns) {
-    //     //   _insertColumns(index, count);
-    //     //   _updateColumnIndexes(index);
-    //     //   _columnsChangeController?.add(record);
+    //     // if (source == columns) {
+    //     //   insertColumns(index, count);
+    //     //   updateColumnIndexes(index);
+    //     //   columnsChangeController?.add(record);
     //     // } else {
-    //     //   _rowsChangeController?.add(record);
+    //     //   rowsChangeController?.add(record);
     //     // }
     // }
 
     // fn onRowsOrColumnsRemoved(source: DataCollectionBase, index: i64, count: i64) {
     //     // let record = DataCollectionChangeRecord(index, 0, count);
-    //     // if (source == _columns) {
-    //     //   _removeColumns(index, count);
-    //     //   _updateColumnIndexes(index);
-    //     //   _columnsChangeController?.add(record);
+    //     // if (source == columns) {
+    //     //   removeColumns(index, count);
+    //     //   updateColumnIndexes(index);
+    //     //   columnsChangeController?.add(record);
     //     // } else {
-    //     //   _rowsChangeController?.add(record);
+    //     //   rowsChangeController?.add(record);
     //     // }
     // }
 
     fn insert_columns(start: i64, count: i64) {
-        // for (let row in _rows) {
-        //   row._cells.insertAll(start, List(count));
+        // for (let row in rows) {
+        //   row.cells.insertAll(start, List(count));
         // }
     }
 
     fn remove_columns(start: i64, count: i64) {
-        // for (let row in _rows) {
-        //   row._cells.remove_range(start, start + count);
+        // for (let row in rows) {
+        //   row.cells.remove_range(start, start + count);
         // }
     }
 
     fn update_column_indexes(start: i64) {
-        // let end = _columns.length;
+        // let end = columns.length;
         // while (start < end) {
-        //   _columnIndexByName[_columns[start].name] = start++;
+        //   columnIndexByName[_columns[start].name] = start++;
         // }
     }
 
     // /// The columns in this [DataTable].
-    // DataColumnCollection get columns => _columns;
+    // DataColumnCollection get columns => columns;
 
     // /// The rows (without the header row) in this [DataTable].
-    // DataRowCollection get rows => _rows;
+    // DataRowCollection get rows => rows;
 
     // /// Fired when a cell is changed.
     // Stream<DataCellChangeRecord> get onCellChange {
     // ??= - Assign the value if the variable is null
-    //   _cellChangeController ??= StreamController.broadcast(
+    //   cellChangeController ??= StreamController.broadcast(
     //       sync: true,
     //       onCancel: () {
-    //         _cellChangeController = null;
+    //         cellChangeController = null;
     //       });
-    //   return _cellChangeController.stream;
+    //   return cellChangeController.stream;
     // }
 
     // /// Fired when [columns] are changed.
     // Stream<DataCollectionChangeRecord> get onColumnsChange {
     // ??= - Assign the value if the variable is null
-    //   _columnsChangeController ??= StreamController.broadcast(
+    //   columnsChangeController ??= StreamController.broadcast(
     //       sync: true,
     //       onCancel: () {
-    //         _columnsChangeController = null;
+    //         columnsChangeController = null;
     //       });
-    //   return _columnsChangeController.stream;
+    //   return columnsChangeController.stream;
     // }
 
     // /// Fired when [rows] are changed.
     // Stream<DataCollectionChangeRecord> get onRowsChange {
     // ??= - Assign the value if the variable is null
-    //   _rowsChangeController ??= StreamController.broadcast(
+    //   rowsChangeController ??= StreamController.broadcast(
     //       sync: true,
     //       onCancel: () {
-    //         _rowsChangeController = null;
+    //         rowsChangeController = null;
     //       });
-    //   return _rowsChangeController.stream;
+    //   return rowsChangeController.stream;
     // }
 
     // /// Gets the index of the column specified by [name].
     // i64 getColumnIndexByName(String name) {
-    //   if (_columnIndexByName.containsKey(name)) {
-    //     return _columnIndexByName[name];
+    //   if (columnIndexByName.containsKey(name)) {
+    //     return columnIndexByName[name];
     //   }
     //   return -1;
     // }
@@ -245,7 +245,7 @@ where
     // /// Gets the values of the column specified by [columnIndex].
     // Vec<T> getColumnValues<T>(i64 columnIndex) {
     //   let list = <T>[];
-    //   for (let row in _rows) {
+    //   for (let row in rows) {
     //     list.add(row[columnIndex]);
     //   }
     //   return list;

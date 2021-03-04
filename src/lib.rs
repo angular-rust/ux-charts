@@ -38,6 +38,7 @@ pub use radar::*;
 mod utils;
 pub use utils::*;
 
+pub const PI: f64 = std::f64::consts::PI;
 /// The 2*pi constant - TAU
 pub const TAU: f64 = 6.28318530717958647692528676655900577_f64;
 
@@ -47,15 +48,15 @@ pub const PI_2: f64 = 1.57079632679489661923132169163975144_f64;
 pub const FONT_FAMILY: &str = r#""Segoe UI", "Open Sans", Verdana, Arial"#;
 
 /// The padding of the chart itself.
-pub const CHART_PADDING: usize = 12;
+pub const CHART_PADDING: f64 = 12.0;
 
 /// The margin between the legend and the chart-axes box in pixels.
-pub const LEGEND_MARGIN: usize = 12;
+pub const LEGEND_MARGIN: f64 = 12.0;
 
-pub const CHART_TITLE_MARGIN: usize = 12;
+pub const CHART_TITLE_MARGIN: f64 = 12.0;
 
 /// The padding around the chart title and axis titles.
-pub const TITLE_PADDING: usize = 6;
+pub const TITLE_PADDING: f64 = 6.0;
 
 /// The top-and/or-bottom margin of x-axis labels and the right-and/or-left
 /// margin of y-axis labels.
@@ -199,7 +200,7 @@ where
         let result = Vec::new();
         // while (start < end) {
         //   let value = data_table.rows[start][seriesIndex + 1];
-        //   let e = create_entity(seriesIndex, start, value, color, highlightColor);
+        //   let e = create_entity(seriesIndex, start, value, color, highlight_color);
         //   e.chart = this;
         //   result.add(e);
         //   start++;
@@ -222,10 +223,10 @@ where
         // while (start < end) {
         //   let name = data_table.columns[start + 1].name;
         //   let color = get_color(start);
-        //   let highlightColor = get_highlight_color(color);
+        //   let highlight_color = get_highlight_color(color);
         //   let entities =
-        //       create_entities(start, 0, entityCount, color, highlightColor);
-        //   result.add(Series(name, color, highlightColor, entities));
+        //       create_entities(start, 0, entityCount, color, highlight_color);
+        //   result.add(Series(name, color, highlight_color, entities));
         //   start++;
         // }
         result

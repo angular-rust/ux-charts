@@ -10,9 +10,9 @@ use crate::*;
 #[derive(Default, Clone)]
 struct PointEntity {
     // Chart chart,
-    // String color,
-    // String highlightColor,
-    // String formattedValue,
+    color: String,
+    highlight_color: String,
+    formatted_value: String,
     index: usize,
     old_value: f64,
     value: f64,
@@ -54,12 +54,12 @@ where
         // let cy = lerp(oldY, y, percent);
         // let pr = lerp(oldPointRadius, pointRadius, percent);
         // if (highlight) {
-        //   ctx.fillStyle = highlightColor;
-        //   ctx.beginPath();
+        //   ctx.fillStyle = highlight_color;
+        //   ctx.begin_path();
         //   ctx.arc(cx, cy, 2 * pr, 0, TAU);
         //   ctx.fill();
         // }
-        // ctx.beginPath();
+        // ctx.begin_path();
         // ctx.arc(cx, cy, pr, 0, TAU);
         // ctx.fill();
         // ctx.stroke();
@@ -177,16 +177,16 @@ where
 
         //     // y-axis min-max.
 
-        //     self.y_max_value = options["yAxis"]["maxValue"] ?? f64::NEG_INFINITY;
+        //     self.y_max_value = self.base.options.y_axis.max_value ?? f64::NEG_INFINITY;
         //     y_max_value = max(y_max_value, findMaxValue(data_table));
         //     if (y_max_value == f64::NEG_INFINITY) y_max_value = 0.0;
 
-        //     y_min_value = options["yAxis"]["minValue"] ?? f64::INFINITY;
+        //     y_min_value = self.base.options.y_axis.min_value ?? f64::INFINITY;
         //     y_min_value = min(y_min_value, findMinValue(data_table));
         //     if (y_min_value == f64::INFINITY) y_min_value = 0.0;
 
-        //     y_interval = options["yAxis"]["interval"];
-        //     let minInterval = options["yAxis"]["minInterval"];
+        //     y_interval = self.base.options.y_axis.interval;
+        //     let minInterval = self.base.options.y_axis.min_interval;
 
         //     if (y_interval == null) {
         //       if (y_min_value == y_max_value) {
@@ -216,7 +216,7 @@ where
         //     // y-axis labels.
 
         //     y_labels = <String>[];
-        //     y_label_formatter = options["yAxis"]["labels"]["formatter"];
+        //     y_label_formatter = self.base.options.y_axis.labels.formatter;
         //     if (y_label_formatter == null) {
         //       let maxDecimalPlaces =
         //           max(getDecimalPlaces(y_interval), getDecimalPlaces(y_min_value));
@@ -231,7 +231,7 @@ where
         //       value += y_interval;
         //     }
         //     y_label_max_width = calculateMaxTextWidth(
-        //             context, get_font(options["yAxis"]["labels"]["style"]), y_labels)
+        //             context, get_font(self.base.options.y_axis.labels.style), y_labels)
         //         .round();
 
         //     entity_value_formatter = y_label_formatter;
@@ -239,7 +239,7 @@ where
         //     // Tooltip.
 
         //     tooltip_value_formatter =
-        //         options["tooltip"]["valueFormatter"] ?? y_label_formatter;
+        //         self.base.options.tooltip.value_formatter ?? y_label_formatter;
 
         //     // x-axis title.
 
@@ -247,13 +247,13 @@ where
         //     let xTitleTop = 0;
         //     let xTitleWidth = 0;
         //     let xTitleHeight = 0;
-        //     let xTitle = options["xAxis"]["title"];
+        //     let xTitle = self.base.options.x_axis.title;
         //     if (xTitle["text"] != null) {
         //       context.font = get_font(xTitle["style"]);
         //       xTitleWidth = context.measureText(xTitle["text"]).width.round() +
-        //           2 * title_padding;
-        //       xTitleHeight = xTitle["style"]["fontSize"] + 2 * title_padding;
-        //       xTitleTop = series_and_axes_box.bottom - xTitleHeight;
+        //           2 * TITLE_PADDING;
+        //       xTitleHeight = xTitle["style"]["fontSize"] + 2 * TITLE_PADDING;
+        //       xTitleTop = self.base.series_and_axes_box.bottom - xTitleHeight;
         //     }
 
         //     // y-axis title.
@@ -262,29 +262,29 @@ where
         //     let yTitleTop = 0;
         //     let yTitleWidth = 0;
         //     let yTitleHeight = 0;
-        //     let yTitle = options["yAxis"]["title"];
+        //     let yTitle = self.base.options.y_axis.title;
         //     if (yTitle["text"] != null) {
         //       context.font = get_font(yTitle["style"]);
         //       yTitleHeight = context.measureText(yTitle["text"]).width.round() +
-        //           2 * title_padding;
-        //       yTitleWidth = yTitle["style"]["fontSize"] + 2 * title_padding;
-        //       yTitleLeft = series_and_axes_box.left;
+        //           2 * TITLE_PADDING;
+        //       yTitleWidth = yTitle["style"]["fontSize"] + 2 * TITLE_PADDING;
+        //       yTitleLeft = self.base.series_and_axes_box.left;
         //     }
 
         //     // Axes" size and position.
 
-        //     y_axis_left = series_and_axes_box.left + y_label_max_width + axis_label_margin;
+        //     y_axis_left = self.base.series_and_axes_box.left + y_label_max_width + axis_label_margin;
         //     if (yTitleWidth > 0) {
-        //       y_axis_left += yTitleWidth + chart_title_margin;
+        //       y_axis_left += yTitleWidth + CHART_TITLE_MARGIN;
         //     } else {
         //       y_axis_left += axis_label_margin;
         //     }
 
-        //     x_axis_length = series_and_axes_box.right - y_axis_left;
+        //     x_axis_length = self.base.series_and_axes_box.right - y_axis_left;
 
-        //     x_axis_top = series_and_axes_box.bottom;
+        //     x_axis_top = self.base.series_and_axes_box.bottom;
         //     if (xTitleHeight > 0) {
-        //       x_axis_top -= xTitleHeight + chart_title_margin;
+        //       x_axis_top -= xTitleHeight + CHART_TITLE_MARGIN;
         //     } else {
         //       x_axis_top -= axis_label_margin;
         //     }
@@ -298,7 +298,7 @@ where
         //       x_labels.add(data_table.rows[i][0].to_string());
         //     }
         //     x_label_max_width = calculateMaxTextWidth(
-        //         context, get_font(options["xAxis"]["labels"]["style"]), x_labels);
+        //         context, get_font(self.base.options.x_axis.labels.style), x_labels);
         //     if (x_label_offset_factor > 0 && rowCount > 1) {
         //       x_label_hop = x_axis_length / rowCount;
         //     } else if (rowCount > 1) {
@@ -308,9 +308,9 @@ where
         //     }
         //     x_label_rotation = 0;
 
-        //     let fontSize = options["xAxis"]["labels"]["style"]["fontSize"];
-        //     let maxRotation = options["xAxis"]["labels"]["maxRotation"];
-        //     let minRotation = options["xAxis"]["labels"]["minRotation"];
+        //     let fontSize = self.base.options.x_axis.labels.style.font_size;
+        //     let maxRotation = self.base.options.x_axis.labels.max_rotation;
+        //     let minRotation = self.base.options.x_axis.labels.min_rotation;
         //     const angles = [0, -45, 45, -90, 90];
 
         //     outer:
@@ -338,12 +338,12 @@ where
         //     // Wrap up.
 
         //     y_axis_length = x_axis_top -
-        //         series_and_axes_box.top -
-        //         options["yAxis"]["labels"]["style"]["fontSize"] ~/ 2;
+        //         self.base.series_and_axes_box.top -
+        //         self.base.options.y_axis.labels.style.font_size ~/ 2;
         //     y_label_hop = y_axis_length / (y_labels.length - 1);
 
         //     xTitleLeft = y_axis_left + (x_axis_length - xTitleWidth) ~/ 2;
-        //     yTitleTop = series_and_axes_box.top + (y_axis_length - yTitleHeight) ~/ 2;
+        //     yTitleTop = self.base.series_and_axes_box.top + (y_axis_length - yTitleHeight) ~/ 2;
 
         //     if (xTitleHeight > 0) {
         // //      x_title_box =
@@ -371,7 +371,7 @@ where
     //     // if record.columnIndex == 0 {
     //     //   x_labels[record.rowIndex] = record.newValue;
     //     // } else {
-    //     //   self.base._data_cell_changed(record);
+    //     //   self.base.data_cell_changed(record);
     //     // }
     // }
 
@@ -379,19 +379,19 @@ where
         // // x-axis title.
 
         // if (x_title_center != null) {
-        //   let opt = options["xAxis"]["title"];
+        //   let opt = self.base.options.x_axis.title;
         //   axes_context
         //     ..fillStyle = opt["style"]["color"]
         //     ..font = get_font(opt["style"])
         //     ..textAlign = "center"
         //     ..textBaseline = "middle"
-        //     ..fillText(opt["text"], x_title_center.x, x_title_center.y);
+        //     ..fill_text(opt["text"], x_title_center.x, x_title_center.y);
         // }
 
         // // y-axis title.
 
         // if (y_title_center != null) {
-        //   let opt = options["yAxis"]["title"];
+        //   let opt = self.base.options.y_axis.title;
         //   axes_context
         //     ..save()
         //     ..fillStyle = opt["style"]["color"]
@@ -400,13 +400,13 @@ where
         //     ..rotate(-PI_2)
         //     ..textAlign = "center"
         //     ..textBaseline = "middle"
-        //     ..fillText(opt["text"], 0, 0)
+        //     ..fill_text(opt["text"], 0, 0)
         //     ..restore();
         // }
 
         // // x-axis labels.
 
-        // let opt = options["xAxis"]["labels"];
+        // let opt = self.base.options.x_axis.labels;
         // axes_context.fillStyle = opt["style"]["color"];
         // axes_context.font = get_font(opt["style"]);
         // let x = x_label_x(0);
@@ -417,7 +417,7 @@ where
         //   axes_context.textAlign = "center";
         //   axes_context.textBaseline = "alphabetic";
         //   for (let i = 0; i < x_labels.length; i += x_label_step) {
-        //     axes_context.fillText(x_labels[i], x, y);
+        //     axes_context.fill_text(x_labels[i], x, y);
         //     x += scaledLabelHop;
         //   }
         // } else {
@@ -432,7 +432,7 @@ where
         //       ..save()
         //       ..translate(x, y)
         //       ..rotate(angle)
-        //       ..fillText(x_labels[i], 0, 0)
+        //       ..fill_text(x_labels[i], 0, 0)
         //       ..restore();
         //     x += scaledLabelHop;
         //   }
@@ -441,24 +441,24 @@ where
         // // y-axis labels.
 
         // axes_context
-        //   ..fillStyle = options["yAxis"]["labels"]["style"]["color"]
-        //   ..font = get_font(options["yAxis"]["labels"]["style"])
+        //   ..fillStyle = self.base.options.y_axis.labels.style.color
+        //   ..font = get_font(self.base.options.y_axis.labels.style)
         //   ..textAlign = "right"
         //   ..textBaseline = "middle";
         // x = y_axis_left - axis_label_margin;
-        // y = x_axis_top - (options["yAxis"]["labels"]["style"]["fontSize"] ~/ 8);
+        // y = x_axis_top - (self.base.options.y_axis.labels.style.font_size ~/ 8);
         // for (let label in y_labels) {
-        //   axes_context.fillText(label, x, y);
+        //   axes_context.fill_text(label, x, y);
         //   y -= y_label_hop;
         // }
 
         // // x grid lines - draw bottom up.
 
-        // if (options["xAxis"]["gridLineWidth"] > 0) {
+        // if (self.base.options.x_axis.grid_line_width > 0) {
         //   axes_context
-        //     ..lineWidth = options["xAxis"]["gridLineWidth"]
-        //     ..strokeStyle = options["xAxis"]["gridLineColor"]
-        //     ..beginPath();
+        //     ..lineWidth = self.base.options.x_axis.grid_line_width
+        //     ..strokeStyle = self.base.options.x_axis.grid_line_color
+        //     ..begin_path();
         //   y = x_axis_top - y_label_hop;
         //   for (let i = y_labels.length - 1; i >= 1; i--) {
         //     axes_context.moveTo(y_axis_left, y);
@@ -470,7 +470,7 @@ where
 
         // // y grid lines or x-axis ticks - draw from left to right.
 
-        // let lineWidth = options["yAxis"]["gridLineWidth"];
+        // let lineWidth = self.base.options.y_axis.grid_line_width;
         // x = y_axis_left;
         // if (x_label_step > 1) {
         //   x = x_label_x(0);
@@ -483,8 +483,8 @@ where
         // }
         // axes_context
         //   ..lineWidth = lineWidth
-        //   ..strokeStyle = options["yAxis"]["gridLineColor"]
-        //   ..beginPath();
+        //   ..strokeStyle = self.base.options.y_axis.grid_line_color
+        //   ..begin_path();
         // for (let i = 0; i < x_labels.length; i += x_label_step) {
         //   axes_context.moveTo(x, y);
         //   axes_context.lineTo(x, x_axis_top);
@@ -494,11 +494,11 @@ where
 
         // // x-axis itself.
 
-        // if (options["xAxis"]["lineWidth"] > 0) {
+        // if (self.base.options.x_axis.line_width > 0) {
         //   axes_context
-        //     ..lineWidth = options["xAxis"]["lineWidth"]
-        //     ..strokeStyle = options["xAxis"]["lineColor"]
-        //     ..beginPath()
+        //     ..lineWidth = self.base.options.x_axis.line_width
+        //     ..strokeStyle = self.base.options.x_axis.line_color
+        //     ..begin_path()
         //     ..moveTo(y_axis_left, x_axis_top)
         //     ..lineTo(y_axis_left + x_axis_length, x_axis_top)
         //     ..stroke();
@@ -506,11 +506,11 @@ where
 
         // // y-axis itself.
 
-        // if (options["yAxis"]["lineWidth"] > 0) {
+        // if (self.base.options.y_axis.line_width > 0) {
         //   axes_context
-        //     ..lineWidth = options["yAxis"]["lineWidth"]
-        //     ..strokeStyle = options["yAxis"]["lineColor"]
-        //     ..beginPath()
+        //     ..lineWidth = self.base.options.y_axis.line_width
+        //     ..strokeStyle = self.base.options.y_axis.line_color
+        //     ..begin_path()
         //     ..moveTo(y_axis_left, x_axis_top - y_axis_length)
         //     ..lineTo(y_axis_left, x_axis_top)
         //     ..stroke();
@@ -546,7 +546,7 @@ where
     /// To be overridden.
     // index is opt
     fn calculate_average_y_values(&self, index: usize) {
-        // if (!options["tooltip"]["enabled"]) return;
+        // if !self.base.options.tooltip.enabled return;
 
         // let entityCount = data_table.rows.length;
         // let start = index ?? 0;
@@ -559,7 +559,7 @@ where
         //   let count = 0;
         //   for (let j = series_list.length - 1; j >= 0; j--) {
         //     if (series_states[j].index <= Visibility::hiding.index) continue;
-        //     let point = series_list[j].entities[i] as _Point;
+        //     let point = series_list[j].entities[i] as Point;
         //     if (point.value != null) {
         //       sum += point.y;
         //       count++;
@@ -575,11 +575,11 @@ where
         //   let y = lerp(p.oldY, p.y, percent);
         //   let cp1 = (p.cp1 != null) ? lerp(p.oldCp1, p.cp1, percent) : null;
         //   let cp2 = (p.cp2 != null) ? lerp(p.oldCp2, p.cp2, percent) : null;
-        //   return _Point()
+        //   return Point()
         //     ..index = p.index
         //     ..value = p.value
         //     ..color = p.color
-        //     ..highlightColor = p.highlightColor
+        //     ..highlight_color = p.highlight_color
         //     ..oldPointRadius = p.oldPointRadius
         //     ..oldX = p.oldX
         //     ..oldY = p.oldY
@@ -608,7 +608,7 @@ where
 
     fn calculate_drawing_sizes(&self) {
         self.base.calculate_drawing_sizes();
-        // tooltip_offset = options["series"]["markers"]["size"] * 2 + 5;
+        // tooltip_offset = self.base.options.series.markers.size * 2 + 5;
     }
 
     fn draw_series(&self, percent: f64) -> bool {
@@ -626,9 +626,9 @@ where
 
         //   let seriesCount = series_list.length;
         //   let entityCount = data_table.rows.length;
-        //   let fillOpacity = options["series"]["fillOpacity"];
-        //   let seriesLineWidth = options["series"]["lineWidth"];
-        //   let markerOptions = options["series"]["markers"];
+        //   let fillOpacity = self.base.options.series.fill_opacity;
+        //   let seriesLineWidth = self.base.options.series.line_width;
+        //   let markerOptions = self.base.options.series.markers;
         //   let markerSize = markerOptions["size"];
 
         //   for (let i = 0; i < seriesCount; i++) {
@@ -658,7 +658,7 @@ where
         //         // fill the area between them and the x-axis.
         //         let p = points[j];
         //         series_context
-        //           ..beginPath()
+        //           ..begin_path()
         //           ..moveTo(p.x, x_axis_top)
         //           ..lineTo(p.x, p.y);
         //         let lastPoint = p;
@@ -681,11 +681,11 @@ where
         //     // Draw series without filling.
 
         //     if (seriesLineWidth > 0) {
-        //       let lastPoint = _Point();
+        //       let lastPoint = Point();
         //       series_context
         //         ..lineWidth = scale * seriesLineWidth
         //         ..strokeStyle = series.color
-        //         ..beginPath();
+        //         ..begin_path();
         //       for (let p in points) {
         //         if (p.value != null) {
         //           if (lastPoint.value != null) {
@@ -723,7 +723,7 @@ where
 
         //   // Draw labels only on the last frame.
 
-        //   let labelOptions = options["series"]["labels"];
+        //   let labelOptions = self.base.options.series.labels;
         //   if (percent == 1.0 && labelOptions["enabled"]) {
         //     series_context
         //       ..fillStyle = labelOptions["style"]["color"]
@@ -734,10 +734,10 @@ where
         //       if (series_states[i] != Visibility::shown) continue;
 
         //       let points = series_list[i].entities;
-        //       for (_Point p in points) {
+        //       for (Point p in points) {
         //         if (p.value != null) {
         //           let y = p.y - markerSize - 5;
-        //           series_context.fillText(p.formattedValue, p.x, y);
+        //           series_context.fill_text(p.formatted_value, p.x, y);
         //         }
         //       }
         //     }
@@ -748,9 +748,9 @@ where
 
     fn update_series(&self, index: usize) {
         // let entityCount = data_table.rows.length;
-        // let markerSize = options["series"]["markers"]["size"];
-        // let curveTension = options["series"]["curveTension"];
-        // let curve = curveTension > 0 && entityCount > 2;
+        // let markerSize = self.base.options.series.markers.size;
+        // let curve_tension = self.base.options.series.curve_tension;
+        // let curve = curve_tension > 0 && entityCount > 2;
 
         // let start = index ?? 0;
         // let end = (index == null) ? series_list.length : index + 1;
@@ -759,25 +759,25 @@ where
         //   let series = series_list[i];
         //   let entities = series.entities;
         //   let color = get_color(i);
-        //   let highlightColor = get_highlight_color(color);
+        //   let highlight_color = get_highlight_color(color);
         //   series.color = color;
-        //   series.highlightColor = highlightColor;
+        //   series.highlight_color = highlight_color;
 
         //   for (let j = 0; j < entityCount; j++) {
-        //     let e = entities[j] as _Point;
+        //     let e = entities[j] as Point;
         //     e.index = j;
         //     e.color = color;
-        //     e.highlightColor = highlightColor;
+        //     e.highlight_color = highlight_color;
         //     e.x = x_label_x(j);
-        //     e.y = visible ? _valueToY(e.value) : x_axis_top;
+        //     e.y = visible ? valueToY(e.value) : x_axis_top;
         //     e.pointRadius = visible ? markerSize : 0;
         //   }
 
         //   if (!curve) continue;
 
         //   let e1;
-        //   let e2 = entities[0] as _Point;
-        //   let e3 = entities[1] as _Point;
+        //   let e2 = entities[0] as Point;
+        //   let e3 = entities[1] as Point;
         //   for (let j = 2; j < entityCount; j++) {
         //     e1 = e2;
         //     e2 = e3;
@@ -786,7 +786,7 @@ where
         //     if (e2.value == null) continue;
         //     if (e3.value == null) continue;
         //     let list = calculateControlPoints(
-        //         e1.asPoint, e2.asPoint, e3.asPoint, curveTension);
+        //         e1.asPoint, e2.asPoint, e3.asPoint, curve_tension);
         //     e2.cp1 = list[0];
         //     e2.cp2 = list[1];
         // ??= - Assign the value if the variable is null
@@ -808,18 +808,18 @@ where
         // let x = x_label_x(entityIndex);
         // let oldY = x_axis_top;
         // // oldCp1 and oldCp2 are calculated in [update_series].
-        // return _Point()
+        // return Point()
         //   ..index = entityIndex
         //   ..value = value
-        //   ..formattedValue = value != null ? entity_value_formatter(value) : null
+        //   ..formatted_value = value != null ? entity_value_formatter(value) : null
         //   ..color = color
-        //   ..highlightColor = highlightColor
+        //   ..highlight_color = highlight_color
         //   ..oldX = x
         //   ..oldY = oldY
         //   ..oldPointRadius = 09
         //   ..x = x
-        //   ..y = _valueToY(value)
-        //   ..pointRadius = options["series"]["markers"]["size"];
+        //   ..y = valueToY(value)
+        //   ..pointRadius = self.base.options.series.markers.size;
         unimplemented!()
     }
 
@@ -827,8 +827,8 @@ where
         // FIXME: as usuze
         let x = self.x_label_x(self.base.focused_entity_index as usize) + self.tooltip_offset;
         // let y = max(x_axis_top - y_axis_length,
-        //     average_y_values[focused_entity_index] - _tooltip.offsetHeight ~/ 2);
-        // if (x + tooltip.offsetWidth > _width) {
+        //     average_y_values[focused_entity_index] - tooltip.offsetHeight ~/ 2);
+        // if (x + tooltip.offsetWidth > width) {
         //   x -= tooltip.offsetWidth + 2 * tooltip_offset;
         //   x = max(x, y_axis_left);
         // }

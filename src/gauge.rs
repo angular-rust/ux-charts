@@ -10,9 +10,9 @@ use crate::*;
 #[derive(Default, Clone)]
 pub struct GaugeEntity {
     // Chart chart,
-    // String color,
-    // String highlightColor,
-    // String formattedValue,
+    color: String,
+    highlight_color: String,
+    formatted_value: String,
     index: usize,
     old_value: f64,
     value: f64,
@@ -46,7 +46,7 @@ impl GaugeEntity {
         }
 
         let angle = f64::atan2(p.y, p.x);
-        // let chartStartAngle = (chart as dynamic)._startAngle;
+        // let chartStartAngle = (chart as dynamic).startAngle;
 
         // Make sure [angle] is in range [chartStartAngle]..[chartStartAngle] + TAU.
         // angle = (angle - chartStartAngle) % TAU + chartStartAngle;
@@ -59,10 +59,10 @@ impl GaugeEntity {
 
         // if (startAngle <= endAngle) {
         //   // Clockwise.
-        //   return isInRange(angle, startAngle, endAngle);
+        //   return is_in_range(angle, startAngle, endAngle);
         // } else {
         //   // Counterclockwise.
-        //   return isInRange(angle, endAngle, startAngle);
+        //   return is_in_range(angle, endAngle, startAngle);
         // }
         unimplemented!()
     }
@@ -102,7 +102,7 @@ where
 
         // // Draw the percent.
 
-        // let fs1 = .75 * innerRadius;
+        // let fs1 = .75 * inner_radius;
         // let font1 = "${fs1}px $_fontFamily";
         // let text1 = lerp(oldValue, value, percent).round().to_string();
         // ctx.font = font1;
@@ -117,9 +117,9 @@ where
         // let y = center.y + .3 * fs1;
         // ctx
         //   ..font = font1
-        //   ..fillText(text1, center.x - .5 * w2, y)
+        //   ..fill_text(text1, center.x - .5 * w2, y)
         //   ..font = font2
-        //   ..fillText(text2, center.x + .5 * w1, y);
+        //   ..fill_text(text2, center.x + .5 * w1, y);
     }
 }
 
@@ -167,7 +167,7 @@ where
     }
 
     fn update_tooltip_content(&self) {
-        // let gauge = series_list[0].entities[focused_entity_index] as _Gauge;
+        // let gauge = series_list[0].entities[focused_entity_index] as Gauge;
         // tooltip.style
         //   ..borderColor = gauge.color
         //   ..padding = "4px 12px";
@@ -178,7 +178,7 @@ where
 
     fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
         // let p = Point(x, y);
-        // for (_Gauge g in series_list[0].entities) {
+        // for (Gauge g in series_list[0].entities) {
         //   if (g.containsPoint(p)) return g.index;
         // }
         // return -1;
@@ -197,27 +197,27 @@ where
 
         // let gaugeCount = data_table.rows.length;
         // let labelTotalHeight = 0;
-        // if (options["gaugeLabels"]["enabled"]) {
+        // if (self.base.options.gauge_labels.enabled) {
         //   labelTotalHeight =
-        //       axis_label_margin + options["gaugeLabels"]["style"]["fontSize"];
+        //       axis_label_margin + self.base.options.gauge_labels.style.font_size;
         // }
 
-        // gauge_center_y = seriesAndAxesBox.top + .5 * seriesAndAxesBox.height;
-        // gauge_hop = series_and_axes_box.width / gaugeCount;
+        // gauge_center_y = series_and_axes_box.top + .5 * series_and_axes_box.height;
+        // gauge_hop = self.base.series_and_axes_box.width / gaugeCount;
 
         // let availW = .618 * gauge_hop; // Golden ratio.
-        // let availH = series_and_axes_box.height - 2 * labelTotalHeight;
-        // gaugeOuterRadius = .5 * min(availW, availH) / highlightOuterRadiusFactor;
+        // let availH = self.base.series_and_axes_box.height - 2 * labelTotalHeight;
+        // gaugeOuterRadius = .5 * min(availW, availH) / HIGHLIGHT_OUTER_RADIUS_FACTOR;
         // gaugeInnerRadius = .5 * gaugeOuterRadius;
     }
 
     fn draw_series(&self, percent: f64) -> bool {
-        // let style = options["gaugeLabels"]["style"];
-        // let labelsEnabled = options["gaugeLabels"]["enabled"];
+        // let style = self.base.options.gauge_labels.style;
+        // let labelsEnabled = self.base.options.gauge_labels.enabled;
         // series_context
         //   ..strokeStyle = "white"
         //   ..textAlign = "center";
-        // for (_Gauge gauge in series_list[0].entities) {
+        // for (Gauge gauge in series_list[0].entities) {
         //   let highlight = gauge.index == focused_entity_index;
         //   gauge.draw(series_context, percent, highlight);
 
@@ -225,14 +225,14 @@ where
 
         //   let x = gauge.center.x;
         //   let y = gauge.center.y +
-        //       gauge.outerRadius +
+        //       gauge.outer_radius +
         //       style["fontSize"] +
         //       axis_label_margin;
         //   series_context
         //     ..fillStyle = style["color"]
         //     ..font = get_font(style)
         //     ..textAlign = "center"
-        //     ..fillText(gauge.name, x, y);
+        //     ..fill_text(gauge.name, x, y);
         // }
         // return false;
         unimplemented!()
@@ -243,15 +243,15 @@ where
         // for (let i = 0; i < n; i++) {
         //   let gauge = series_list[0].entities[i] as Gauge;
         //   let color = get_color(i);
-        //   let highlightColor = change_color_alpha(color, .5);
+        //   let highlight_color = change_color_alpha(color, .5);
         //   gauge
         //     ..index = i
         //     ..name = data_table.rows[i][0]
         //     ..color = color
-        //     ..highlightColor = highlightColor
+        //     ..highlight_color = highlight_color
         //     ..center = getGaugeCenter(i)
-        //     ..innerRadius = gaugeInnerRadius
-        //     ..outerRadius = gaugeOuterRadius
+        //     ..inner_radius = gaugeInnerRadius
+        //     ..outer_radius = gaugeOuterRadius
         //     ..endAngle = startAngle + valueToAngle(gauge.value);
         // }
     }
@@ -274,24 +274,24 @@ where
         //   ..value = value
         //   ..name = name
         //   ..color = color
-        //   ..backgroundColor = options["gaugeBackgroundColor"]
-        //   ..highlightColor = highlightColor
+        //   ..backgroundColor = self.base.options.gauge_background_color
+        //   ..highlight_color = highlight_color
         //   ..oldValue = 0
         //   ..oldStartAngle = startAngle
         //   ..oldEndAngle = startAngle
-        //   ..center = _getGaugeCenter(entityIndex)
-        //   ..innerRadius = gaugeInnerRadius
-        //   ..outerRadius = gaugeOuterRadius
+        //   ..center = getGaugeCenter(entityIndex)
+        //   ..inner_radius = gaugeInnerRadius
+        //   ..outer_radius = gaugeOuterRadius
         //   ..startAngle = startAngle
         //   ..endAngle = startAngle + valueToAngle(value);
         unimplemented!()
     }
 
     fn get_tooltip_position(&self) -> Point<f64> {
-        // let gauge = series_list[0].entities[focused_entity_index] as _Gauge;
+        // let gauge = series_list[0].entities[focused_entity_index] as Gauge;
         // let x = gauge.center.x - tooltip.offsetWidth ~/ 2;
         // let y = gauge.center.y -
-        //     highlightOuterRadiusFactor * gauge.outerRadius -
+        //     HIGHLIGHT_OUTER_RADIUS_FACTOR * gauge.outer_radius -
         //     tooltip.offsetHeight -
         //     5;
         // return Point(x, y);
