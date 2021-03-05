@@ -3,41 +3,28 @@ use ux_primitives::{canvas::*, math::*};
 
 use super::*;
 
-/// Base class for all charts.
+lazy_static! {
+    /// The color cache used by change_color_alpha. (should be doc)
+    // should be global static cache
+    static ref COLOR_CACHE: HashMap<String, String> = Default::default();
+}
+
 #[derive(Default, Clone)]
-pub struct BaseChart<'a, C, E, M, D, O>
-where
-    C: CanvasContext,
-    E: Entity,
-    M: fmt::Display,
-    D: fmt::Display,
-    O: BaseOption<'a>,
-{
+pub struct BaseChartProperties {
     /// ID of the current animation frame.
-    pub animation_frame_id: i64,
+    pub animation_frame_id: usize,
 
     /// The starting time of an animation cycle.
     pub animation_start_time: Option<f64>,
 
-    /// The data table that stores chart data
-    /// Row 0 contains column names.
-    /// Column 0 contains x-axis/pie labels.
-    /// Column 1..n - 1 contain series data.
-    pub data_table: DataStream<'a, M, D>,
-
     // dataTableSubscriptionTracker: StreamSubscriptionTracker, // = StreamSubscriptionTracker();
     pub easing_function: Option<EasingFunction>,
 
-    // /// The default drawing options initialized in the constructor.
-    // default_options: O,
-    /// The drawing options initialized in the constructor.
-    pub options: O,
-
     /// The chart"s width.
-    pub height: RefCell<f64>,
+    pub height: f64,
 
     /// The chart"s height.
-    pub width: RefCell<f64>,
+    pub width: f64,
 
     /// Index of the highlighted point group/bar group/pie/...
     pub focused_entity_index: i64, // = -1;
@@ -62,10 +49,37 @@ where
     pub tooltip_value_formatter: Option<ValueFormatter>,
 
     /// Bounding box of the series and axes.
-    pub series_and_axes_box: Rectangle<i64>,
+    pub series_and_axes_box: Rectangle<f64>,
 
     /// Bounding box of the chart title.
-    pub title_box: Rectangle<i64>,
+    pub title_box: Rectangle<f64>,
+
+    /// A list used to keep track of the visibility of the series.
+    pub series_states: Vec<Visibility>,
+}
+
+/// Base class for all charts.
+#[derive(Default, Clone)]
+pub struct BaseChart<'a, C, E, M, D, O>
+where
+    C: CanvasContext,
+    E: Entity,
+    M: fmt::Display,
+    D: fmt::Display,
+    O: BaseOption<'a>,
+{
+    pub props: RefCell<BaseChartProperties>,
+    /// The data table that stores chart data
+    /// Row 0 contains column names.
+    /// Column 0 contains x-axis/pie labels.
+    /// Column 1..n - 1 contain series data.
+    pub data_table: DataStream<'a, M, D>,
+
+    // /// The default drawing options initialized in the constructor.
+    // default_options: O,
+    /// The drawing options initialized in the constructor.
+    pub options: O,
+
     /// The main rendering context.
     pub context: Option<C>,
 
@@ -75,14 +89,8 @@ where
     /// The rendering context for the series.
     pub series_context: Option<C>,
 
+    /// The precalcuated datas
     pub series_list: Vec<Series<E>>,
-
-    /// A list used to keep track of the visibility of the series.
-    pub series_states: Vec<Visibility>,
-
-    /// The color cache used by change_color_alpha. (should be doc)
-    // should be global static cache
-    pub color_cache: HashMap<String, String>,
 }
 
 impl<'a, C, E, M, D, O> BaseChart<'a, C, E, M, D, O>
@@ -107,31 +115,14 @@ where
 
         // container.append(context.canvas);
         Self {
-            animation_frame_id: 0,
-            animation_start_time: None,
+            props: Default::default(),
             data_table: Default::default(),
-            easing_function: None,
             // default_options: O,
             options,
-            height: RefCell::new(0.0),
-            width: RefCell::new(0.0),
-            focused_entity_index: 0, // = -1;
-            focused_series_index: 0, // = -1;
-            entity_value_formatter: None,
-            legend: None,
-            // legendItemSubscriptionTracker: StreamSubscriptionTracker, // = StreamSubscriptionTracker();
-            // mouseMoveSub: StreamSubscription,
-            tooltip: None,
-            tooltip_label_formatter: None,
-            tooltip_value_formatter: None,
-            series_and_axes_box: Default::default(),
-            title_box: Default::default(),
             context: None,
             axes_context: None,
             series_context: None,
             series_list: Vec::new(),
-            series_states: Vec::new(),
-            color_cache: HashMap::new(),
         }
     }
 
@@ -141,11 +132,12 @@ where
         let o = self.options.animation();
 
         let key = format!("{}{}", color, alpha);
-        let result = self.color_cache.get(&key);
+        let result = COLOR_CACHE.get(&key);
         match result {
             Some(color) => color.clone(),
             None => {
-                // // Convert [color] to HEX/RGBA format using [context].
+                // Convert [color] to HEX/RGBA format using [context].
+
                 // context.fillStyle = color;
                 // color = context.fillStyle;
 
@@ -156,7 +148,7 @@ where
                 // list[list.length - 1] = "$alpha)";
                 // result = list.join(",");
                 // }
-                // color_cache[key] = result;
+                // COLOR_CACHE.insert(key, result);
                 "".into()
             }
         }
@@ -166,12 +158,13 @@ where
     /// series.
     // end is opt
     pub fn count_visible_series(&self, end: Option<usize>) -> usize {
+        let props = self.props.borrow();
         let end = match end {
             Some(end) => end,
-            None => self.series_states.len(),
+            None => props.series_states.len(),
         };
 
-        // return series_states
+        // props.series_states
         //     .take(end)
         //     .where((e) => e.index >= Visibility::showing.index)
         //     .length;
@@ -189,8 +182,9 @@ where
     }
 
     /// Called when the animation ends.
-    pub fn animation_end(&mut self) {
-        self.animation_start_time = None;
+    pub fn animation_end(&self) {
+        let mut props = self.props.borrow_mut();
+        props.animation_start_time = None;
 
         for series in &self.series_list {
             for entity in &series.entities {
@@ -220,8 +214,14 @@ where
         if title.position != "none" && title.text.is_some() {
             title_h = title.style.font_size + 2.0 * TITLE_PADDING;
         }
-        // self.series_and_axes_box = MutableRectangle(CHART_PADDING, CHART_PADDING,
-        //     width - 2 * CHART_PADDING, height - 2 * CHART_PADDING);
+
+        let mut props = self.props.borrow_mut();
+        props.series_and_axes_box = Rectangle {
+            left: CHART_PADDING,
+            top: CHART_PADDING,
+            width: props.width - 2.0 * CHART_PADDING,
+            height: props.height - 2.0 * CHART_PADDING,
+        };
 
         // // Consider the title.
 
@@ -229,15 +229,18 @@ where
             match title.position {
                 "above" => {
                     title_y = CHART_PADDING;
-                    //   self.series_and_axes_box.top += title_h + CHART_TITLE_MARGIN;
-                    //   self.series_and_axes_box.height -= title_h + CHART_TITLE_MARGIN;
+                    props.series_and_axes_box.top =
+                        props.series_and_axes_box.top + title_h + CHART_TITLE_MARGIN;
+                    props.series_and_axes_box.height =
+                        props.series_and_axes_box.height - title_h + CHART_TITLE_MARGIN;
                 }
                 "middle" => {
-                    //   title_y = (height - title_h) ~/ 2;
+                    title_y = f64::floor((props.height - title_h) / 2.0);
                 }
                 "below" => {
-                    title_y = *self.height.borrow() - title_h - CHART_PADDING;
-                    //   self.series_and_axes_box.height -= title_h + CHART_TITLE_MARGIN;
+                    title_y = props.height - title_h - CHART_PADDING;
+                    props.series_and_axes_box.height =
+                        props.series_and_axes_box.height - title_h + CHART_TITLE_MARGIN;
                 }
                 _ => {}
             }
@@ -257,43 +260,45 @@ where
             height: title_h,
         };
 
-        // // Consider the legend.
+        // Consider the legend.
 
-        // if (self.legend != null) {
-        //   let lwm = self.legend.offsetWidth + legend_margin;
-        //   let lhm = self.legend.offsetHeight + legend_margin;
-        //   switch (self.options.legend().position) {
-        //     case "right":
-        //       self.series_and_axes_box.width -= lwm;
-        //       break;
-        //     case "bottom":
-        //       self.series_and_axes_box.height -= lhm;
-        //       break;
-        //     case "left":
-        //       self.series_and_axes_box.left += lwm;
-        //       self.series_and_axes_box.width -= lwm;
-        //       break;
-        //     case "top":
-        //       self.series_and_axes_box.top += lhm;
-        //       self.series_and_axes_box.height -= lhm;
-        //       break;
-        //   }
-        // }
+        if let Some(legend) = props.legend {
+            //   let lwm = self.legend.offsetWidth + legend_margin;
+            //   let lhm = self.legend.offsetHeight + legend_margin;
+            let position = self.options.legend().position;
+            match position {
+                "right" => {
+                    //   self.series_and_axes_box.width -= lwm;
+                }
+                "bottom" => {
+                    //   self.series_and_axes_box.height -= lhm;
+                }
+                "left" => {
+                    //   self.series_and_axes_box.left += lwm;
+                    //   self.series_and_axes_box.width -= lwm;
+                }
+                "top" => {
+                    //   self.series_and_axes_box.top += lhm;
+                    //   self.series_and_axes_box.height -= lhm;
+                }
+                _ => {}
+            }
+        }
     }
 
-    // /// Event handler for [DataTable.onCellChanged].
-    // ///
-    // /// NOTE: This method only handles the case when [record.columnIndex] >= 1;
-    // fn data_cell_changed(&self, record: DataCellChangeRecord) {
-    //     // if (record.columnIndex >= 1) {
-    //     //   let f = entity_value_formatter != null && record.newValue != null
-    //     //       ? entity_value_formatter(record.newValue)
-    //     //       : null;
-    //     //   series_list[record.columnIndex - 1].entities[record.rowIndex]
-    //     //     ..value = record.newValue
-    //     //     ..formatted_value = f;
-    //     // }
-    // }
+    /// Event handler for [DataTable.onCellChanged].
+    ///
+    /// NOTE: This method only handles the case when [record.columnIndex] >= 1;
+    pub fn data_cell_changed(&self, record: DataCellChangeRecord<D>) {
+        if record.column_index >= 1 {
+            //   let f = entity_value_formatter != null && record.newValue != null
+            //       ? entity_value_formatter(record.newValue)
+            //       : null;
+            //   series_list[record.columnIndex - 1].entities[record.rowIndex]
+            //     ..value = record.newValue
+            //     ..formatted_value = f;
+        }
+    }
 
     /// Event handler for [DataTable.onRowsChanged].
     pub fn data_rows_changed(&self, record: DataCollectionChangeRecord) {
@@ -369,8 +374,10 @@ where
     pub fn draw_frame(&mut self, time: Option<f64>) {
         let percent = 1.0;
         let duration = self.options.animation().duration;
-        if let None = self.animation_start_time {
-            self.animation_start_time = time
+        let mut props = self.props.borrow_mut();
+
+        if let None = props.animation_start_time {
+            props.animation_start_time = time
         }
 
         // if (duration > 0 && time != null) {
@@ -584,7 +591,7 @@ where
         // let y = e.client.y - rect.top;
         // let index = getEntityGroupIndex(x, y);
 
-        // if (index != focused_entity_index) {
+        // if index != focused_entity_index {
         //   focused_entity_index = index;
         //   draw_frame(null);
         //   if (index >= 0) {
@@ -696,7 +703,7 @@ where
 
     /// Whether the chart is animating.
     pub fn is_animating(&self) -> bool {
-        self.animation_start_time != None
+        self.props.borrow().animation_start_time.is_some()
     }
 
     /// Whether the chart is interactive.
@@ -753,11 +760,12 @@ where
             return;
         }
 
-        let width = *self.width.borrow();
-        let height = *self.height.borrow();
+        let mut props = self.props.borrow_mut();
+        let width = props.width;
+        let height = props.height;
         if w != width || h != height {
-            *self.width.borrow_mut() += w;
-            *self.height.borrow_mut() += h;
+            props.width = props.width + w;
+            props.height = props.height + h;
             force_redraw = true;
 
             //   let dpr = window.devicePixelRatio;
@@ -795,7 +803,9 @@ where
     ///  This method should be called after [dataTable] has been modified.
     // TODO: handle updates while animation is happening.
     pub fn update(&self, options: HashMap<String, String>) {
-        if *self.width.borrow() == 0_f64 || *self.height.borrow() == 0_f64 {
+        let props = self.props.borrow();
+
+        if props.width == 0_f64 || props.height == 0_f64 {
             return;
         }
 

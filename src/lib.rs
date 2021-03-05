@@ -4,6 +4,9 @@
 use std::{collections::HashMap, fmt, rc::Rc, cell::RefCell};
 use ux_primitives::{canvas::*, math::*};
 
+#[macro_use] 
+extern crate lazy_static;
+
 // was named before "animation"
 mod easing;
 pub use easing::*;

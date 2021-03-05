@@ -349,13 +349,13 @@ where
         unimplemented!()
     }
 
-    // fn data_cell_changed(&self, record: DataCellChangeRecord) {
-    //     // if record.columnIndex == 0 {
-    //     //   x_labels[record.rowIndex] = record.newValue;
-    //     // } else {
-    //     //   self.base.data_cell_changed(record);
-    //     // }
-    // }
+    fn data_cell_changed(&self, record: DataCellChangeRecord<D>) {
+        if record.column_index == 0 {
+        //   x_labels[record.rowIndex] = record.newValue;
+        } else {
+          self.base.data_cell_changed(record);
+        }
+    }
 
     fn draw_axes_and_grid(&self) {
         // // x-axis title.
@@ -807,8 +807,10 @@ where
 
     fn get_tooltip_position(&self) -> Point<f64> {
         let props = self.props.borrow();
+        let focused_entity_index = self.base.props.borrow().focused_entity_index;
+
         // FIXME: as usuze
-        let x = self.x_label_x(self.base.focused_entity_index as usize) + props.tooltip_offset;
+        let x = self.x_label_x(focused_entity_index as usize) + props.tooltip_offset;
         // let y = max(x_axis_top - y_axis_length,
         //     average_y_values[focused_entity_index] - tooltip.offsetHeight ~/ 2);
         // if (x + tooltip.offsetWidth > width) {

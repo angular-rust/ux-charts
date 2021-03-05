@@ -22,6 +22,7 @@ default = ["cairo"]
 
 [dependencies]
 log = "0.4"
+lazy_static = "1.4"
 ux-primitives = { version = "0.1" }
 ux-animate = { version = "0.1", default-features = false, optional = true }
 
@@ -36,6 +37,7 @@ wasm-logger = { version = "0.2", optional = true }
 gloo = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true }
 wasm-bindgen-test = { version = "0.3", optional = true }
+
 
 
 [dependencies.web-sys]

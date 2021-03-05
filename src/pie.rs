@@ -208,9 +208,9 @@ where
 {
     fn calculate_drawing_sizes(&self) {
         self.base.calculate_drawing_sizes();
-        let rect = &self.base.series_and_axes_box;
-        let half_w = rect.width >> 1;
-        let half_h = rect.height >> 1;
+        let rect = &self.base.props.borrow().series_and_axes_box;
+        let half_w = rect.width as i64 >> 1;
+        let half_h = rect.height as i64 >> 1;
 
         // self.center = Point {
         //     x: (rect.left + half_w) as f64,

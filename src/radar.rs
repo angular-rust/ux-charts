@@ -204,11 +204,11 @@ where
 {
     fn calculate_drawing_sizes(&self) {
         self.base.calculate_drawing_sizes();
-
+        
         // x_labels = data_table.getColumnValues<String>(0);
         // angle_interval = TAU / x_labels.length;
-
-        let rect = &self.base.series_and_axes_box;
+        
+        let rect = &self.base.props.borrow().series_and_axes_box;
         // let xLabelFontSize = self.base.options.x_axis.labels.style.font_size;
 
         // // [_radius]*factor equals the height of the largest polygon.
@@ -446,7 +446,9 @@ where
     fn get_tooltip_position(&self) -> Point<f64> {
         // FIXME: as usize
         let props = self.props.borrow();
-        let bbox = &props.bounding_boxes[self.base.focused_entity_index as usize];
+        let focused_entity_index = self.base.props.borrow().focused_entity_index;
+
+        let bbox = &props.bounding_boxes[focused_entity_index as usize];
         // let offset = self.base.options.series.markers.size * 2 + 5;
         // let x = box.right + offset;
         // let y = box.top + (box.height - tooltip.offsetHeight) ~/ 2;
