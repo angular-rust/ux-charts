@@ -1,7 +1,8 @@
 #![allow(unused_imports)]
+#![allow(unused_variables)]
 
-use ux_primitives::datatable::*;
 use ux_charts::*;
+use ux_primitives::datatable::*;
 
 fn main() {
     // let changeDataButton = ButtonElement()..text = "Change data";
@@ -11,15 +12,51 @@ fn main() {
     // document.body.append(insertRemoveRowButton);
 
     // let container = createContainer();
-    // let table = DataTable([
-    //   ["Browser", "Share"],
-    //   ["Chrome", 35],
-    //   ["Firefox", 20],
-    //   ["IE", 30],
-    //   ["Opera", 5],
-    //   ["Safari", 8],
-    //   ["Other", 2]
-    // ]);
+
+    let metadata = vec![
+        Channel {
+            name: "Browser",
+            tag: 0,
+            visible: true,
+        },
+        Channel {
+            name: "Share",
+            tag: 1,
+            visible: true,
+        },
+    ];
+
+    let mut frames = vec![DataFrame {
+        metric: "Chrome",
+        data: [(1, 35)].iter().cloned().collect(),
+    }];
+
+    frames.push(DataFrame {
+        metric: "Firefox",
+        data: [(1, 20)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "IE",
+        data: [(1, 30)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "Opera",
+        data: [(1, 5)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "Safari",
+        data: [(1, 8)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "Other",
+        data: [(1, 2)].iter().cloned().collect(),
+    });
+
+    let stream = DataStream::new(metadata, frames);
 
     // let chart = PieChart::new(Default::default());
     // chart.draw(table, {

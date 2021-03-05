@@ -58,10 +58,10 @@ features = [
 
 
 [[example]]
-name = "web-example"
+name = "web-chart"
 # crate-type = ["staticlib"]
 required-features = ["web"]
 
 [[example]]
-name = "cairo-example"
+name = "cairo-chart"
 required-features = ["cairo"]

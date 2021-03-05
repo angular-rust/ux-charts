@@ -1,19 +1,60 @@
 #![allow(unused_imports)]
+#![allow(unused_variables)]
 
-use ux_primitives::datatable::*;
 use ux_charts::*;
+use ux_primitives::datatable::*;
 
 fn main() {
-    // let table = DataTable([
-    //   ["Categories", "Series 1"],
-    //   ["Monday", 8],
-    //   ["Tuesday", 17],
-    //   ["Wednesday", 7],
-    //   ["Thursday", 16],
-    //   ["Friday", 12],
-    //   ["Saturday", 5],
-    //   ["Sunday", 14]
-    // ]);
+    let metadata = vec![
+        Channel {
+            name: "Categories",
+            tag: 0,
+            visible: true,
+        },
+        Channel {
+            name: "Series 1",
+            tag: 1,
+            visible: true,
+        },
+    ];
+
+    // Zero stream tag is allways metric
+    let mut frames = vec![DataFrame {
+        metric: "Monday",
+        data: [(1, 8)].iter().cloned().collect(),
+    }];
+
+    frames.push(DataFrame {
+        metric: "Tuesday",
+        data: [(1, 17)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "Wednesday",
+        data: [(1, 7)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "Thursday",
+        data: [(1, 16)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "Friday",
+        data: [(1, 12)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "Saturday",
+        data: [(1, 5)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "Sunday",
+        data: [(1, 14)].iter().cloned().collect(),
+    });
+
+    let stream = DataStream::new(metadata, frames);
 
     // let changeDataButton = ButtonElement()..text = "Change data";
     // document.body.append(changeDataButton);

@@ -1,19 +1,70 @@
 #![allow(unused_imports)]
+#![allow(unused_variables)]
 
-use ux_primitives::datatable::*;
 use ux_charts::*;
+use ux_primitives::datatable::*;
 
 fn main() {
-    // let table = DataTable([
-    //   ["Categories", "Series 1", "Series 2", "Series 3"],
-    //   ["Monday", 1, 3, 5],
-    //   ["Tuesday", 3, 4, 6],
-    //   ["Wednesday", 4, 3, 1],
-    //   ["Thursday", null, 5, 1],
-    //   ["Friday", 3, 4, 2],
-    //   ["Saturday", 5, 10, 4],
-    //   ["Sunday", 4, 12, 8]
-    // ]);
+    let metadata = vec![
+        Channel {
+            name: "Categories",
+            tag: 0,
+            visible: true,
+        },
+        Channel {
+            name: "Series 1",
+            tag: 1,
+            visible: true,
+        },
+        Channel {
+            name: "Series 2",
+            tag: 2,
+            visible: true,
+        },
+        Channel {
+            name: "Series 3",
+            tag: 3,
+            visible: true,
+        },
+    ];
+
+    // Zero stream tag is allways metric
+    let mut frames = vec![DataFrame {
+        metric: "Monday",
+        data: [(1, 1), (2, 3), (3, 5)].iter().cloned().collect(),
+    }];
+
+    frames.push(DataFrame {
+        metric: "Tuesday",
+        data: [(1, 3), (2, 4), (3, 6)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "Wednesday",
+        data: [(1, 4), (2, 3), (3, 1)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "Thursday",
+        data: [(2, 5), (3, 1)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "Friday",
+        data: [(1, 3), (2, 4), (3, 2)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "Saturday",
+        data: [(1, 5), (2, 10), (3, 4)].iter().cloned().collect(),
+    });
+
+    frames.push(DataFrame {
+        metric: "Sunday",
+        data: [(1, 5), (2, 10), (3, 4)].iter().cloned().collect(),
+    });
+
+    let stream = DataStream::new(metadata, frames);
 
     // let changeDataButton = ButtonElement()..text = "Change data";
     // document.body.append(changeDataButton);

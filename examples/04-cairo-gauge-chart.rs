@@ -1,7 +1,8 @@
 #![allow(unused_imports)]
+#![allow(unused_variables)]
 
-use ux_primitives::datatable::*;
 use ux_charts::*;
+use ux_primitives::datatable::*;
 
 fn main() {
     //   let changeDataButton = ButtonElement()..text = "Change data";
@@ -11,12 +12,37 @@ fn main() {
     //   document.body.append(insertRemoveRowButton);
 
     //   let container = createContainer();
-    //   let table = DataTable([
-    //     ["Browser", "Share"],
-    //     ["Memory", 25],
-    // //    ["CPU", 75],
-    // //    ["Disk", 40]
-    //   ]);
+
+    let metadata = vec![
+        Channel {
+            name: "Browser",
+            tag: 0,
+            visible: true,
+        },
+        Channel {
+            name: "Share",
+            tag: 1,
+            visible: true,
+        },
+    ];
+
+    let frames = vec![DataFrame {
+        metric: "Memory",
+        data: [(1, 25)].iter().cloned().collect(),
+    }];
+
+    // frames.push(DataFrame {
+    //     metric: "CPU",
+    //     data: [(1, 75)].iter().cloned().collect(),
+    // });
+
+    // frames.push(DataFrame {
+    //     metric: "Disk",
+    //     data: [(1, 40)].iter().cloned().collect(),
+    // });
+
+    let stream = DataStream::new(metadata, frames);
+
     // let chart = GaugeChart::new(Default::default());
     //   chart.draw(table, {
     //     "animation": {
