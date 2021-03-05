@@ -2,7 +2,7 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::{collections::HashMap, fmt};
+use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
 use ux_primitives::{canvas::*, math::*};
 
 use crate::*;
@@ -82,12 +82,8 @@ impl Entity for PointEntity {
     }
 }
 
-pub struct LineChart<'a, C, M, D>
-where
-    C: CanvasContext,
-    M: fmt::Display,
-    D: fmt::Display,
-{
+#[derive(Default, Clone)]
+struct LineChartProperties {
     x_axis_top: f64,
     y_axis_left: f64,
     x_axis_length: f64,
@@ -117,7 +113,15 @@ where
     average_y_values: Vec<f64>,
 
     x_label_offset_factor: f64, // = .5;
+}
 
+pub struct LineChart<'a, C, M, D>
+where
+    C: CanvasContext,
+    M: fmt::Display,
+    D: fmt::Display,
+{
+    props: RefCell<LineChartProperties>,
     base: BaseChart<'a, C, PointEntity, M, D, LineChartOptions<'a>>,
 }
 
@@ -129,37 +133,15 @@ where
 {
     pub fn new(options: LineChartOptions<'a>) -> Self {
         Self {
-            x_axis_top: 0.0,
-            y_axis_left: 0.0,
-            x_axis_length: 0.0,
-            y_axis_length: 0.0,
-            x_label_max_width: 0.0,
-            y_label_max_width: 0.0,
-            x_label_rotation: 0.0, // 0..90
-            x_label_step: 0,
-            x_label_hop: 0.0, // Distance between two consecutive x-axis labels.
-            y_label_hop: 0.0, // Distance between two consecutive x-axis labels.
-            x_title_box: Default::default(),
-            y_title_box: Default::default(),
-            x_title_center: Default::default(),
-            y_title_center: Default::default(),
-            x_labels: Vec::new(),
-            y_labels: Vec::new(),
-            y_interval: 0.0,
-            y_max_value: 0.0,
-            y_min_value: 0.0,
-            y_range: 0.0,
-            tooltip_offset: 0.0,       
-            y_label_formatter: None,
-            average_y_values: Vec::new(),
-            x_label_offset_factor: 0.0, // = .5;
+            props: Default::default(),
             base: BaseChart::new(options),
         }
     }
 
     /// Returns the x coordinate of the x-axis label at [index].
     fn x_label_x(&self, index: usize) -> f64 {
-        self.y_axis_left + self.x_label_hop * ((index as f64) + self.x_label_offset_factor)
+        let props = self.props.borrow();
+        props.y_axis_left + props.x_label_hop * ((index as f64) + props.x_label_offset_factor)
     }
 
     /// Returns the y-coordinate corresponding to the data point [value] and
@@ -824,8 +806,9 @@ where
     }
 
     fn get_tooltip_position(&self) -> Point<f64> {
+        let props = self.props.borrow();
         // FIXME: as usuze
-        let x = self.x_label_x(self.base.focused_entity_index as usize) + self.tooltip_offset;
+        let x = self.x_label_x(self.base.focused_entity_index as usize) + props.tooltip_offset;
         // let y = max(x_axis_top - y_axis_length,
         //     average_y_values[focused_entity_index] - tooltip.offsetHeight ~/ 2);
         // if (x + tooltip.offsetWidth > width) {

@@ -1,3 +1,4 @@
+use super::{ValueFormatter, LabelFormatter};
 pub trait BaseOption<'a> {
     fn animation(&self) -> AnimationOptions;
     fn colors(&self) -> Vec<&'a str>;
@@ -18,12 +19,12 @@ pub struct AnimationOptions {
     pub easing: String,
 
     /// () -> fn - The function that is called when the animation is complete.
-    pub on_end: Option<Box<dyn FnOnce()>>,
+    pub on_end: Option<fn()>,
 }
 
 pub struct LegendOptions<'a> {
     /// (String label) -> String - A function that format the labels.
-    pub label_formatter: Option<Box<dyn FnOnce()>>,
+    pub label_formatter: Option<LabelFormatter>,
 
     /// The position of the legend relative to the chart area.
     /// Supported values: "left", "top", "bottom", "right", "none".
@@ -50,13 +51,13 @@ pub struct TooltipOptions<'a> {
     pub enabled: bool,
 
     /// (String label) -> String - A function that format the labels.
-    pub label_formatter: Option<Box<dyn FnOnce()>>,
+    pub label_formatter: Option<LabelFormatter>,
 
     /// An object that controls the styling of the tooltip.
     pub style: StyleOption<'a>,
 
     /// (num value) -> String - A function that formats the values.
-    pub value_formatter: Option<Box<dyn FnOnce()>>,
+    pub value_formatter: Option<ValueFormatter>,
 }
 
 /// The global drawing options.
@@ -165,7 +166,7 @@ pub struct BarChartXAxisOptions<'a> {
 
 pub struct BarChartYAxisLabelsOptions<'a> {
     /// (num value) -> String - A function that formats the labels.
-    pub formatter: Option<Box<dyn FnOnce()>>,
+    pub formatter: Option<ValueFormatter>,
 
     /// An object that controls the styling of the axis labels.
     pub style: StyleOption<'a>,
@@ -448,7 +449,7 @@ pub struct LineChartXAxisOptions<'a> {
 
 pub struct LineChartYAxisLabelsOptions<'a> {
     /// (num value) -> String - A function that formats the labels.
-    pub formatter: Option<Box<dyn FnOnce()>>,
+    pub formatter: Option<ValueFormatter>,
 
     /// An object that controls the styling of the axis labels.
     pub style: StyleOption<'a>,
@@ -590,7 +591,7 @@ pub struct PieChartSeriesLabelsOptions<'a> {
     pub enabled: bool,
 
     /// (num) -> String - A function used to format the labels.
-    pub formatter: Option<Box<dyn FnOnce()>>,
+    pub formatter: Option<ValueFormatter>,
 
     pub style: StyleOption<'a>,
 }
@@ -705,7 +706,7 @@ pub struct RadarChartXAxisOptions<'a> {
 
 pub struct RadarChartYAxisLabelsOptions<'a> {
     /// (num value) -> String - A function that formats the labels.
-    pub formatter: Option<Box<dyn FnOnce()>>,
+    pub formatter: Option<ValueFormatter>,
 
     /// An object that controls the styling of the axis labels.
     pub style: StyleOption<'a>,

@@ -3,7 +3,7 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::fmt;
+use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
 use ux_primitives::{canvas::*, math::*};
 
 use crate::*;
@@ -125,12 +125,8 @@ where
     }
 }
 
-pub struct PieChart<'a, C, M, D>
-where
-    C: CanvasContext,
-    M: fmt::Display,
-    D: fmt::Display,
-{
+#[derive(Default, Clone)]
+struct PieChartProperties {
     center: Point<f64>,
     outer_radius: f64,
     inner_radius: f64,
@@ -140,7 +136,15 @@ where
 
     /// 1 means clockwise and -1 means counterclockwise.
     direction: i64,
+}
 
+pub struct PieChart<'a, C, M, D>
+where
+    C: CanvasContext,
+    M: fmt::Display,
+    D: fmt::Display,
+{
+    props: RefCell<PieChartProperties>,
     base: BaseChart<'a, C, PieEntity, M, D, PieChartOptions<'a>>,
 }
 
@@ -152,11 +156,7 @@ where
 {
     pub fn new(options: PieChartOptions<'a>) -> Self {
         Self {
-            center: Default::default(),
-            outer_radius: 0.0,
-            inner_radius: 0.0,
-            start_angle: 0.0,
-            direction: 1,
+            props: Default::default(),
             base: BaseChart::new(options),
         }
     }

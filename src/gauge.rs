@@ -2,7 +2,7 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::fmt;
+use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
 use ux_primitives::{canvas::*, math::*};
 
 use crate::*;
@@ -123,18 +123,22 @@ where
     }
 }
 
+#[derive(Default, Clone)]
+struct GaugeChartProperties {
+    gauge_hop: f64,
+    gauge_inner_radius: f64,
+    gauge_outer_radius: f64,
+    gauge_center_y: f64,
+    start_angle: f64, // = -f64::FRAC_PI_2;
+}
+
 pub struct GaugeChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display,
 {
-    gauge_hop: f64,
-    gauge_inner_radius: f64,
-    gauge_outer_radius: f64,
-    gauge_center_y: f64,
-    start_angle: f64, // = -f64::FRAC_PI_2;
-
+    props: RefCell<GaugeChartProperties>,
     base: BaseChart<'a, C, GaugeEntity, M, D, GaugeChartOptions<'a>>,
 }
 
@@ -147,11 +151,7 @@ where
     pub fn new(options: GaugeChartOptions<'a>) -> Self {
         // default_options["legend"]["position"] = "none";
         Self {
-            gauge_hop: 0.0,
-            gauge_inner_radius: 0.0,
-            gauge_outer_radius: 0.0,
-            gauge_center_y: 0.0,
-            start_angle: 0.0, // = -f64::FRAC_PI_2;
+            props: Default::default(),
             base: BaseChart::new(options),
         }
     }

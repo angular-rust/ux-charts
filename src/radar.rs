@@ -2,7 +2,7 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::{collections::HashMap, fmt};
+use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
 use ux_primitives::{canvas::*, math::*};
 
 use crate::*;
@@ -66,12 +66,9 @@ impl Entity for PolarPointEntity {
     }
 }
 
-pub struct RadarChart<'a, C, M, D>
-where
-    C: CanvasContext,
-    M: fmt::Display,
-    D: fmt::Display,
-{
+
+#[derive(Default, Clone)]
+struct RadarChartProperties {
     center: Point<f64>,
     radius: f64,
     angle_interval: f64,
@@ -83,6 +80,15 @@ where
     /// Each element is the bounding box of each entity group.
     /// A `null` element means the group has no visible entities.
     bounding_boxes: Vec<Rectangle<f64>>,
+}
+
+pub struct RadarChart<'a, C, M, D>
+where
+    C: CanvasContext,
+    M: fmt::Display,
+    D: fmt::Display,
+{
+    props: RefCell<RadarChartProperties>,
     base: BaseChart<'a, C, PolarPointEntity, M, D, RadarChartOptions<'a>>,
 }
 
@@ -94,25 +100,20 @@ where
 {
     pub fn new(options: RadarChartOptions<'a>) -> Self {
         Self {
-            center: Default::default(),
-            radius: 0.0,
-            angle_interval: 0.0,
-            x_labels: Vec::new(),
-            y_labels: Vec::new(),
-            y_max_value: 0.0,
-            y_label_hop: 0.0,
-            bounding_boxes: Vec::new(),
+            props: Default::default(),
             base: BaseChart::new(options),
         }
     }
 
     pub fn get_angle(&self, entity_index: usize) -> f64 {
-        (entity_index as f64) * self.angle_interval - PI_2
+        let props = self.props.borrow();
+        (entity_index as f64) * props.angle_interval - PI_2
     }
 
     pub fn value2radius(&self, value: f64) -> f64 {
         if value != 0.0 {
-            return value * self.radius / self.y_max_value;
+            let props = self.props.borrow();
+            return value * props.radius / props.y_max_value;
         }
         0.0
     }
@@ -253,8 +254,9 @@ where
     }
 
     fn draw_axes_and_grid(&self) {
-        let x_label_count = self.x_labels.len();
-        let y_label_count = self.y_labels.len();
+        let props = self.props.borrow();
+        let x_label_count = props.x_labels.len();
+        let y_label_count = props.y_labels.len();
 
         // x-axis grid lines (i.e. concentric equilateral polygons).
 
@@ -443,7 +445,8 @@ where
 
     fn get_tooltip_position(&self) -> Point<f64> {
         // FIXME: as usize
-        let bbox = &self.bounding_boxes[self.base.focused_entity_index as usize];
+        let props = self.props.borrow();
+        let bbox = &props.bounding_boxes[self.base.focused_entity_index as usize];
         // let offset = self.base.options.series.markers.size * 2 + 5;
         // let x = box.right + offset;
         // let y = box.top + (box.height - tooltip.offsetHeight) ~/ 2;
