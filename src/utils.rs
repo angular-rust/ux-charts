@@ -2,22 +2,19 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::{
-    collections::HashMap,
-    f64::consts::PI
-};
+use std::{collections::HashMap, f64::consts::PI, fmt};
 
-use ux_primitives::canvas::CanvasContext;
+use ux_primitives::{canvas::*, math::*};
 
-use crate::{DataTable, Point};
+use crate::DataStream;
 
 /// Converts [angle] in radians to degrees.
-fn rad2deg(angle: f64) -> f64 {
+pub fn rad2deg(angle: f64) -> f64 {
     angle * 180.0 / PI
 }
 
 /// Converts [angle] in degrees to radians.
-fn deg2rad(angle: f64) -> f64 {
+pub fn deg2rad(angle: f64) -> f64 {
     angle * PI / 180.0
 }
 
@@ -30,30 +27,30 @@ fn deg2rad(angle: f64) -> f64 {
 /// end value [end], and the interpolation factor [f].
 ///
 /// [start] and [end] can be of any type which defines three operators +, - , *.
-fn lerp(start: f64, end: f64, f: f64) -> f64 {
+pub fn lerp(start: f64, end: f64, f: f64) -> f64 {
     start + (end - start) * f
 }
 
 /// Tests if [value] is in range [min]..[max], inclusively.
-fn is_in_range(value: f64, min: f64, max: f64) -> bool {
+pub fn is_in_range(value: f64, min: f64, max: f64) -> bool {
     value >= min && value <= max
 }
 
-// fn polarToCartesian(center: Point, radius: f64, angle: f64) -> Point<f64> {
-//   let x = center.x + radius * (angle).cos();
-//   let y = center.y + radius * (angle).sin();
-//   return Point<f64>(x, y);
-// }
+pub fn polar2cartesian(center: &Point<f64>, radius: f64, angle: f64) -> Point<f64> {
+    let x = center.x + radius * (angle).cos();
+    let y = center.y + radius * (angle).sin();
+    Point { x, y }
+}
 
 /// Rounds [value] to [places] decimal places.
-fn round_to_places(value: f64, places: usize) -> f64 {
+pub fn round2places(value: f64, places: usize) -> f64 {
     let p = f64::powf(10.0, places as f64);
     let value = value * p;
-    return value.round() / p;
+    value.round() / p
 }
 
 /// Converts [hexColor] and [alpha] to an RGBA color string.
-fn hex_to_rgba(hex_color: String, alpha: f64) -> String {
+pub fn hex2rgba(hex_color: &str, alpha: f64) -> String {
     // let componentLength = hexColor.length ~/ 3;
     // let i = 1 + componentLength;
     // let j = i + componentLength;
@@ -70,7 +67,7 @@ fn hex_to_rgba(hex_color: String, alpha: f64) -> String {
 }
 
 /// Returns the hyphenated version of [s].
-fn hyphenate(s: String) -> String {
+pub fn hyphenate(s: &str) -> String {
     // return s.replaceAllMapped(RegExp("[A-Z]"), (Match m) {
     //   return "-" + m[0].toLowerCase();
     // });
@@ -78,8 +75,8 @@ fn hyphenate(s: String) -> String {
 }
 
 /// Returns the maximum value in a [DataTable].
-fn find_max_value(table: DataTable) -> f64 {
-    // let maxValue = double.negativeInfinity;
+pub fn find_max_value<'a, M: fmt::Display, D: fmt::Display>(table: DataStream<'a, M, D>) -> D {
+    // let maxValue = f64::NEG_INFINITY;
     // for (let row in table.rows) {
     //   for (let col in table.columns) {
     //     let value = row[col.index];
@@ -91,8 +88,8 @@ fn find_max_value(table: DataTable) -> f64 {
 }
 
 /// Returns the minimum value in a [DataTable].
-fn find_min_value(table: DataTable) -> f64 {
-    // let minValue = double.infinity;
+pub fn find_min_value<'a, M: fmt::Display, D: fmt::Display>(table: DataStream<'a, M, D>) -> f64 {
+    // let minValue = f64::INFINITY;
     // for (let row in table.rows) {
     //   for (let col in table.columns) {
     //     let value = row[col.index];
@@ -103,46 +100,56 @@ fn find_min_value(table: DataTable) -> f64 {
     unimplemented!();
 }
 
-// /// Calculates a nice axis interval given
-// /// - the axis range [range]
-// /// - the desired number of steps [targetSteps]
-// /// - and the minimum interval [minInterval]
-// fn calculateInterval(range: f64, targetSteps: usize, minInterval: f64) -> f64 {
-//   let interval = range / targetSteps;
-//   let mag = log10(interval).floor();
-//   let magPow = (10.0, mag).pow() as f64;
-//   if minInterval != null {
-//     magPow = (magPow, minInterval).max();
-//   }
-//   let msd = (interval / magPow).round();
-//   if msd > 5 {
-//     msd = 10;
-//   } else if msd > 2 {
-//     msd = 5;
-//   } else if msd == 0 {
-//     msd = 1;
-//   }
-//   return msd * magPow;
-// }
+/// Calculates a nice axis interval given
+/// - the axis range [range]
+/// - the desired number of steps [targetSteps]
+/// - and the minimum interval [minInterval]
+pub fn calculate_interval(range: f64, target_steps: usize, min_interval: f64) -> f64 {
+    //   let interval = range / targetSteps;
+    //   let mag = log10(interval).floor();
+    //   let magPow = (10.0, mag).pow() as f64;
+    //   if minInterval != null {
+    //     magPow = (magPow, minInterval).max();
+    //   }
+    //   let msd = (interval / magPow).round();
+    //   if msd > 5 {
+    //     msd = 10;
+    //   } else if msd > 2 {
+    //     msd = 5;
+    //   } else if msd == 0 {
+    //     msd = 1;
+    //   }
+    //   return msd * magPow;
+    unimplemented!()
+}
 
-// fn calculateMaxTextWidth(context: C, font: String, texts: Vec<String>) -> f64 {
-//   // let result = 0.0;
-//   // context.font = font;
-//   // for (let text in texts) {
-//   //   let width = context.measureText(text).width;
-//   //   if (result < width) result = width;
-//   // }
-//   // result
-//   unimplemented!();
-// }
+pub fn calculate_max_text_width<C: CanvasContext>(
+    context: C,
+    font: String,
+    texts: Vec<String>,
+) -> f64 {
+    // let result = 0.0;
+    // context.font = font;
+    // for (let text in texts) {
+    //   let width = context.measureText(text).width;
+    //   if (result < width) result = width;
+    // }
+    // result
+    unimplemented!();
+}
 
-/// Calculates the controls for [p2] given the previous poi64 [p1], the next
-/// poi64 [p3], and the curve tension [t];
+/// Calculates the controls for [p2] given the previous point [p1], the next
+/// point [p3], and the curve tension [t];
 ///
 /// Returns a list that contains two control points for [p2].
 ///
 /// Credit: Rob Spencer (http://scaledinnovation.com/analytics/splines/aboutSplines.html)
-fn calculate_control_points(p1: Point, p2: Point, p3: Point, t: f64) -> Vec<Point> {
+pub fn calculate_control_points(
+    p1: Point<f64>,
+    p2: Point<f64>,
+    p3: Point<f64>,
+    t: f64,
+) -> Vec<Point<f64>> {
     // let d21 = p2.distanceTo(p1);
     // let d23 = p2.distanceTo(p3);
     // let fa = t * d21 / (d21 + d23);
@@ -155,11 +162,38 @@ fn calculate_control_points(p1: Point, p2: Point, p3: Point, t: f64) -> Vec<Poin
 }
 
 /// Returns the number of decimal digits of [value].
-fn get_decimal_places(value: i64) -> i64 {
+pub fn get_decimal_places(value: i64) -> i64 {
     // if (value % 1 == 0) return 0;
     // // See https://code.google.com/p/dart/issues/detail?id=1533
     // return "$value.0".split(".")[1].length;
     unimplemented!()
+}
+
+/// Returns a CSS font string given a map that contains at least three keys:
+/// `fontStyle`, `fontSize`, and `fontFamily`.
+pub fn get_font(style: Option<String>, size: Option<f64>, family: Option<String>) -> String {
+    if let Some(style) = style {
+        if let Some(size) = size {
+            if let Some(family) = family {
+                return format!("{} {}px {}", style, size, family);
+            }
+            return format!("{} {}px", style, size);
+        }
+        return format!("{}", style);
+    }
+
+    if let Some(size) = size {
+        if let Some(family) = family {
+            return format!("{}px {}", size, family);
+        }
+        return format!("{}px", size);
+    }
+
+    if let Some(family) = style {
+        return format!("{}", family);
+    }
+
+    "".into()
 }
 
 /// Deeply merges [map1] and [map2] into a new [Map].
@@ -167,7 +201,7 @@ fn get_decimal_places(value: i64) -> i64 {
 /// [map1] must not be `null`.
 ///
 /// If [map2] is `null`, returns [map1].
-fn merge_maps(
+pub fn merge_maps(
     map1: HashMap<String, String>,
     map2: HashMap<String, String>,
 ) -> HashMap<String, String> {
@@ -186,16 +220,16 @@ fn merge_maps(
     unimplemented!()
 }
 
-// struct StreamSubscriptionTracker {
+// pub struct StreamSubscriptionTracker {
 //     subs: Vec<StreamSubscription>,
 // }
 
 // impl StreamSubscriptionTracker {
-//     fn add(sub: StreamSubscription) {
+//     pub fn add(sub: StreamSubscription) {
 //         // subs.add(sub);
 //     }
 
-//     fn clear() {
+//     pub fn clear() {
 //         // for (let sub in subs) {
 //         //   sub.cancel();
 //         // }

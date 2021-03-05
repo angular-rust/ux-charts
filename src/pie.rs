@@ -1,111 +1,133 @@
+#![allow(unused_assignments)]
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use ux_primitives::canvas::CanvasContext;
+use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
+use ux_primitives::{canvas::*, math::*};
 
-use crate::{Chart, DataCollectionChangeRecord, Drawable, Entity, Point};
+use crate::*;
 
 const CLOCKWISE: i64 = 1;
 const COUNTERCLOCKWISE: i64 = -1;
 const HIGHLIGHT_OUTER_RADIUS_FACTOR: f64 = 1.05;
 
 /// A pie in a pie chart.
-pub struct Pie {
+#[derive(Default, Clone)]
+pub struct PieEntity {
+    // Chart chart,
+    color: String,
+    highlight_color: String,
+    formatted_value: String,
+    index: usize,
+    old_value: f64,
+    value: f64,
+
     old_start_angle: f64,
     old_end_angle: f64,
     start_angle: f64,
     end_angle: f64,
 
-    center: Point,
+    center: Point<f64>,
     inner_radius: f64,
     outer_radius: f64,
 
-    // [_Series] field.
+    // [Series] field.
     name: String,
 }
 
-impl Pie {
-    // bool get isEmpty => startAngle == endAngle;
-
-    fn contains_point(p: Point) -> bool {
-        // p -= center;
-        // let mag = p.magnitude;
-        // if (mag > outerRadius || mag < innerRadius) {
-        //   return false;
-        // }
-
-        // let angle = atan2(p.y, p.x);
-        // let chartStartAngle = (chart as dynamic)._startAngle;
-
-        // // Make sure [angle] is in range [chartStartAngle]..[chartStartAngle] + 2pi.
-        // angle = (angle - chartStartAngle) % _2pi + chartStartAngle;
-
-        // // If counterclockwise, make sure [angle] is in range
-        // // [start] - 2*pi..[start].
-        // if (startAngle > endAngle) angle -= _2pi;
-
-        // if (startAngle <= endAngle) {
-        //   // Clockwise.
-        //   return isInRange(angle, startAngle, endAngle);
-        // } else {
-        //   // Counterclockwise.
-        //   return isInRange(angle, endAngle, startAngle);
-        // }
-        unimplemented!()
+impl PieEntity {
+    pub fn is_empty(&self) -> bool {
+        self.start_angle == self.end_angle
     }
 
-    fn save() {
-        // oldStartAngle = startAngle;
-        // oldEndAngle = endAngle;
-        // super.save();
-        unimplemented!()
+    fn contains_point(&self, p: Point<f64>) -> bool {
+        // p -= center;
+        let mag = p.magnitude();
+        if mag > self.outer_radius || mag < self.inner_radius {
+            return false;
+        }
+
+        let mut angle = f64::atan2(p.y, p.x);
+
+        //TODO: complete it
+        // let chartStartAngle = (chart as dynamic).startAngle;
+
+        // // Make sure [angle] is in range [chartStartAngle]..[chartStartAngle] + TAU.
+        // angle = (angle - chartStartAngle) % TAU + chartStartAngle;
+
+        // If counterclockwise, make sure [angle] is in range
+        // [start] - 2*pi..[start].
+        if self.start_angle > self.end_angle {
+            angle -= TAU;
+        }
+
+        if self.start_angle <= self.end_angle {
+            // Clockwise.
+            is_in_range(angle, self.start_angle, self.end_angle)
+        } else {
+            // Counterclockwise.
+            is_in_range(angle, self.end_angle, self.start_angle)
+        }
     }
 }
 
-impl<C> Drawable<C> for Pie
+impl Entity for PieEntity {
+    fn free(&mut self) {
+        // chart = null;
+    }
+
+    fn save(&self) {
+        // self.old_start_angle = self.start_angle;
+        // self.old_end_angle = self.end_angle;
+        // self.old_value = self.value;
+    }
+}
+
+impl<C> Drawable<C> for PieEntity
 where
     C: CanvasContext,
 {
-    fn draw(ctx: C, percent: f64, highlight: bool) {
-        // let a1 = lerp(oldStartAngle, startAngle, percent);
-        // let a2 = lerp(oldEndAngle, endAngle, percent);
-        // if (a1 > a2) {
-        //   let tmp = a1;
-        //   a1 = a2;
-        //   a2 = tmp;
-        // }
-        // if (highlight) {
-        //   let highlightOuterRadius = _highlightOuterRadiusFactor * outerRadius;
-        //   ctx.fillStyle = highlightColor;
-        //   ctx.beginPath();
-        //   ctx.arc(center.x, center.y, highlightOuterRadius, a1, a2);
-        //   ctx.arc(center.x, center.y, innerRadius, a2, a1, true);
-        //   ctx.fill();
-        // }
+    fn draw(&self, ctx: C, percent: f64, highlight: bool) {
+        let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
+        let mut a2 = lerp(self.old_end_angle, self.end_angle, percent);
+        if a1 > a2 {
+            let tmp = a1;
+            a1 = a2;
+            a2 = tmp;
+        }
+        if highlight {
+            //   let highlight_outer_radius = HIGHLIGHT_OUTER_RADIUS_FACTOR * outer_radius;
+            //   ctx.fillStyle = highlight_color;
+            //   ctx.begin_path();
+            //   ctx.arc(center.x, center.y, highlight_outer_radius, a1, a2);
+            //   ctx.arc(center.x, center.y, inner_radius, a2, a1, true);
+            //   ctx.fill();
+        }
         // ctx.fillStyle = color;
-        // ctx.beginPath();
-        // ctx.arc(center.x, center.y, outerRadius, a1, a2);
-        // ctx.arc(center.x, center.y, innerRadius, a2, a1, true);
+        // ctx.begin_path();
+        // ctx.arc(center.x, center.y, outer_radius, a1, a2);
+        // ctx.arc(center.x, center.y, inner_radius, a2, a1, true);
         // ctx.fill();
         // ctx.stroke();
 
-        // if (formattedValue != null && chart is PieChart && a2 - a1 > pi / 36) {
-        //   let options = chart._options["series"]["labels"];
-        //   if (options["enabled"]) {
-        //     let r = .25 * innerRadius + .75 * outerRadius;
-        //     let a = .5 * (a1 + a2);
-        //     let p = polarToCartesian(center, r, a);
-        //     ctx.fillStyle = options["style"]["color"];
-        //     ctx.fillText(formattedValue, p.x, p.y);
-        //   }
-        // }
-        unimplemented!()
+        // && chart is PieChart
+        if !self.formatted_value.is_empty() && a2 - a1 > PI / 36.0 {
+            //   let options = chart.options["series"]["labels"];
+            //   if (options["enabled"]) {
+            //     let r = .25 * inner_radius + .75 * outer_radius;
+            //     let a = .5 * (a1 + a2);
+            //     let p = polarToCartesian(center, r, a);
+            //     ctx.fillStyle = options["style"]["color"];
+            // ctx.fill_text(formatted_value, p.x, p.y);
+            //   }
+        }
     }
 }
 
-pub struct PieChart {
-    center: Point,
+#[derive(Default, Clone)]
+struct PieChartProperties {
+    center: Point<f64>,
     outer_radius: f64,
     inner_radius: f64,
 
@@ -116,135 +138,134 @@ pub struct PieChart {
     direction: i64,
 }
 
-impl PieChart {
-    pub fn new() -> Self {
-        // : super(container)
-        // _defaultOptions = mergeMaps(globalOptions, _pieChartDefaultOptions);
-        unimplemented!()
+pub struct PieChart<'a, C, M, D>
+where
+    C: CanvasContext,
+    M: fmt::Display,
+    D: fmt::Display,
+{
+    props: RefCell<PieChartProperties>,
+    base: BaseChart<'a, C, PieEntity, M, D, PieChartOptions<'a>>,
+}
+
+impl<'a, C, M, D> PieChart<'a, C, M, D>
+where
+    C: CanvasContext,
+    M: fmt::Display,
+    D: fmt::Display,
+{
+    pub fn new(options: PieChartOptions<'a>) -> Self {
+        Self {
+            props: Default::default(),
+            base: BaseChart::new(options),
+        }
     }
 
-    fn data_rows_changed(record: DataCollectionChangeRecord) {
-        // _updateSeriesVisible(record.index, record.removedCount, record.addedCount);
-        // super._dataRowsChanged(record);
-        // _updateLegendContent();
-        unimplemented!()
+    fn data_rows_changed(&self, record: DataCollectionChangeRecord) {
+        self.base
+            .update_series_visible(record.index, record.removed_count, record.added_count);
+        self.base.data_rows_changed(record);
+        self.base.update_legend_content();
     }
 
-    fn get_entity_group_index(x: f64, y: f64) -> i64 {
-        // let p = Point(x, y);
-        // let entities = _seriesList.first.entities;
+    fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
+        let p = Point { x, y };
+        // let entities = series_list.first.entities;
         // for (let i = entities.length - 1; i >= 0; i--) {
-        //   let pie = entities[i] as _Pie;
+        //   let pie = entities[i] as Pie;
         //   if (pie.containsPoint(p)) return i;
         // }
         // return -1;
         unimplemented!()
     }
 
-    // Vec<String> _getLegendLabels() => _dataTable.getColumnValues<String>(0);
-
-    fn get_tooltip_position() -> Point {
-        // let pie = _seriesList.first.entities[_focusedEntityIndex] as _Pie;
-        // let angle = .5 * (pie.startAngle + pie.endAngle);
-        // let radius = .5 * (_innerRadius + _outerRadius);
-        // let poi64 = polarToCartesian(_center, radius, angle);
-        // let x = point.x - .5 * _tooltip.offsetWidth;
-        // let y = point.y - _tooltip.offsetHeight;
-        // return Point(x, y);
+    pub fn get_legend_labels(&self) -> Vec<String> {
+        //self.data_table.getColumnValues<String>(0)
         unimplemented!()
     }
 
-    // fn create_entity(
-    //     seriesIndex: usize,
-    //     entityIndex: usize,
-    //     value: String,
-    //     color: String,
-    //     highlightColor: String,
-    // ) -> Entity {
-    //     // // Override the colors.
-    //     // color = _getColor(entityIndex);
-    //     // highlightColor = _changeColorAlpha(color, .5);
-    //     // let name = _dataTable.rows[entityIndex][0];
-    //     // let startAngle = _startAngle;
-    //     // if (entityIndex > 0 && _seriesList != null) {
-    //     //   let prevPie = _seriesList[0].entities[entityIndex - 1] as _Pie;
-    //     //   startAngle = prevPie.endAngle;
-    //     // }
-    //     // return _Pie()
-    //     //   ..index = entityIndex
-    //     //   ..value = value
-    //     //   ..formattedValue = value != null ? _entityValueFormatter(value) : null
-    //     //   ..name = name
-    //     //   ..color = color
-    //     //   ..highlightColor = highlightColor
-    //     //   ..oldStartAngle = startAngle
-    //     //   ..oldEndAngle = startAngle
-    //     //   ..center = _center
-    //     //   ..innerRadius = _innerRadius
-    //     //   ..outerRadius = _outerRadius
-    //     //   ..startAngle = startAngle
-    //     //   ..endAngle = startAngle; // To be updated in [_updateSeries].
-    //     unimplemented!()
-    // }
-
-    fn series_visibility_changed(index: usize) {
-        // _updateSeries();
+    fn series_visibility_changed(&self, index: usize) {
+        self.update_series(0);
     }
 
-    fn update_tooltip_content() {
-        // let pie = _seriesList[0].entities[_focusedEntityIndex] as _Pie;
-        // _tooltip.style
+    fn update_tooltip_content(&self) {
+        // let pie = series_list[0].entities[focused_entity_index] as Pie;
+        // tooltip.style
         //   ..borderColor = pie.color
         //   ..padding = "4px 12px";
-        // let label = _tooltipLabelFormatter(pie.name);
-        // let value = _tooltipValueFormatter(pie.value);
-        // _tooltip.innerHtml = "$label: <strong>$value</strong>";
+        // let label = tooltip_label_formatter(pie.name);
+        // let value = tooltip_value_formatter(pie.value);
+        // tooltip.innerHtml = "$label: <strong>$value</strong>";
         unimplemented!()
     }
 }
 
-impl Chart for PieChart {
-    fn calculate_drawing_sizes() {
-        // super._calculateDrawingSizes();
-        // let rect = _seriesAndAxesBox;
-        // let halfW = rect.width >> 1;
-        // let halfH = rect.height >> 1;
-        // _center = Point(rect.left + halfW, rect.top + halfH);
-        // _outerRadius = min(halfW, halfH) / _highlightOuterRadiusFactor;
-        // let pieHole = _options["pieHole"];
-        // if (pieHole > 1) pieHole = 0;
-        // if (pieHole < 0) pieHole = 0;
-        // _innerRadius = pieHole * _outerRadius;
+impl<'a, C, M, D> Chart<PieEntity> for PieChart<'a, C, M, D>
+where
+    C: CanvasContext,
+    M: fmt::Display,
+    D: fmt::Display,
+{
+    fn calculate_drawing_sizes(&self) {
+        self.base.calculate_drawing_sizes();
+        let rect = &self.base.props.borrow().series_and_axes_box;
+        let half_w = rect.width as i64 >> 1;
+        let half_h = rect.height as i64 >> 1;
 
-        // let opt = _options["series"];
-        // _entityValueFormatter =
-        //     opt["labels"]["formatter"] ?? _defaultValueFormatter;
-        // _direction = opt["counterclockwise"] ? _counterclockwise : _clockwise;
-        // _startAngle = deg2rad(opt["startAngle"]);
-        unimplemented!()
+        // self.center = Point {
+        //     x: (rect.left + half_w) as f64,
+        //     y: (rect.top + half_h) as f64,
+        // };
+        
+        // self.outer_radius = (half_w.min(half_h) as f64) / HIGHLIGHT_OUTER_RADIUS_FACTOR;
+        let mut pie_hole = self.base.options.pie_hole;
+        
+        if pie_hole > 1.0 {
+            pie_hole = 0.0;
+        }
+
+        if pie_hole < 0.0 {
+            pie_hole = 0.0;
+        }
+        
+        // self.inner_radius = pie_hole * self.outer_radius;
+
+        let opt = &self.base.options.series;
+
+        // FIXME: complete
+        // self.base.entity_value_formatter =
+        //     opt.labels.formatter ?? default_value_formatter;
+
+        // self.direction = if opt.counterclockwise {
+        //     COUNTERCLOCKWISE
+        // } else {
+        //     CLOCKWISE
+        // };
+
+        // self.start_angle = deg2rad(opt.start_angle);
     }
 
-    fn draw_series(percent: f64) -> bool {
-        // _seriesContext
+    fn draw_series(&self, percent: f64) -> bool {
+        // series_context
         //   ..lineWidth = 2
         //   ..strokeStyle = "#fff"
         //   ..textAlign = "center"
         //   ..textBaseline = "middle";
-        // let pies = _seriesList.first.entities;
-        // let labelOptions = _options["series"]["labels"];
-        // _seriesContext.font = _getFont(labelOptions["style"]);
-        // for (_Pie pie in pies) {
+        // let pies = series_list.first.entities;
+        // let labelOptions = self.base.options.series.labels;
+        // series_context.font = get_font(labelOptions["style"]);
+        // for (Pie pie in pies) {
         //   if (pie.isEmpty && percent == 1.0) continue;
         //   let highlight =
-        //       pie.index == _focusedSeriesIndex || pie.index == _focusedEntityIndex;
-        //   pie.draw(_seriesContext, percent, highlight);
+        //       pie.index == focused_series_index || pie.index == focused_entity_index;
+        //   pie.draw(series_context, percent, highlight);
         // }
 
         // return false;
         unimplemented!()
     }
 
-    fn update_series(index: usize) {
+    fn update_series(&self, index: usize) {
         // // Example data table:
         // //   Browser  Share
         // //   Chrome   .35
@@ -253,37 +274,82 @@ impl Chart for PieChart {
         // //   Other    .15
 
         // let sum = 0.0;
-        // let startAngle = _startAngle;
-        // let pieCount = _dataTable.rows.length;
-        // let entities = _seriesList[0].entities;
+        // let startAngle = startAngle;
+        // let pieCount = data_table.rows.length;
+        // let entities = series_list[0].entities;
 
         // // Sum the values of all visible pies.
         // for (let i = 0; i < pieCount; i++) {
-        //   if (_seriesStates[i].index >= _VisibilityState.showing.index) {
+        //   if (series_states[i].index >= Visibility::showing.index) {
         //     sum += entities[i].value;
         //   }
         // }
 
         // for (let i = 0; i < pieCount; i++) {
-        //   _Pie pie = entities[i];
-        //   let color = _getColor(i);
+        //   Pie pie = entities[i];
+        //   let color = get_color(i);
         //   pie.index = i;
-        //   pie.name = _dataTable.rows[i][0];
+        //   pie.name = data_table.rows[i][0];
         //   pie.color = color;
-        //   pie.highlightColor = _getHighlightColor(color);
-        //   pie.center = _center;
-        //   pie.innerRadius = _innerRadius;
-        //   pie.outerRadius = _outerRadius;
+        //   pie.highlight_color = get_highlight_color(color);
+        //   pie.center = center;
+        //   pie.inner_radius = inner_radius;
+        //   pie.outer_radius = outer_radius;
 
-        //   if (_seriesStates[i].index >= _VisibilityState.showing.index) {
+        //   if (series_states[i].index >= Visibility::showing.index) {
         //     pie.startAngle = startAngle;
-        //     pie.endAngle = startAngle + _direction * pie.value * _2pi / sum;
+        //     pie.endAngle = startAngle + direction * pie.value * TAU / sum;
         //     startAngle = pie.endAngle;
         //   } else {
         //     pie.startAngle = startAngle;
         //     pie.endAngle = startAngle;
         //   }
         // }
+        unimplemented!()
+    }
+
+    fn create_entity(
+        &self,
+        series_index: usize,
+        entity_index: usize,
+        value: String,
+        color: String,
+        highlight_color: String,
+    ) -> PieEntity {
+        // // Override the colors.
+        // color = get_color(entityIndex);
+        // highlight_color = change_color_alpha(color, .5);
+        // let name = data_table.rows[entityIndex][0];
+        // let startAngle = startAngle;
+        // if (entityIndex > 0 && series_list != null) {
+        //   let prevPie = series_list[0].entities[entityIndex - 1] as Pie;
+        //   startAngle = prevPie.endAngle;
+        // }
+        // return Pie()
+        //   ..index = entityIndex
+        //   ..value = value
+        //   ..formatted_value = value != null ? entity_value_formatter(value) : null
+        //   ..name = name
+        //   ..color = color
+        //   ..highlight_color = highlight_color
+        //   ..oldStartAngle = startAngle
+        //   ..oldEndAngle = startAngle
+        //   ..center = center
+        //   ..inner_radius = inner_radius
+        //   ..outer_radius = outer_radius
+        //   ..startAngle = startAngle
+        //   ..endAngle = startAngle; // To be updated in [update_series].
+        unimplemented!()
+    }
+
+    fn get_tooltip_position(&self) -> Point<f64> {
+        // let pie = series_list.first.entities[focused_entity_index] as Pie;
+        // let angle = .5 * (pie.startAngle + pie.endAngle);
+        // let radius = .5 * (inner_radius + outer_radius);
+        // let point = polarToCartesian(center, radius, angle);
+        // let x = point.x - .5 * tooltip.offsetWidth;
+        // let y = point.y - tooltip.offsetHeight;
+        // return Point(x, y);
         unimplemented!()
     }
 }

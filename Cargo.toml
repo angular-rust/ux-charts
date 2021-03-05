@@ -16,13 +16,15 @@ license = "MPL-2.0"
 maintenance = { status = "actively-developed" }
 
 [features]
-web = ["wasm-bindgen", "wasm-bindgen-futures", "wasm-logger", "gloo", "js-sys", "wasm-bindgen-test", "web-sys"]
-cairo = ["cairo-rs", "png", "gio", "gtk"]
-default = ["web"]
+web = ["wasm-bindgen", "wasm-bindgen-futures", "wasm-logger", "gloo", "js-sys", "wasm-bindgen-test", "web-sys", "ux-animate", "ux-animate/web"]
+cairo = ["cairo-rs", "png", "gio", "gtk", "ux-animate", "ux-animate/cairo"]
+default = ["cairo"]
 
 [dependencies]
 log = "0.4"
-ux-primitives = { version = "0.1", git = "https://github.com/angular-rust/ux-primitives.git", branch="main" }
+lazy_static = "1.4"
+ux-primitives = { version = "0.1" }
+ux-animate = { version = "0.1", default-features = false, optional = true }
 
 png = { version = "0.16", optional = true }
 gio = { version = "0.9", features = ["v2_58"], optional = true }
@@ -57,10 +59,10 @@ features = [
 
 
 [[example]]
-name = "web-example"
+name = "web-chart"
 # crate-type = ["staticlib"]
 required-features = ["web"]
 
 [[example]]
-name = "cairo-example"
+name = "cairo-chart"
 required-features = ["cairo"]

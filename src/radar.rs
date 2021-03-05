@@ -2,13 +2,21 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
+use ux_primitives::{canvas::*, math::*};
 
-use ux_primitives::canvas::CanvasContext;
+use crate::*;
 
-use crate::{Chart, Drawable, Entity, Point, Rectangle};
+#[derive(Default, Clone)]
+pub struct PolarPointEntity {
+    // Chart chart,
+    color: String,
+    highlight_color: String,
+    formatted_value: String,
+    index: usize,
+    old_value: f64,
+    value: f64,
 
-pub struct PolarPoint {
     old_radius: f64,
     old_angle: f64,
     old_point_radius: f64,
@@ -17,86 +25,116 @@ pub struct PolarPoint {
     angle: f64,
     point_radius: f64,
 
-    center: Point,
+    center: Point<f64>,
 }
 
-impl<C> Drawable<C> for PolarPoint
+impl<C> Drawable<C> for PolarPointEntity
 where
     C: CanvasContext,
 {
-    fn draw(ctx: C, percent: f64, highlight: bool) {
-        // let r = lerp(oldRadius, radius, percent);
-        // let a = lerp(oldAngle, angle, percent);
-        // let pr = lerp(oldPointRadius, pointRadius, percent);
-        // let p = polarToCartesian(center, r, a);
-        // if (highlight) {
-        //   ctx.fillStyle = highlightColor;
-        //   ctx.beginPath();
-        //   ctx.arc(p.x, p.y, 2 * pr, 0, _2pi);
-        //   ctx.fill();
-        // }
+    fn draw(&self, ctx: C, percent: f64, highlight: bool) {
+        let r = lerp(self.old_radius, self.radius, percent);
+        let a = lerp(self.old_angle, self.angle, percent);
+        let pr = lerp(self.old_point_radius, self.point_radius, percent);
+        let p = polar2cartesian(&self.center, r, a);
+        if highlight {
+            // ctx.set_fill_style_color(value)
+            //   ctx.fillStyle = highlight_color;
+            //   ctx.begin_path();
+            //   ctx.arc(p.x, p.y, 2 * pr, 0, TAU);
+            //   ctx.fill();
+        }
         // ctx.fillStyle = color;
-        // ctx.beginPath();
-        // ctx.arc(p.x, p.y, pr, 0, _2pi);
+        // ctx.begin_path();
+        // ctx.arc(p.x, p.y, pr, 0, TAU);
         // ctx.fill();
         // ctx.stroke();
         unimplemented!()
     }
 }
 
-impl Entity for PolarPoint {
-    fn save() {
-        // oldRadius = radius;
-        // oldAngle = angle;
-        // oldPointRadius = pointRadius;
-        // super.save();
-        unimplemented!()
+impl Entity for PolarPointEntity {
+    fn free(&mut self) {
+        // chart = null;
+    }
+
+    fn save(&self) {
+        // self.old_radius = self.radius;
+        // self.old_angle = self.angle;
+        // self.old_point_radius = self.point_radius;
+        // self.old_value = self.value;
     }
 }
 
-pub struct RadarChart {
-    center: Point,
+
+#[derive(Default, Clone)]
+struct RadarChartProperties {
+    center: Point<f64>,
     radius: f64,
     angle_interval: f64,
     x_labels: Vec<String>,
     y_labels: Vec<String>,
-    y_max_malue: f64,
+    y_max_value: f64,
     y_label_hop: f64,
     // yLabelFormatter: ValueFormatter,
     /// Each element is the bounding box of each entity group.
     /// A `null` element means the group has no visible entities.
-    bounding_boxes: Vec<Rectangle>,
+    bounding_boxes: Vec<Rectangle<f64>>,
 }
 
-impl RadarChart {
-    pub fn new() -> Self {
-        // : super(container)
-        // _defaultOptions = mergeMaps(globalOptions, _radarChartDefaultOptions);
-        unimplemented!()
+pub struct RadarChart<'a, C, M, D>
+where
+    C: CanvasContext,
+    M: fmt::Display,
+    D: fmt::Display,
+{
+    props: RefCell<RadarChartProperties>,
+    base: BaseChart<'a, C, PolarPointEntity, M, D, RadarChartOptions<'a>>,
+}
+
+impl<'a, C, M, D> RadarChart<'a, C, M, D>
+where
+    C: CanvasContext,
+    M: fmt::Display,
+    D: fmt::Display,
+{
+    pub fn new(options: RadarChartOptions<'a>) -> Self {
+        Self {
+            props: Default::default(),
+            base: BaseChart::new(options),
+        }
     }
 
-    // num _getAngle(i64 entityIndex) => entityIndex * _angleInterval - _pi_2;
+    pub fn get_angle(&self, entity_index: usize) -> f64 {
+        let props = self.props.borrow();
+        (entity_index as f64) * props.angle_interval - PI_2
+    }
 
-    // num _valueToRadius(num value) =>
-    //     (value != null) ? value * _radius / _yMaxValue : 0.0;
+    pub fn value2radius(&self, value: f64) -> f64 {
+        if value != 0.0 {
+            let props = self.props.borrow();
+            return value * props.radius / props.y_max_value;
+        }
+        0.0
+    }
 
-    fn calculate_bounding_boxes() {
-        // if (!_options["tooltip"]["enabled"]) return;
+    fn calculate_bounding_boxes(&self) {
+        // if !self.base.options.tooltip.enabled return;
 
-        // let seriesCount = _seriesList.length;
-        // let entityCount = _seriesList.first.entities.length;
-        // _boundingBoxes = Vec<Rectangle>(entityCount);
+        // let seriesCount = series_list.length;
+        // let entityCount = series_list.first.entities.length;
+        // bounding_boxes = Vec<Rectangle>(entityCount);
         // for (let i = 0; i < entityCount; i++) {
-        //   let minX = double.maxFinite;
-        //   let minY = double.maxFinite;
-        //   let maxX = -double.maxFinite;
-        //   let maxY = -double.maxFinite;
+        //   let minX = f64::MAX;
+        //   let minY = f64::MAX;
+        //   let maxX = -f64::MAX;
+        //   let maxY = -f64::MAX;
         //   let count = 0;
         //   for (let j = 0; j < seriesCount; j++) {
-        //     if (_seriesStates[j] == _VisibilityState.hidden) continue;
-        //     if (_seriesStates[j] == _VisibilityState.hiding) continue;
+        //     if (series_states[j] == Visibility::hidden) continue;
+        //     if (series_states[j] == Visibility::hiding) continue;
 
-        //     let pp = _seriesList[j].entities[i] as _PolarPoint;
+        //     let pp = series_list[j].entities[i] as PolarPoint;
         //     if (pp.value == null) continue;
 
         //     let cp = polarToCartesian(pp.center, pp.radius, pp.angle);
@@ -106,7 +144,7 @@ impl RadarChart {
         //     maxY = max(maxY, cp.y);
         //     count++;
         //   }
-        //   _boundingBoxes[i] =
+        //   bounding_boxes[i] =
         //       count > 0 ? Rectangle(minX, minY, maxX - minX, maxY - minY) : null;
         // }
         unimplemented!()
@@ -114,66 +152,33 @@ impl RadarChart {
 
     // fn drawText(ctx: C, text: String, radius: f64, angle: f64, fontSize: f64) {
     //     // let w = ctx.measureText(text).width;
-    //     // let x = _center.x + cos(angle) * (radius + .5 * w);
-    //     // let y = _center.y + sin(angle) * (radius + .5 * fontSize);
-    //     // ctx.fillText(text, x, y);
+    //     // let x = center.x + cos(angle) * (radius + .5 * w);
+    //     // let y = center.y + sin(angle) * (radius + .5 * fontSize);
+    //     // ctx.fill_text(text, x, y);
     // }
 
-    fn get_entity_group_index(x: f64, y: f64) -> i64 {
-        // let p = Point(x - _center.x, y - _center.y);
-        // if (p.magnitude >= _radius) return -1;
+    fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
+        // let p = Point(x - center.x, y - center.y);
+        // if (p.magnitude >= radius) return -1;
         // let angle = atan2(p.y, p.x);
-        // let points = _seriesList.first.entities.cast<_PolarPoint>();
+        // let points = series_list.first.entities.cast<PolarPoint>();
         // for (let i = points.length - 1; i >= 0; i--) {
-        //   if (_boundingBoxes[i] == null) continue;
+        //   if (bounding_boxes[i] == null) continue;
 
         //   let delta = angle - points[i].angle;
-        //   if (delta.abs() < .5 * _angleInterval) return i;
-        //   if ((delta + _2pi).abs() < .5 * _angleInterval) return i;
+        //   if (delta.abs() < .5 * angle_interval) return i;
+        //   if ((delta + TAU).abs() < .5 * angle_interval) return i;
         // }
         // return -1;
         unimplemented!()
     }
 
-    fn get_tooltip_position() -> Point {
-        // let box = _boundingBoxes[_focusedEntityIndex];
-        // let offset = _options["series"]["markers"]["size"] * 2 + 5;
-        // let x = box.right + offset;
-        // let y = box.top + (box.height - _tooltip.offsetHeight) ~/ 2;
-        // if (x + _tooltip.offsetWidth > _width)
-        //   x = box.left - _tooltip.offsetWidth - offset;
-        // return Point(x, y);
-        unimplemented!()
-    }
-
-    // fn create_entity(
-    //     seriesIndex: usize,
-    //     entityIndex: usize,
-    //     value: String,
-    //     color: String,
-    //     highlightColor: String,
-    // ) -> Entity {
-    //     // let angle = _getAngle(entityIndex);
-    //     // return _PolarPoint()
-    //     //   ..index = entityIndex
-    //     //   ..value = value
-    //     //   ..color = color
-    //     //   ..highlightColor = highlightColor
-    //     //   ..center = _center
-    //     //   ..oldRadius = 0
-    //     //   ..oldAngle = angle
-    //     //   ..oldPointRadius = 0
-    //     //   ..radius = _valueToRadius(value)
-    //     //   ..angle = angle
-    //     //   ..pointRadius = _options["series"]["markers"]["size"];
-    // }
-
-    fn series_visibility_changed(index: usize) {
-        // let visible = _seriesStates[index].index >= _VisibilityState.showing.index;
-        // let markerSize = _options["series"]["markers"]["size"];
-        // for (_PolarPoint p in _seriesList[index].entities) {
+    fn series_visibility_changed(&self, index: usize) {
+        // let visible = series_states[index].index >= Visibility::showing.index;
+        // let markerSize = self.base.options.series.markers.size;
+        // for (PolarPoint p in series_list[index].entities) {
         //   if (visible) {
-        //     p.radius = _valueToRadius(p.value);
+        //     p.radius = value2radius(p.value);
         //     p.pointRadius = markerSize;
         //   } else {
         //     p.radius = 0.0;
@@ -181,185 +186,191 @@ impl RadarChart {
         //   }
         // }
 
-        // _calculateBoundingBoxes();
+        // calculate_bounding_boxes();
     }
 
-    fn update(options: HashMap<String, String>) {
-        // super.update(options);
-        // _calculateBoundingBoxes();
+    fn update(&self, options: HashMap<String, String>) {
+        // self.base.update(options);
+        // calculate_bounding_boxes();
         unimplemented!()
     }
 }
 
-impl Chart for RadarChart {
-    fn calculate_drawing_sizes() {
-        // super._calculateDrawingSizes();
-
-        // _xLabels = _dataTable.getColumnValues<String>(0);
-        // _angleInterval = _2pi / _xLabels.length;
-
-        // let rect = _seriesAndAxesBox;
-        // let xLabelFontSize = _options["xAxis"]["labels"]["style"]["fontSize"];
+impl<'a, C, M, D> Chart<PolarPointEntity> for RadarChart<'a, C, M, D>
+where
+    C: CanvasContext,
+    M: fmt::Display,
+    D: fmt::Display,
+{
+    fn calculate_drawing_sizes(&self) {
+        self.base.calculate_drawing_sizes();
+        
+        // x_labels = data_table.getColumnValues<String>(0);
+        // angle_interval = TAU / x_labels.length;
+        
+        let rect = &self.base.props.borrow().series_and_axes_box;
+        // let xLabelFontSize = self.base.options.x_axis.labels.style.font_size;
 
         // // [_radius]*factor equals the height of the largest polygon.
-        // let factor = 1 + sin((_xLabels.length >> 1) * _angleInterval - _pi_2);
-        // _radius = min(rect.width, rect.height) / factor -
-        //     factor * (xLabelFontSize + _axisLabelMargin);
-        // _center =
+        // let factor = 1 + sin((x_labels.length >> 1) * angle_interval - PI_2);
+        // radius = min(rect.width, rect.height) / factor -
+        //     factor * (xLabelFontSize + axis_label_margin);
+        // center =
         //     Point(rect.left + rect.width / 2, rect.top + rect.height / factor);
 
         // // The minimum value on the y-axis is always zero.
-        // let yInterval = _options["yAxis"]["interval"];
+        // let yInterval = self.base.options.y_axis.interval;
         // if (yInterval == null) {
-        //   let yMinInterval = _options["yAxis"]["minInterval"];
-        //   _yMaxValue = findMaxValue(_dataTable);
-        //   yInterval = calculateInterval(_yMaxValue, 3, yMinInterval);
-        //   _yMaxValue = (_yMaxValue / yInterval).ceilToDouble() * yInterval;
+        //   let yMinInterval = self.base.options.y_axis.min_interval;
+        //   y_max_value = findMaxValue(data_table);
+        //   yInterval = calculateInterval(y_max_value, 3, yMinInterval);
+        //   y_max_value = (y_max_value / yInterval).ceilToDouble() * yInterval;
         // }
 
-        // _yLabelFormatter = _options["yAxis"]["labels"]["formatter"];
-        // if (_yLabelFormatter == null) {
+        // y_label_formatter = self.base.options.y_axis.labels.formatter;
+        // if (y_label_formatter == null) {
         //   let decimalPlaces = getDecimalPlaces(yInterval);
         //   let numberFormat = NumberFormat.decimalPattern()
         //     ..maximumFractionDigits = decimalPlaces
         //     ..minimumFractionDigits = decimalPlaces;
-        //   _yLabelFormatter = numberFormat.format;
+        //   y_label_formatter = numberFormat.format;
         // }
-        // _entityValueFormatter = _yLabelFormatter;
+        // entity_value_formatter = y_label_formatter;
 
-        // _yLabels = <String>[];
+        // y_labels = <String>[];
         // let value = 0.0;
-        // while (value <= _yMaxValue) {
-        //   _yLabels.add(_yLabelFormatter(value));
+        // while (value <= y_max_value) {
+        //   y_labels.add(y_label_formatter(value));
         //   value += yInterval;
         // }
 
-        // _yLabelHop = _radius / (_yLabels.length - 1);
+        // y_label_hop = radius / (y_labels.length - 1);
 
         // // Tooltip.
 
-        // _tooltipValueFormatter =
-        //     _options["tooltip"]["valueFormatter"] ?? _yLabelFormatter;
+        // tooltip_value_formatter =
+        //     self.base.options.tooltip.value_formatter ?? y_label_formatter;
         unimplemented!()
     }
 
-    fn draw_axes_and_grid() {
-        // let xLabelCount = _xLabels.length;
-        // let yLabelCount = _yLabels.length;
+    fn draw_axes_and_grid(&self) {
+        let props = self.props.borrow();
+        let x_label_count = props.x_labels.len();
+        let y_label_count = props.y_labels.len();
 
-        // // x-axis grid lines (i.e. concentric equilateral polygons).
+        // x-axis grid lines (i.e. concentric equilateral polygons).
 
-        // let lineWidth = _options["xAxis"]["gridLineWidth"];
+        // let line_width = self.base.options.x_axis.grid_line_width;
         // if (lineWidth > 0) {
-        //   _axesContext
+        //   axes_context
         //     ..lineWidth = lineWidth
-        //     ..strokeStyle = _options["xAxis"]["gridLineColor"]
-        //     ..beginPath();
-        //   let radius = _radius;
+        //     ..strokeStyle = self.base.options.x_axis.grid_line_color
+        //     ..begin_path();
+        //   let radius = radius;
         //   for (let i = yLabelCount - 1; i >= 1; i--) {
-        //     let angle = -_pi_2 + _angleInterval;
-        //     _axesContext.moveTo(_center.x, _center.y - radius);
+        //     let angle = -PI_2 + angle_interval;
+        //     axes_context.moveTo(center.x, center.y - radius);
         //     for (let j = 0; j < xLabelCount; j++) {
-        //       let poi64 = polarToCartesian(_center, radius, angle);
-        //       _axesContext.lineTo(point.x, point.y);
-        //       angle += _angleInterval;
+        //       let point = polarToCartesian(center, radius, angle);
+        //       axes_context.lineTo(point.x, point.y);
+        //       angle += angle_interval;
         //     }
-        //     radius -= _yLabelHop;
+        //     radius -= y_label_hop;
         //   }
-        //   _axesContext.stroke();
+        //   axes_context.stroke();
         // }
 
         // // y-axis grid lines (i.e. radii from the center to the x-axis labels).
 
-        // lineWidth = _options["yAxis"]["gridLineWidth"];
+        // lineWidth = self.base.options.y_axis.grid_line_width;
         // if (lineWidth > 0) {
-        //   _axesContext
+        //   axes_context
         //     ..lineWidth = lineWidth
-        //     ..strokeStyle = _options["yAxis"]["gridLineColor"]
-        //     ..beginPath();
-        //   let angle = -_pi_2;
+        //     ..strokeStyle = self.base.options.y_axis.grid_line_color
+        //     ..begin_path();
+        //   let angle = -PI_2;
         //   for (let i = 0; i < xLabelCount; i++) {
-        //     let poi64 = polarToCartesian(_center, _radius, angle);
-        //     _axesContext
-        //       ..moveTo(_center.x, _center.y)
+        //     let point = polarToCartesian(center, radius, angle);
+        //     axes_context
+        //       ..moveTo(center.x, center.y)
         //       ..lineTo(point.x, point.y);
-        //     angle += _angleInterval;
+        //     angle += angle_interval;
         //   }
-        //   _axesContext.stroke();
+        //   axes_context.stroke();
         // }
 
         // // y-axis labels - don"t draw the first (at center) and the last ones.
 
-        // let style = _options["yAxis"]["labels"]["style"];
-        // let x = _center.x - _axisLabelMargin;
-        // let y = _center.y - _yLabelHop;
-        // _axesContext
+        // let style = self.base.options.y_axis.labels.style;
+        // let x = center.x - axis_label_margin;
+        // let y = center.y - y_label_hop;
+        // axes_context
         //   ..fillStyle = style["color"]
-        //   ..font = _getFont(style)
+        //   ..font = get_font(style)
         //   ..textAlign = "right"
         //   ..textBaseline = "middle";
         // for (let i = 1; i <= yLabelCount - 2; i++) {
-        //   _axesContext.fillText(_yLabels[i], x, y);
-        //   y -= _yLabelHop;
+        //   axes_context.fill_text(y_labels[i], x, y);
+        //   y -= y_label_hop;
         // }
 
         // // x-axis labels.
 
-        // style = _options["xAxis"]["labels"]["style"];
-        // _axesContext
+        // style = self.base.options.x_axis.labels.style;
+        // axes_context
         //   ..fillStyle = style["color"]
-        //   ..font = _getFont(style)
+        //   ..font = get_font(style)
         //   ..textAlign = "center"
         //   ..textBaseline = "middle";
         // let fontSize = style["fontSize"];
-        // let angle = -_pi_2;
-        // let radius = _radius + _axisLabelMargin;
+        // let angle = -PI_2;
+        // let radius = radius + axis_label_margin;
         // for (let i = 0; i < xLabelCount; i++) {
-        //   _drawText(_axesContext, _xLabels[i], radius, angle, fontSize);
-        //   angle += _angleInterval;
+        //   drawText(axes_context, x_labels[i], radius, angle, fontSize);
+        //   angle += angle_interval;
         // }
         unimplemented!()
     }
 
-    fn draw_series(percent: f64) -> bool {
-        // let fillOpacity = _options["series"]["fillOpacity"];
-        // let seriesLineWidth = _options["series"]["lineWidth"];
-        // let markerOptions = _options["series"]["markers"];
+    fn draw_series(&self, percent: f64) -> bool {
+        // let fillOpacity = self.base.options.series.fill_opacity;
+        // let seriesLineWidth = self.base.options.series.line_width;
+        // let markerOptions = self.base.options.series.markers;
         // let markerSize = markerOptions["size"];
-        // let pointCount = _xLabels.length;
+        // let pointCount = x_labels.length;
 
-        // for (let i = 0; i < _seriesList.length; i++) {
-        //   if (_seriesStates[i] == _VisibilityState.hidden) continue;
+        // for (let i = 0; i < series_list.length; i++) {
+        //   if (series_states[i] == Visibility::hidden) continue;
 
-        //   let series = _seriesList[i];
-        //   let scale = (i != _focusedSeriesIndex) ? 1 : 2;
+        //   let series = series_list[i];
+        //   let scale = (i != focused_series_index) ? 1 : 2;
 
         //   // Draw the polygon.
 
-        //   _seriesContext
+        //   series_context
         //     ..lineWidth = scale * seriesLineWidth
         //     ..strokeStyle = series.color
-        //     ..beginPath();
+        //     ..begin_path();
         //   for (let j = 0; j < pointCount; j++) {
-        //     let poi64 = series.entities[j] as _PolarPoint;
+        //     let point = series.entities[j] as PolarPoint;
         //     // TODO: Optimize.
         //     let radius = lerp(point.oldRadius, point.radius, percent);
         //     let angle = lerp(point.oldAngle, point.angle, percent);
-        //     let p = polarToCartesian(_center, radius, angle);
+        //     let p = polarToCartesian(center, radius, angle);
         //     if (j > 0) {
-        //       _seriesContext.lineTo(p.x, p.y);
+        //       series_context.lineTo(p.x, p.y);
         //     } else {
-        //       _seriesContext.moveTo(p.x, p.y);
+        //       series_context.moveTo(p.x, p.y);
         //     }
         //   }
-        //   _seriesContext.closePath();
-        //   _seriesContext.stroke();
+        //   series_context.closePath();
+        //   series_context.stroke();
 
         //   // Optionally fill the polygon.
 
         //   if (fillOpacity > 0) {
-        //     _seriesContext.fillStyle = _changeColorAlpha(series.color, fillOpacity);
-        //     _seriesContext.fill();
+        //     series_context.fillStyle = change_color_alpha(series.color, fillOpacity);
+        //     series_context.fill();
         //   }
 
         //   // Draw the markers.
@@ -367,16 +378,16 @@ impl Chart for RadarChart {
         //   if (markerSize > 0) {
         //     let fillColor = markerOptions["fillColor"] ?? series.color;
         //     let strokeColor = markerOptions["strokeColor"] ?? series.color;
-        //     _seriesContext
+        //     series_context
         //       ..fillStyle = fillColor
         //       ..lineWidth = scale * markerOptions["lineWidth"]
         //       ..strokeStyle = strokeColor;
         //     for (let p in series.entities) {
         //       if (markerOptions["enabled"]) {
-        //         p.draw(_seriesContext, percent, p.index == _focusedEntityIndex);
-        //       } else if (p.index == _focusedEntityIndex) {
+        //         p.draw(series_context, percent, p.index == focused_entity_index);
+        //       } else if (p.index == focused_entity_index) {
         //         // Only draw marker on hover.
-        //         p.draw(_seriesContext, percent, true);
+        //         p.draw(series_context, percent, true);
         //       }
         //     }
         //   }
@@ -387,24 +398,63 @@ impl Chart for RadarChart {
     }
 
     // param should be Option
-    fn update_series(index: usize) {
-        // let entityCount = _dataTable.rows.length;
-        // for (let i = 0; i < _seriesList.length; i++) {
-        //   let series = _seriesList[i];
-        //   let color = _getColor(i);
-        //   let highlightColor = _getHighlightColor(color);
-        //   let visible = _seriesStates[i].index >= _VisibilityState.showing.index;
+    fn update_series(&self, index: usize) {
+        // let entityCount = data_table.rows.length;
+        // for (let i = 0; i < series_list.length; i++) {
+        //   let series = series_list[i];
+        //   let color = get_color(i);
+        //   let highlight_color = get_highlight_color(color);
+        //   let visible = series_states[i].index >= Visibility::showing.index;
         //   series.color = color;
-        //   series.highlightColor = highlightColor;
+        //   series.highlight_color = highlight_color;
         //   for (let j = 0; j < entityCount; j++) {
-        //     let p = series.entities[j] as _PolarPoint;
+        //     let p = series.entities[j] as PolarPoint;
         //     p.index = j;
-        //     p.center = _center;
-        //     p.radius = visible ? _valueToRadius(p.value) : 0.0;
-        //     p.angle = _getAngle(j);
+        //     p.center = center;
+        //     p.radius = visible ? value2radius(p.value) : 0.0;
+        //     p.angle = get_angle(j);
         //     p.color = color;
-        //     p.highlightColor = highlightColor;
+        //     p.highlight_color = highlight_color;
         //   }
         // }
+    }
+
+    fn create_entity(
+        &self,
+        series_index: usize,
+        entity_index: usize,
+        value: String,
+        color: String,
+        highlight_color: String,
+    ) -> PolarPointEntity {
+        // let angle = self.get_angle(entity_index);
+        // PolarPoint()
+        //   ..index = entityIndex
+        //   ..value = value
+        //   ..color = color
+        //   ..highlight_color = highlight_color
+        //   ..center = center
+        //   ..oldRadius = 0
+        //   ..oldAngle = angle
+        //   ..oldPointRadius = 0
+        //   ..radius = value2radius(value)
+        //   ..angle = angle
+        //   ..pointRadius = self.base.options.series.markers.size;
+        unimplemented!()
+    }
+
+    fn get_tooltip_position(&self) -> Point<f64> {
+        // FIXME: as usize
+        let props = self.props.borrow();
+        let focused_entity_index = self.base.props.borrow().focused_entity_index;
+
+        let bbox = &props.bounding_boxes[focused_entity_index as usize];
+        // let offset = self.base.options.series.markers.size * 2 + 5;
+        // let x = box.right + offset;
+        // let y = box.top + (box.height - tooltip.offsetHeight) ~/ 2;
+        // if (x + tooltip.offsetWidth > width)
+        //   x = box.left - tooltip.offsetWidth - offset;
+        // return Point(x, y);
+        unimplemented!()
     }
 }

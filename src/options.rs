@@ -1,3 +1,13 @@
+use super::{ValueFormatter, LabelFormatter};
+pub trait BaseOption<'a> {
+    fn animation(&self) -> AnimationOptions;
+    fn colors(&self) -> Vec<&'a str>;
+    fn title(&self) -> TitleOptions<'a>;
+    fn legend(&self) -> LegendOptions<'a>;
+    fn tooltip(&self) -> TooltipOptions<'a>;
+    fn background(&self) -> &'a str;
+}
+
 pub struct AnimationOptions {
     /// The animation duration in ms.
     pub duration: usize,
@@ -9,12 +19,12 @@ pub struct AnimationOptions {
     pub easing: String,
 
     /// () -> fn - The function that is called when the animation is complete.
-    pub on_end: Option<Box<dyn FnOnce()>>,
+    pub on_end: Option<fn()>,
 }
 
 pub struct LegendOptions<'a> {
     /// (String label) -> String - A function that format the labels.
-    pub label_formatter: Option<Box<dyn FnOnce()>>,
+    pub label_formatter: Option<LabelFormatter>,
 
     /// The position of the legend relative to the chart area.
     /// Supported values: "left", "top", "bottom", "right", "none".
@@ -41,13 +51,13 @@ pub struct TooltipOptions<'a> {
     pub enabled: bool,
 
     /// (String label) -> String - A function that format the labels.
-    pub label_formatter: Option<Box<dyn FnOnce()>>,
+    pub label_formatter: Option<LabelFormatter>,
 
     /// An object that controls the styling of the tooltip.
     pub style: StyleOption<'a>,
 
     /// (num value) -> String - A function that formats the values.
-    pub value_formatter: Option<Box<dyn FnOnce()>>,
+    pub value_formatter: Option<ValueFormatter>,
 }
 
 /// The global drawing options.
@@ -105,6 +115,7 @@ impl<'a> Default for GlobalOptions<'a> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct BarChartSeriesOptions<'a> {
     /// An object that controls the series labels.
     /// bool - Whether to show the labels.
@@ -155,7 +166,7 @@ pub struct BarChartXAxisOptions<'a> {
 
 pub struct BarChartYAxisLabelsOptions<'a> {
     /// (num value) -> String - A function that formats the labels.
-    pub formatter: Option<Box<dyn FnOnce()>>,
+    pub formatter: Option<ValueFormatter>,
 
     /// An object that controls the styling of the axis labels.
     pub style: StyleOption<'a>,
@@ -212,6 +223,32 @@ pub struct BarChartOptions<'a> {
     pub y_axis: BarChartYAxisOptions<'a>,
 }
 
+impl<'a> BaseOption<'a> for BarChartOptions<'a> {
+    fn animation(&self) -> AnimationOptions {
+        unimplemented!()
+    }
+
+    fn colors(&self) -> Vec<&'a str> {
+        unimplemented!()
+    }
+
+    fn title(&self) -> TitleOptions<'a> {
+        unimplemented!()
+    }
+
+    fn legend(&self) -> LegendOptions<'a> {
+        unimplemented!()
+    }
+
+    fn tooltip(&self) -> TooltipOptions<'a> {
+        unimplemented!()
+    }
+
+    fn background(&self) -> &'a str {
+        unimplemented!()
+    }
+}
+
 pub struct TitleOption<'a> {
     /// An object that controls the styling of the axis title.
     pub style: StyleOption<'a>,
@@ -264,16 +301,17 @@ impl<'a> Default for BarChartOptions<'a> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct StyleOption<'a> {
     pub background_color: &'a str,
     pub border_color: &'a str,
-    pub border_width: f32, // i32?
+    pub border_width: f64, // i32?
     /// The title"s color
     pub color: &'a str,
     /// The title"s font family.
     pub font_family: &'a str,
     /// The title"s font size.
-    pub font_size: f32,
+    pub font_size: f64,
     /// The title"s font style.
     pub font_style: &'a str, // "normal"
 }
@@ -283,10 +321,10 @@ impl<'a> Default for StyleOption<'a> {
         Self {
             background_color: "",
             border_color: "",
-            border_width: 0_f32,
+            border_width: 0_f64,
             color: "",
             font_family: "",
-            font_size: 0_f32,
+            font_size: 0_f64,
             font_style: "normal", // "normal"
         }
     }
@@ -300,6 +338,32 @@ pub struct GaugeChartOptions<'a> {
     /// Whether to show the labels
     /// An object that controls the styling of the gauge labels
     pub labels: Option<StyleOption<'a>>,
+}
+
+impl<'a> BaseOption<'a> for GaugeChartOptions<'a> {
+    fn animation(&self) -> AnimationOptions {
+        unimplemented!()
+    }
+
+    fn colors(&self) -> Vec<&'a str> {
+        unimplemented!()
+    }
+
+    fn title(&self) -> TitleOptions<'a> {
+        unimplemented!()
+    }
+
+    fn legend(&self) -> LegendOptions<'a> {
+        unimplemented!()
+    }
+
+    fn tooltip(&self) -> TooltipOptions<'a> {
+        unimplemented!()
+    }
+
+    fn background(&self) -> &'a str {
+        unimplemented!()
+    }
 }
 
 impl<'a> Default for GaugeChartOptions<'a> {
@@ -385,7 +449,7 @@ pub struct LineChartXAxisOptions<'a> {
 
 pub struct LineChartYAxisLabelsOptions<'a> {
     /// (num value) -> String - A function that formats the labels.
-    pub formatter: Option<Box<dyn FnOnce()>>,
+    pub formatter: Option<ValueFormatter>,
 
     /// An object that controls the styling of the axis labels.
     pub style: StyleOption<'a>,
@@ -439,6 +503,32 @@ pub struct LineChartOptions<'a> {
 
     /// An object that controls the y-axis.
     pub y_axis: LineChartYAxisOptions<'a>,
+}
+
+impl<'a> BaseOption<'a> for LineChartOptions<'a> {
+    fn animation(&self) -> AnimationOptions {
+        unimplemented!()
+    }
+
+    fn colors(&self) -> Vec<&'a str> {
+        unimplemented!()
+    }
+
+    fn title(&self) -> TitleOptions<'a> {
+        unimplemented!()
+    }
+
+    fn legend(&self) -> LegendOptions<'a> {
+        unimplemented!()
+    }
+
+    fn tooltip(&self) -> TooltipOptions<'a> {
+        unimplemented!()
+    }
+
+    fn background(&self) -> &'a str {
+        unimplemented!()
+    }
 }
 
 impl<'a> Default for LineChartOptions<'a> {
@@ -501,7 +591,7 @@ pub struct PieChartSeriesLabelsOptions<'a> {
     pub enabled: bool,
 
     /// (num) -> String - A function used to format the labels.
-    pub formatter: Option<Box<dyn FnOnce()>>,
+    pub formatter: Option<ValueFormatter>,
 
     pub style: StyleOption<'a>,
 }
@@ -514,22 +604,48 @@ pub struct PieChartSeriesOptions<'a> {
     pub labels: PieChartSeriesLabelsOptions<'a>,
 
     /// The start angle in degrees. Default is -90, which is 12 o"clock.
-    pub start_angle: i64,
+    pub start_angle: f64,
 }
 
 pub struct PieChartOptions<'a> {
     /// If between 0 and 1, displays a donut chart. The hole will have a
     /// radius equal to this value times the radius of the chart.
-    pub pie_hole: usize,
+    pub pie_hole: f64,
 
     /// An object that controls the series.
     pub series: PieChartSeriesOptions<'a>,
 }
 
+impl<'a> BaseOption<'a> for PieChartOptions<'a> {
+    fn animation(&self) -> AnimationOptions {
+        unimplemented!()
+    }
+
+    fn colors(&self) -> Vec<&'a str> {
+        unimplemented!()
+    }
+
+    fn title(&self) -> TitleOptions<'a> {
+        unimplemented!()
+    }
+
+    fn legend(&self) -> LegendOptions<'a> {
+        unimplemented!()
+    }
+
+    fn tooltip(&self) -> TooltipOptions<'a> {
+        unimplemented!()
+    }
+
+    fn background(&self) -> &'a str {
+        unimplemented!()
+    }
+}
+
 impl<'a> Default for PieChartOptions<'a> {
     fn default() -> Self {
         Self {
-            pie_hole: 0,
+            pie_hole: 0_f64,
             series: PieChartSeriesOptions {
                 counterclockwise: false,
                 labels: PieChartSeriesLabelsOptions {
@@ -537,7 +653,7 @@ impl<'a> Default for PieChartOptions<'a> {
                     formatter: None,
                     style: Default::default(),
                 },
-                start_angle: -90,
+                start_angle: -90_f64,
             },
         }
     }
@@ -590,7 +706,7 @@ pub struct RadarChartXAxisOptions<'a> {
 
 pub struct RadarChartYAxisLabelsOptions<'a> {
     /// (num value) -> String - A function that formats the labels.
-    pub formatter: Option<Box<dyn FnOnce()>>,
+    pub formatter: Option<ValueFormatter>,
 
     /// An object that controls the styling of the axis labels.
     pub style: StyleOption<'a>,
@@ -624,6 +740,32 @@ pub struct RadarChartOptions<'a> {
 
     /// An object that controls the y-axis.
     pub y_axis: RadarChartYAxisOptions<'a>,
+}
+
+impl<'a> BaseOption<'a> for RadarChartOptions<'a> {
+    fn animation(&self) -> AnimationOptions {
+        unimplemented!()
+    }
+
+    fn colors(&self) -> Vec<&'a str> {
+        unimplemented!()
+    }
+
+    fn title(&self) -> TitleOptions<'a> {
+        unimplemented!()
+    }
+
+    fn legend(&self) -> LegendOptions<'a> {
+        unimplemented!()
+    }
+
+    fn tooltip(&self) -> TooltipOptions<'a> {
+        unimplemented!()
+    }
+
+    fn background(&self) -> &'a str {
+        unimplemented!()
+    }
 }
 
 impl<'a> Default for RadarChartOptions<'a> {
