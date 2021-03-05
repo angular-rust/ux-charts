@@ -18,7 +18,6 @@ maintenance = { status = "actively-developed" }
 [features]
 web = ["wasm-bindgen", "wasm-bindgen-futures", "wasm-logger", "gloo", "js-sys", "wasm-bindgen-test", "web-sys", "ux-animate", "ux-animate/web"]
 cairo = ["cairo-rs", "png", "gio", "gtk", "ux-animate", "ux-animate/cairo"]
-default = ["cairo"]
 
 [dependencies]
 log = "0.4"
