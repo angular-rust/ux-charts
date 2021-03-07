@@ -1,5 +1,8 @@
 use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
-use ux_primitives::{canvas::*, math::*};
+use ux_primitives::{
+    canvas::CanvasContext,
+    geom::{Point, Size, Rect}
+};
 
 use super::*;
 
@@ -49,10 +52,10 @@ pub struct BaseChartProperties {
     pub tooltip_value_formatter: Option<ValueFormatter>,
 
     /// Bounding box of the series and axes.
-    pub series_and_axes_box: Rectangle<f64>,
+    pub series_and_axes_box: Rect<f64>,
 
     /// Bounding box of the chart title.
-    pub title_box: Rectangle<f64>,
+    pub title_box: Rect<f64>,
 
     /// A list used to keep track of the visibility of the series.
     pub series_states: Vec<Visibility>,
@@ -216,11 +219,12 @@ where
         }
 
         let mut props = self.props.borrow_mut();
-        props.series_and_axes_box = Rectangle {
-            left: CHART_PADDING,
-            top: CHART_PADDING,
-            width: props.width - 2.0 * CHART_PADDING,
-            height: props.height - 2.0 * CHART_PADDING,
+        props.series_and_axes_box = Rect {
+            origin: Point::new(CHART_PADDING, CHART_PADDING),
+            size: Size::new(
+                props.width - 2.0 * CHART_PADDING,
+                props.height - 2.0 * CHART_PADDING
+            ),
         };
 
         // // Consider the title.
@@ -229,18 +233,15 @@ where
             match title.position {
                 "above" => {
                     title_y = CHART_PADDING;
-                    props.series_and_axes_box.top =
-                        props.series_and_axes_box.top + title_h + CHART_TITLE_MARGIN;
-                    props.series_and_axes_box.height =
-                        props.series_and_axes_box.height - title_h + CHART_TITLE_MARGIN;
+                    props.series_and_axes_box.origin.x += title_h + CHART_TITLE_MARGIN;
+                    props.series_and_axes_box.size.height -= title_h + CHART_TITLE_MARGIN;
                 }
                 "middle" => {
                     title_y = f64::floor((props.height - title_h) / 2.0);
                 }
                 "below" => {
                     title_y = props.height - title_h - CHART_PADDING;
-                    props.series_and_axes_box.height =
-                        props.series_and_axes_box.height - title_h + CHART_TITLE_MARGIN;
+                    props.series_and_axes_box.size.height -= title_h + CHART_TITLE_MARGIN;
                 }
                 _ => {}
             }
@@ -253,11 +254,9 @@ where
             //   title_x = (width - titleW - 2 * TITLE_PADDING) ~/ 2;
         }
 
-        let title_box = Rectangle {
-            left: title_x,
-            top: title_y,
-            width: title_w,
-            height: title_h,
+        let title_box = Rect {
+            origin: Point::new(title_x, title_y),
+            size: Size::new(title_w, title_h),
         };
 
         // Consider the legend.
