@@ -42,8 +42,7 @@ impl CanvasContext for WebCanvas {
     //    self.ctx.get_transform() -> Result<DomMatrix, JsValue>
     // };
     fn set_current_transform(&mut self, value: Matrix<f64>) {
-        // self.ctx.set_transform(value.a, value.b, value.c, value.d, value.e, value.f);
-        unimplemented!() // FIXME: adjust ux-primitives
+        let _ = self.ctx.set_transform(value.a, value.b, value.c, value.d, value.e, value.f);
     }
     fn get_direction(&self) -> Direction {
         unimplemented!() // FIXME: not implemented in web_sys
