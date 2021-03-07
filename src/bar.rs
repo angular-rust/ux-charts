@@ -3,7 +3,10 @@
 #![allow(dead_code)]
 
 use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
-use ux_primitives::{canvas::*, math::*};
+use ux_primitives::{
+    canvas::CanvasContext,
+    geom::{Point, Size, Rect}
+};
 
 use crate::*;
 
@@ -77,8 +80,8 @@ struct BarChartProperties {
     x_label_hop: f64,
     /// Distance between two consecutive x-axis labels.
     y_label_hop: f64,
-    x_title_box: Rectangle<f64>,
-    y_title_box: Rectangle<f64>,
+    x_title_box: Rect<f64>,
+    y_title_box: Rect<f64>,
     x_title_center: Point<f64>,
     y_title_center: Point<f64>,
     x_labels: Vec<String>,

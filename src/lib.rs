@@ -2,7 +2,10 @@
 #![allow(unused_variables)]
 
 use std::{collections::HashMap, fmt, rc::Rc, cell::RefCell};
-use ux_primitives::{canvas::*, math::*};
+use ux_primitives::{
+    canvas::CanvasContext,
+    geom::Point
+};
 
 #[macro_use] 
 extern crate lazy_static;
@@ -43,10 +46,10 @@ pub use utils::*;
 
 pub const PI: f64 = std::f64::consts::PI;
 /// The 2*pi constant - TAU
-pub const TAU: f64 = 6.28318530717958647692528676655900577_f64;
+pub const TAU: f64 = std::f64::consts::TAU;
 
 /// The pi/2 constant.
-pub const PI_2: f64 = 1.57079632679489661923132169163975144_f64;
+pub const PI_2: f64 = std::f64::consts::FRAC_PI_2;
 
 pub const FONT_FAMILY: &str = r#""Segoe UI", "Open Sans", Verdana, Arial"#;
 
@@ -86,7 +89,7 @@ pub fn default_value_formatter(value: f64) -> String {
 #[derive(Debug, Clone)]
 pub enum Visibility {
     Hidden,
-    Hidding,
+    Hiding,
     Showing,
     Shown,
 }

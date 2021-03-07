@@ -3,7 +3,10 @@
 #![allow(dead_code)]
 
 use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
-use ux_primitives::{canvas::*, math::*};
+use ux_primitives::{
+    canvas::CanvasContext,
+    geom::Point
+};
 
 use crate::*;
 
@@ -40,7 +43,7 @@ impl GaugeEntity {
 
     pub fn contains_point(&self, p: Point<f64>) -> bool {
         // let p = p - center;
-        let mag = p.magnitude();
+        let mag = p.distance_to(Point::default()); //p.magnitude()
         if mag > self.outer_radius || mag < self.inner_radius {
             return false;
         }

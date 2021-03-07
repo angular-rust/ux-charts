@@ -3,12 +3,15 @@
 #![allow(dead_code)]
 
 use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
-use ux_primitives::{canvas::*, math::*};
+use ux_primitives::{
+    canvas::CanvasContext,
+    geom::{Point, Rect},
+};
 
 use crate::*;
 
 #[derive(Default, Clone)]
-struct PointEntity {
+struct LinePoint {
     // Chart chart,
     color: String,
     highlight_color: String,
@@ -35,17 +38,14 @@ struct PointEntity {
     point_radius: f64,
 }
 
-impl PointEntity {
+impl LinePoint {
     fn as_point(&self) -> Point<f64> {
-        Point {
-            x: self.x,
-            y: self.y,
-        }
+        Point::new(self.x, self.y)
     }
 }
 
 /// A point in a line chart.
-impl<C> Drawable<C> for PointEntity
+impl<C> Drawable<C> for LinePoint
 where
     C: CanvasContext,
 {
@@ -67,7 +67,7 @@ where
     }
 }
 
-impl Entity for PointEntity {
+impl Entity for LinePoint {
     fn free(&mut self) {
         // chart = null;
     }
@@ -94,8 +94,8 @@ struct LineChartProperties {
     x_label_step: i64,
     x_label_hop: f64, // Distance between two consecutive x-axis labels.
     y_label_hop: f64, // Distance between two consecutive x-axis labels.
-    x_title_box: Rectangle<f64>,
-    y_title_box: Rectangle<f64>,
+    x_title_box: Rect<f64>,
+    y_title_box: Rect<f64>,
     x_title_center: Point<f64>,
     y_title_center: Point<f64>,
     x_labels: Vec<String>,
@@ -122,7 +122,7 @@ where
     D: fmt::Display,
 {
     props: RefCell<LineChartProperties>,
-    base: BaseChart<'a, C, PointEntity, M, D, LineChartOptions<'a>>,
+    base: BaseChart<'a, C, LinePoint, M, D, LineChartOptions<'a>>,
 }
 
 impl<'a, C, M, D> LineChart<'a, C, M, D>
@@ -551,7 +551,7 @@ where
         // }
     }
 
-    fn lerp_points(&self, points: Vec<PointEntity>, percent: f64) -> Vec<PointEntity> {
+    fn lerp_points(&self, points: Vec<LinePoint>, percent: f64) -> Vec<LinePoint> {
         // return points.map((p) {
         //   let x = lerp(p.oldX, p.x, percent);
         //   let y = lerp(p.oldY, p.y, percent);
@@ -580,7 +580,7 @@ where
     }
 }
 
-impl<'a, C, M, D> Chart<PointEntity> for LineChart<'a, C, M, D>
+impl<'a, C, M, D> Chart<LinePoint> for LineChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
@@ -594,7 +594,7 @@ where
     }
 
     fn draw_series(&self, percent: f64) -> bool {
-        fn curve_to(cp1: Point<f64>, cp2: Point<f64>, p: PointEntity) {
+        fn curve_to(cp1: Point<f64>, cp2: Point<f64>, p: LinePoint) {
             //     if cp2 == null && cp1 == null {
             //       series_context.lineTo(p.x, p.y);
             //     } else if cp2 == null {
@@ -786,7 +786,7 @@ where
         value: String,
         color: String,
         highlight_color: String,
-    ) -> PointEntity {
+    ) -> LinePoint {
         // let x = x_label_x(entityIndex);
         // let oldY = x_axis_top;
         // // oldCp1 and oldCp2 are calculated in [update_series].

@@ -4,7 +4,10 @@
 
 use std::{collections::HashMap, f64::consts::PI, fmt};
 
-use ux_primitives::{canvas::*, math::*};
+use ux_primitives::{
+    canvas::CanvasContext,
+    geom::Point
+};
 
 use crate::DataStream;
 
@@ -39,7 +42,7 @@ pub fn is_in_range(value: f64, min: f64, max: f64) -> bool {
 pub fn polar2cartesian(center: &Point<f64>, radius: f64, angle: f64) -> Point<f64> {
     let x = center.x + radius * (angle).cos();
     let y = center.y + radius * (angle).sin();
-    Point { x, y }
+    Point::new(x, y)
 }
 
 /// Rounds [value] to [places] decimal places.
