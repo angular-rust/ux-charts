@@ -3,12 +3,15 @@
 #![allow(dead_code)]
 
 use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
-use ux_primitives::{canvas::*, math::*};
+use ux_primitives::{
+    canvas::CanvasContext,
+    geom::{Point, Rect}
+};
 
 use crate::*;
 
 #[derive(Default, Clone)]
-pub struct PolarPointEntity {
+pub struct PolarPoint {
     // Chart chart,
     color: String,
     highlight_color: String,
@@ -28,7 +31,7 @@ pub struct PolarPointEntity {
     center: Point<f64>,
 }
 
-impl<C> Drawable<C> for PolarPointEntity
+impl<C> Drawable<C> for PolarPoint
 where
     C: CanvasContext,
 {
@@ -53,7 +56,7 @@ where
     }
 }
 
-impl Entity for PolarPointEntity {
+impl Entity for PolarPoint {
     fn free(&mut self) {
         // chart = null;
     }
@@ -79,7 +82,7 @@ struct RadarChartProperties {
     // yLabelFormatter: ValueFormatter,
     /// Each element is the bounding box of each entity group.
     /// A `null` element means the group has no visible entities.
-    bounding_boxes: Vec<Rectangle<f64>>,
+    bounding_boxes: Vec<Rect<f64>>,
 }
 
 pub struct RadarChart<'a, C, M, D>
@@ -89,7 +92,7 @@ where
     D: fmt::Display,
 {
     props: RefCell<RadarChartProperties>,
-    base: BaseChart<'a, C, PolarPointEntity, M, D, RadarChartOptions<'a>>,
+    base: BaseChart<'a, C, PolarPoint, M, D, RadarChartOptions<'a>>,
 }
 
 impl<'a, C, M, D> RadarChart<'a, C, M, D>
@@ -196,7 +199,7 @@ where
     }
 }
 
-impl<'a, C, M, D> Chart<PolarPointEntity> for RadarChart<'a, C, M, D>
+impl<'a, C, M, D> Chart<PolarPoint> for RadarChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
@@ -426,7 +429,7 @@ where
         value: String,
         color: String,
         highlight_color: String,
-    ) -> PolarPointEntity {
+    ) -> PolarPoint {
         // let angle = self.get_angle(entity_index);
         // PolarPoint()
         //   ..index = entityIndex

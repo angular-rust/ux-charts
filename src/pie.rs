@@ -4,7 +4,10 @@
 #![allow(dead_code)]
 
 use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
-use ux_primitives::{canvas::*, math::*};
+use ux_primitives::{
+    canvas::CanvasContext,
+    geom::Point
+};
 
 use crate::*;
 
@@ -43,7 +46,7 @@ impl PieEntity {
 
     fn contains_point(&self, p: Point<f64>) -> bool {
         // p -= center;
-        let mag = p.magnitude();
+        let mag = p.distance_to(Point::default()); //p.magnitude();
         if mag > self.outer_radius || mag < self.inner_radius {
             return false;
         }
@@ -169,7 +172,7 @@ where
     }
 
     fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
-        let p = Point { x, y };
+        let p = Point::new(x, y);
         // let entities = series_list.first.entities;
         // for (let i = entities.length - 1; i >= 0; i--) {
         //   let pie = entities[i] as Pie;
@@ -209,8 +212,8 @@ where
     fn calculate_drawing_sizes(&self) {
         self.base.calculate_drawing_sizes();
         let rect = &self.base.props.borrow().series_and_axes_box;
-        let half_w = rect.width as i64 >> 1;
-        let half_h = rect.height as i64 >> 1;
+        let half_w = rect.size.width as i64 >> 1;
+        let half_h = rect.size.height as i64 >> 1;
 
         // self.center = Point {
         //     x: (rect.left + half_w) as f64,
