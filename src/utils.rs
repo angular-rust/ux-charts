@@ -8,8 +8,7 @@ use ux_primitives::{
     canvas::CanvasContext,
     geom::Point
 };
-
-use crate::DataStream;
+use ux_dataflow::*;
 
 /// Converts [angle] in radians to degrees.
 pub fn rad2deg(angle: f64) -> f64 {

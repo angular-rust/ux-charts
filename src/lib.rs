@@ -14,17 +14,11 @@ extern crate lazy_static;
 mod easing;
 pub use easing::*;
 
-mod backend;
-pub use backend::*;
-
 mod basechart;
 pub use basechart::*;
 
 mod bar;
 pub use bar::*;
-
-mod datastream;
-pub use datastream::*;
 
 mod gauge;
 pub use gauge::*;

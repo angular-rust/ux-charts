@@ -22,6 +22,7 @@ cairo = ["cairo-rs", "png", "gio", "gtk", "ux-animate", "ux-animate/cairo"]
 [dependencies]
 log = "0.4"
 lazy_static = "1.4"
+ux-dataflow = "0.1"
 ux-animate = { version = "0.1", default-features = false, optional = true }
 
 png = { version = "0.16", optional = true }
