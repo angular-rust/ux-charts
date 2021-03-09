@@ -2,12 +2,12 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use ux_dataflow::*;
 use ux_primitives::{
     canvas::CanvasContext,
-    geom::{Point, Size, Rect}
+    geom::{Point, Rect, Size},
 };
-use ux_dataflow::*;
 
 use crate::*;
 
@@ -111,7 +111,7 @@ where
     C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display,
-{   
+{
     props: RefCell<BarChartProperties>,
     base: BaseChart<'a, C, BarEntity, M, D, BarChartOptions<'a>>,
 }
@@ -127,9 +127,6 @@ where
             props: Default::default(),
             base: BaseChart::new(options),
         }
-    }
-
-    pub fn set_stream(&self, stream: DataStream<'a, M, D>) {
     }
 
     /// Returns the x coordinate of the x-axis label at [index].
@@ -154,56 +151,86 @@ where
         self.base.calculate_drawing_sizes();
 
         // y-axis min-max.
+        let mut props = self.props.borrow_mut();
 
-        // let y_max_value = self.base.options.y_axis.max_value ?? f64::NEG_INFINITY;
-        //     y_max_value = max(y_max_value, findMaxValue(data_table));
-        //     if (y_max_value == f64::NEG_INFINITY) y_max_value = 0.0;
+        props.y_max_value = if let Some(value) = self.base.options.y_axis.max_value {
+            value as f64
+        } else {
+            f64::NEG_INFINITY
+        };
 
-        //     y_min_value = self.base.options.y_axis.min_value ?? f64::INFINITY;
-        //     y_min_value = min(y_min_value, findMinValue(data_table));
-        //     if (y_min_value == f64::INFINITY) y_min_value = 0.0;
+        // FIXME:
+        // props.y_max_value = props
+        //     .y_max_value
+        //     .max(utils::find_max_value(&self.base.data_table));
 
-        //     y_interval = self.base.options.y_axis.interval;
-        //     let minInterval = self.base.options.y_axis.min_interval;
+        if props.y_max_value == f64::NEG_INFINITY {
+            props.y_max_value = 0.;
+        }
 
-        //     if (y_interval == null) {
-        //       if (y_min_value == y_max_value) {
-        //         if (y_min_value == 0.0) {
-        //           y_max_value = 1.0;
-        //           y_interval = 1.0;
-        //         } else if (y_min_value == 1.0) {
-        //           y_min_value = 0.0;
-        //           y_interval = 1.0;
-        //         } else {
-        //           y_interval = y_min_value * .25;
-        //           y_min_value -= y_interval;
-        //           y_max_value += y_interval;
-        //         }
-        //         if (minInterval != null) {
-        //           y_interval = max(y_interval, minInterval);
-        //         }
-        //       } else {
-        //         y_interval = calculateInterval(y_max_value - y_min_value, 5, minInterval);
-        //       }
-        //     }
+        props.y_min_value = if let Some(value) = self.base.options.y_axis.min_value {
+            value as f64
+        } else {
+            f64::INFINITY
+        };
 
-        //     y_min_value = (y_min_value / y_interval).floorToDouble() * y_interval;
-        //     y_max_value = (y_max_value / y_interval).ceilToDouble() * y_interval;
-        //     yRange = y_max_value - y_min_value;
+        // FIXME:
+        // props.y_min_value = props
+        //     .y_min_value
+        //     .min(utils::find_min_value(&self.base.data_table));
 
-        //     // y-axis labels.
+        if props.y_min_value == f64::INFINITY {
+            props.y_min_value = 0.;
+        }
 
-        //     y_labels = <String>[];
-        //     y_label_formatter = self.base.options.y_axis.labels.formatter;
-        //     if (y_label_formatter == null) {
-        //       let maxDecimalPlaces =
-        //           max(getDecimalPlaces(y_interval), getDecimalPlaces(y_min_value));
-        //       let numberFormat = NumberFormat.decimalPattern()
-        //         ..maximumFractionDigits = maxDecimalPlaces
-        //         ..minimumFractionDigits = maxDecimalPlaces;
-        //       y_label_formatter = numberFormat.format;
-        //     }
-        //     let value = y_min_value;
+        props.y_interval = self.base.options.y_axis.interval.unwrap();
+        let min_interval = self.base.options.y_axis.min_interval;
+
+        if props.y_interval == 0. {
+            if props.y_min_value == props.y_max_value {
+                if props.y_min_value == 0. {
+                    props.y_max_value = 1.;
+                    props.y_interval = 1.;
+                } else if props.y_min_value == 1. {
+                    props.y_min_value = 0.;
+                    props.y_interval = 1.;
+                } else {
+                    props.y_interval = props.y_min_value * 0.25;
+                    props.y_min_value -= props.y_interval;
+                    props.y_max_value += props.y_interval;
+                }
+                if let Some(value) = min_interval {
+                    props.y_interval = props.y_interval.max(value as f64);
+                }
+            } else {
+                props.y_interval = utils::calculate_interval(
+                    props.y_max_value - props.y_min_value,
+                    5,
+                    min_interval.unwrap() as f64,
+                );
+            }
+        }
+
+        let val = props.y_min_value / props.y_interval;
+        props.y_min_value = val.floor() * props.y_interval;
+        props.y_max_value = val.ceil() * props.y_interval;
+        props.y_range = props.y_max_value - props.y_min_value;
+
+        // y-axis labels.
+        props.y_labels = Vec::new(); //<String>[];
+        props.y_label_formatter = self.base.options.y_axis.labels.formatter;
+
+        if let None = props.y_label_formatter {
+            // TODO:
+            // let max_decimal_places =
+            //     max(utils::get_decimal_places(props.y_interval), utils::get_decimal_places(props.y_min_value));
+            // let numberFormat = NumberFormat.decimalPattern()
+            // ..maximumFractionDigits = maxDecimalPlaces
+            // ..minimumFractionDigits = maxDecimalPlaces;
+            // y_label_formatter = numberFormat.format;
+        }
+
+        let value = props.y_min_value;
         //     while (value <= y_max_value) {
         //       y_labels.add(y_label_formatter(value));
         //       value += y_interval;
@@ -342,18 +369,18 @@ where
         // //      y_title_box = null;
         //       y_title_center = null;
         //     }
-        unimplemented!()
     }
 
     fn data_cell_changed(&self, record: DataCellChangeRecord<D>) {
+        let mut props = self.props.borrow_mut();
         if record.column_index == 0 {
-        //   x_labels[record.rowIndex] = record.newValue;
+            props.x_labels[record.row_index] = format!("{}", record.new_value);
         } else {
-          self.base.data_cell_changed(record);
+            self.base.data_cell_changed(record);
         }
     }
 
-    fn draw_axes_and_grid(&self) {
+    fn draw_axes_and_grid(&self, axes_context: C) {
         // // x-axis title.
 
         // if (x_title_center != null) {
@@ -495,19 +522,22 @@ where
         // }
     }
 
-    fn get_entity_group_index(&self, x: f64, num: f64) -> i64 {
-        // let dx = x - y_axis_left;
-        // // If (x, y) is inside the rectangle defined by the two axes.
-        // if (y > x_axis_top - y_axis_length &&
-        //     y < x_axis_top &&
-        //     dx > 0 &&
-        //     dx < x_axis_length) {
-        //   let index = (dx / x_label_hop - x_label_offset_factor).round();
-        //   // If there is at least one visible point in the current point group...
-        //   if (average_y_values[index] != null) return index;
-        // }
-        // return -1;
-        unimplemented!()
+    fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
+        let props = self.props.borrow();
+        let dx = x - props.y_axis_left;
+        // If (x, y) is inside the rectangle defined by the two axes.
+        if y > props.x_axis_top - props.y_axis_length
+            && y < props.x_axis_top
+            && dx > 0.
+            && dx < props.x_axis_length
+        {
+            let index = (dx / props.x_label_hop - props.x_label_offset_factor).round() as usize;
+            // If there is at least one visible point in the current point group...
+            if let Some(_) = props.average_y_values.get(index) {
+                return index as i64;
+            }
+        }
+        return -1;
     }
 
     fn update(&self, options: HashMap<String, String>) {
@@ -516,28 +546,29 @@ where
     }
 
     fn get_bar_left(&self, series_index: usize, bar_index: usize) -> f64 {
-        // x_label_x(barIndex) -
-        //     0.5 * bar_group_width +
-        //     countVisibleSeries(seriesIndex) * (barWidth + barSpacing)
-        unimplemented!()
+        let props = self.props.borrow();
+        self.x_label_x(bar_index) - 0.5 * props.bar_group_width
+            + (self.base.count_visible_series(Some(series_index)) as f64)
+                * (props.bar_width + props.bar_spacing)
     }
 
     fn update_bar_width(&self) {
-        // let count = countVisibleSeries();
-        // if count > 0 {
-        //   barWidth = (bar_group_width + barSpacing) / count - barSpacing;
-        // } else {
-        //   barWidth = 0.0;
-        // }
-        unimplemented!()
+        let count = self.base.count_visible_series(None);
+        let mut props = self.props.borrow_mut();
+        if count > 0 {
+            props.bar_width =
+                (props.bar_group_width + props.bar_spacing) / (count as f64) - props.bar_spacing;
+        } else {
+            props.bar_width = 0.;
+        }
     }
 
     fn value_to_bar_height(&self, value: f64) -> f64 {
-        // if value != null {
-        //   return xAxisTop - valueToY(value);
-        // }
-        // return 0;
-        unimplemented!()
+        if value == 0. {
+            return 0.;
+        }
+        let props = self.props.borrow();
+        props.x_axis_top - self.value_to_y(value)
     }
 
     /// Calculates average y values for the visible series to help position the
@@ -549,7 +580,9 @@ where
     /// To be overridden.
     // index is opt
     fn calculate_average_y_values(&self, index: usize) {
-        // if (!self.base.options.tooltip.enabled) return;
+        if !self.base.options.tooltip.enabled {
+            return;
+        }
 
         // let entity_count = self.base.series_list.first.entities.length;
         // let start = index ?? 0;
@@ -583,7 +616,7 @@ where
     }
 }
 
-impl<'a, C, M, D> Chart<BarEntity> for BarChart<'a, C, M, D>
+impl<'a, C, M, D> Chart<'a, C, M, D, BarEntity> for BarChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
@@ -591,11 +624,15 @@ where
 {
     fn calculate_drawing_sizes(&self) {
         self.base.calculate_drawing_sizes();
-        // bar_group_width = 0.618 * x_label_hop; // Golden ratio.
-        // tooltipOffset = 0.5 * xLabelHop + 4;
-        // updateBarWidth();
-        unimplemented!()
+        let mut props = self.props.borrow_mut();
+        props.bar_group_width = 0.618 * props.x_label_hop; // Golden ratio.
+        props.tooltip_offset = 0.5 * props.x_label_hop + 4.;
+        self.update_bar_width();
     }
+
+    fn set_stream(&self, stream: DataStream<'a, M, D>) {}
+
+    fn draw(&self, ctx: C) {}
 
     fn draw_series(&self, percent: f64) -> bool {
         // for (let i = 0, n = series_list.length; i < n; i++) {
@@ -642,7 +679,7 @@ where
         // let entityCount = data_table.frames.length;
         // for (let i = 0; i < series_list.length; i++) {
         //   let series = series_list[i];
-        //   let left = getBarLeft(i, 0);
+        //   let left = get_bar_left(i, 0);
         //   let barWidth = 0.0;
         //   if (series_states[i].index >= Visibility::showing.index) {
         //     barWidth = barWidth;
@@ -674,7 +711,7 @@ where
         color: String,
         highlight_color: String,
     ) -> BarEntity {
-        // let left = getBarLeft(seriesIndex, entityIndex);
+        // let left = get_bar_left(seriesIndex, entityIndex);
         // let oldLeft = left;
         // let height = valueToBarHeight(value);
 
@@ -707,13 +744,14 @@ where
     fn get_tooltip_position(&self) -> Point<f64> {
         let props = self.props.borrow();
         let focused_entity_index = self.base.props.borrow().focused_entity_index;
-        
+
         // FIXME: as usize
+        // TODO: tooltip is a Element
         let x = self.x_label_x(focused_entity_index as usize) + props.tooltip_offset;
         // let y = max(x_axis_top - y_axis_length,
-        //     average_y_values[focused_entity_index] - tooltip.offsetHeight ~/ 2);
-        // if (x + tooltip.offsetWidth > width) {
-        //   x -= tooltip.offsetWidth + 2 * tooltip_offset;
+        //     average_y_values[focused_entity_index] - tooltip.offset_height ~/ 2);
+        // if (x + tooltip.offset_width > width) {
+        //   x -= tooltip.offset_width + 2 * tooltip_offset;
         //   x = max(x, y_axis_left);
         // }
         // return Point(x, y);

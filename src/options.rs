@@ -1,4 +1,4 @@
-use super::{ValueFormatter, LabelFormatter};
+use super::{LabelFormatter, ValueFormatter};
 pub trait BaseOption<'a> {
     fn animation(&self) -> AnimationOptions;
     fn colors(&self) -> Vec<&'a str>;
@@ -58,61 +58,6 @@ pub struct TooltipOptions<'a> {
 
     /// (num value) -> String - A function that formats the values.
     pub value_formatter: Option<ValueFormatter>,
-}
-
-/// The global drawing options.
-pub struct GlobalOptions<'a> {
-    /// An object that controls the animation.
-    pub animation: AnimationOptions,
-
-    /// The background color of the chart.
-    pub background_color: &'a str,
-
-    /// The color list used to render the series. If there are more series than
-    /// colors, the colors will be reused.
-    pub colors: Vec<&'a str>,
-
-    /// An object that controls the legend.
-    pub legend: LegendOptions<'a>,
-
-    /// An object that controls the chart title.
-    pub title: TitleOptions<'a>,
-
-    /// An object that controls the tooltip.
-    pub tooltip: TooltipOptions<'a>,
-}
-
-impl<'a> Default for GlobalOptions<'a> {
-    fn default() -> Self {
-        Self {
-            animation: AnimationOptions {
-                duration: 800,
-                easing: "easeOutQuint".into(),
-                on_end: None,
-            },
-            background_color: "white",
-            colors: vec![
-                "#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354",
-                "#8085e8", "#8d4653", "#91e8e1",
-            ],
-            legend: LegendOptions {
-                label_formatter: None,
-                position: "right",
-                style: Default::default(),
-            },
-            title: TitleOptions {
-                position: "above",
-                style: Default::default(),
-                text: None,
-            },
-            tooltip: TooltipOptions {
-                enabled: true,
-                label_formatter: None,
-                style: Default::default(),
-                value_formatter: None,
-            },
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -187,7 +132,7 @@ pub struct BarChartYAxisOptions<'a> {
 
     /// The interval of the tick marks in axis unit. If `null`, this value
     /// is automatically calculated.
-    pub interval: Option<usize>,
+    pub interval: Option<f64>,
 
     /// An object that controls the axis labels.
     pub labels: BarChartYAxisLabelsOptions<'a>,
@@ -221,6 +166,25 @@ pub struct BarChartOptions<'a> {
 
     /// An object that controls the y-axis.
     pub y_axis: BarChartYAxisOptions<'a>,
+
+    /// An object that controls the animation.
+    pub animation: AnimationOptions,
+
+    /// The background color of the chart.
+    pub background_color: &'a str,
+
+    /// The color list used to render the series. If there are more series than
+    /// colors, the colors will be reused.
+    pub colors: Vec<&'a str>,
+
+    /// An object that controls the legend.
+    pub legend: LegendOptions<'a>,
+
+    /// An object that controls the chart title.
+    pub title: TitleOptions<'a>,
+
+    /// An object that controls the tooltip.
+    pub tooltip: TooltipOptions<'a>,
 }
 
 impl<'a> BaseOption<'a> for BarChartOptions<'a> {
@@ -297,6 +261,32 @@ impl<'a> Default for BarChartOptions<'a> {
                     text: None,
                 },
             },
+            animation: AnimationOptions {
+                duration: 800,
+                easing: "easeOutQuint".into(),
+                on_end: None,
+            },
+            background_color: "white",
+            colors: vec![
+                "#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354",
+                "#8085e8", "#8d4653", "#91e8e1",
+            ],
+            legend: LegendOptions {
+                label_formatter: None,
+                position: "right",
+                style: Default::default(),
+            },
+            title: TitleOptions {
+                position: "above",
+                style: Default::default(),
+                text: None,
+            },
+            tooltip: TooltipOptions {
+                enabled: true,
+                label_formatter: None,
+                style: Default::default(),
+                value_formatter: None,
+            },
         }
     }
 }
@@ -331,13 +321,29 @@ impl<'a> Default for StyleOption<'a> {
 }
 
 pub struct GaugeChartOptions<'a> {
-    /// The background color of the gauges.
-    pub background_color: &'a str,
-
     /// An object that controls the gauge labels.
     /// Whether to show the labels
     /// An object that controls the styling of the gauge labels
     pub labels: Option<StyleOption<'a>>,
+
+    /// An object that controls the animation.
+    pub animation: AnimationOptions,
+
+    /// The background color of the chart.
+    pub background_color: &'a str,
+
+    /// The color list used to render the series. If there are more series than
+    /// colors, the colors will be reused.
+    pub colors: Vec<&'a str>,
+
+    /// An object that controls the legend.
+    pub legend: LegendOptions<'a>,
+
+    /// An object that controls the chart title.
+    pub title: TitleOptions<'a>,
+
+    /// An object that controls the tooltip.
+    pub tooltip: TooltipOptions<'a>,
 }
 
 impl<'a> BaseOption<'a> for GaugeChartOptions<'a> {
@@ -369,8 +375,33 @@ impl<'a> BaseOption<'a> for GaugeChartOptions<'a> {
 impl<'a> Default for GaugeChartOptions<'a> {
     fn default() -> Self {
         Self {
-            background_color: "#dbdbdb",
             labels: Default::default(),
+            animation: AnimationOptions {
+                duration: 800,
+                easing: "easeOutQuint".into(),
+                on_end: None,
+            },
+            background_color: "#dbdbdb",
+            colors: vec![
+                "#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354",
+                "#8085e8", "#8d4653", "#91e8e1",
+            ],
+            legend: LegendOptions {
+                label_formatter: None,
+                position: "right",
+                style: Default::default(),
+            },
+            title: TitleOptions {
+                position: "above",
+                style: Default::default(),
+                text: None,
+            },
+            tooltip: TooltipOptions {
+                enabled: true,
+                label_formatter: None,
+                style: Default::default(),
+                value_formatter: None,
+            },
         }
     }
 }
@@ -503,6 +534,25 @@ pub struct LineChartOptions<'a> {
 
     /// An object that controls the y-axis.
     pub y_axis: LineChartYAxisOptions<'a>,
+
+    /// An object that controls the animation.
+    pub animation: AnimationOptions,
+
+    /// The background color of the chart.
+    pub background_color: &'a str,
+
+    /// The color list used to render the series. If there are more series than
+    /// colors, the colors will be reused.
+    pub colors: Vec<&'a str>,
+
+    /// An object that controls the legend.
+    pub legend: LegendOptions<'a>,
+
+    /// An object that controls the chart title.
+    pub title: TitleOptions<'a>,
+
+    /// An object that controls the tooltip.
+    pub tooltip: TooltipOptions<'a>,
 }
 
 impl<'a> BaseOption<'a> for LineChartOptions<'a> {
@@ -582,6 +632,32 @@ impl<'a> Default for LineChartOptions<'a> {
                     text: None,
                 },
             },
+            animation: AnimationOptions {
+                duration: 800,
+                easing: "easeOutQuint".into(),
+                on_end: None,
+            },
+            background_color: "white",
+            colors: vec![
+                "#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354",
+                "#8085e8", "#8d4653", "#91e8e1",
+            ],
+            legend: LegendOptions {
+                label_formatter: None,
+                position: "right",
+                style: Default::default(),
+            },
+            title: TitleOptions {
+                position: "above",
+                style: Default::default(),
+                text: None,
+            },
+            tooltip: TooltipOptions {
+                enabled: true,
+                label_formatter: None,
+                style: Default::default(),
+                value_formatter: None,
+            },
         }
     }
 }
@@ -614,6 +690,25 @@ pub struct PieChartOptions<'a> {
 
     /// An object that controls the series.
     pub series: PieChartSeriesOptions<'a>,
+
+    /// An object that controls the animation.
+    pub animation: AnimationOptions,
+
+    /// The background color of the chart.
+    pub background_color: &'a str,
+
+    /// The color list used to render the series. If there are more series than
+    /// colors, the colors will be reused.
+    pub colors: Vec<&'a str>,
+
+    /// An object that controls the legend.
+    pub legend: LegendOptions<'a>,
+
+    /// An object that controls the chart title.
+    pub title: TitleOptions<'a>,
+
+    /// An object that controls the tooltip.
+    pub tooltip: TooltipOptions<'a>,
 }
 
 impl<'a> BaseOption<'a> for PieChartOptions<'a> {
@@ -654,6 +749,32 @@ impl<'a> Default for PieChartOptions<'a> {
                     style: Default::default(),
                 },
                 start_angle: -90_f64,
+            },
+            animation: AnimationOptions {
+                duration: 800,
+                easing: "easeOutQuint".into(),
+                on_end: None,
+            },
+            background_color: "white",
+            colors: vec![
+                "#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354",
+                "#8085e8", "#8d4653", "#91e8e1",
+            ],
+            legend: LegendOptions {
+                label_formatter: None,
+                position: "right",
+                style: Default::default(),
+            },
+            title: TitleOptions {
+                position: "above",
+                style: Default::default(),
+                text: None,
+            },
+            tooltip: TooltipOptions {
+                enabled: true,
+                label_formatter: None,
+                style: Default::default(),
+                value_formatter: None,
             },
         }
     }
@@ -740,6 +861,25 @@ pub struct RadarChartOptions<'a> {
 
     /// An object that controls the y-axis.
     pub y_axis: RadarChartYAxisOptions<'a>,
+
+    /// An object that controls the animation.
+    pub animation: AnimationOptions,
+
+    /// The background color of the chart.
+    pub background_color: &'a str,
+
+    /// The color list used to render the series. If there are more series than
+    /// colors, the colors will be reused.
+    pub colors: Vec<&'a str>,
+
+    /// An object that controls the legend.
+    pub legend: LegendOptions<'a>,
+
+    /// An object that controls the chart title.
+    pub title: TitleOptions<'a>,
+
+    /// An object that controls the tooltip.
+    pub tooltip: TooltipOptions<'a>,
 }
 
 impl<'a> BaseOption<'a> for RadarChartOptions<'a> {
@@ -797,6 +937,32 @@ impl<'a> Default for RadarChartOptions<'a> {
                     style: Default::default(),
                 },
                 min_interval: None,
+            },
+            animation: AnimationOptions {
+                duration: 800,
+                easing: "easeOutQuint".into(),
+                on_end: None,
+            },
+            background_color: "white",
+            colors: vec![
+                "#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354",
+                "#8085e8", "#8d4653", "#91e8e1",
+            ],
+            legend: LegendOptions {
+                label_formatter: None,
+                position: "right",
+                style: Default::default(),
+            },
+            title: TitleOptions {
+                position: "above",
+                style: Default::default(),
+                text: None,
+            },
+            tooltip: TooltipOptions {
+                enabled: true,
+                label_formatter: None,
+                style: Default::default(),
+                value_formatter: None,
             },
         }
     }

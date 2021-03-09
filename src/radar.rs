@@ -200,7 +200,7 @@ where
     }
 }
 
-impl<'a, C, M, D> Chart<PolarPoint> for RadarChart<'a, C, M, D>
+impl<'a, C, M, D> Chart<'a, C, M, D, PolarPoint> for RadarChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
@@ -226,14 +226,14 @@ where
         // let yInterval = self.base.options.y_axis.interval;
         // if (yInterval == null) {
         //   let yMinInterval = self.base.options.y_axis.min_interval;
-        //   y_max_value = findMaxValue(data_table);
-        //   yInterval = calculateInterval(y_max_value, 3, yMinInterval);
+        //   y_max_value = find_max_value(data_table);
+        //   yInterval = utils::calculate_interval(y_max_value, 3, yMinInterval);
         //   y_max_value = (y_max_value / yInterval).ceilToDouble() * yInterval;
         // }
 
         // y_label_formatter = self.base.options.y_axis.labels.formatter;
         // if (y_label_formatter == null) {
-        //   let decimalPlaces = getDecimalPlaces(yInterval);
+        //   let decimalPlaces = utils::get_decimal_places(yInterval);
         //   let numberFormat = NumberFormat.decimalPattern()
         //     ..maximumFractionDigits = decimalPlaces
         //     ..minimumFractionDigits = decimalPlaces;
@@ -255,6 +255,12 @@ where
         // tooltip_value_formatter =
         //     self.base.options.tooltip.value_formatter ?? y_label_formatter;
         unimplemented!()
+    }
+
+    fn set_stream(&self, stream: DataStream<'a, M, D>) {
+    }
+
+    fn draw(&self, ctx: C) {
     }
 
     fn draw_axes_and_grid(&self) {
@@ -455,9 +461,9 @@ where
         let bbox = &props.bounding_boxes[focused_entity_index as usize];
         // let offset = self.base.options.series.markers.size * 2 + 5;
         // let x = box.right + offset;
-        // let y = box.top + (box.height - tooltip.offsetHeight) ~/ 2;
-        // if (x + tooltip.offsetWidth > width)
-        //   x = box.left - tooltip.offsetWidth - offset;
+        // let y = box.top + (box.height - tooltip.offset_height) ~/ 2;
+        // if (x + tooltip.offset_width > width)
+        //   x = box.left - tooltip.offset_width - offset;
         // return Point(x, y);
         unimplemented!()
     }

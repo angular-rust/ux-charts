@@ -77,7 +77,11 @@ pub fn hyphenate(s: &str) -> String {
 }
 
 /// Returns the maximum value in a [DataTable].
-pub fn find_max_value<'a, M: fmt::Display, D: fmt::Display>(table: DataStream<'a, M, D>) -> D {
+pub fn find_max_value<'a, M, D>(table: &DataStream<'a, M, D>) -> D 
+where 
+    M: fmt::Display,
+    D: fmt::Display,
+{
     // let maxValue = f64::NEG_INFINITY;
     // for (let row in table.rows) {
     //   for (let col in table.columns) {
@@ -105,13 +109,13 @@ pub fn find_min_value<'a, M: fmt::Display, D: fmt::Display>(table: DataStream<'a
 /// Calculates a nice axis interval given
 /// - the axis range [range]
 /// - the desired number of steps [targetSteps]
-/// - and the minimum interval [minInterval]
+/// - and the minimum interval [min_interval]
 pub fn calculate_interval(range: f64, target_steps: usize, min_interval: f64) -> f64 {
     //   let interval = range / targetSteps;
     //   let mag = log10(interval).floor();
     //   let magPow = (10.0, mag).pow() as f64;
-    //   if minInterval != null {
-    //     magPow = (magPow, minInterval).max();
+    //   if min_interval != null {
+    //     magPow = (magPow, min_interval).max();
     //   }
     //   let msd = (interval / magPow).round();
     //   if msd > 5 {
@@ -152,21 +156,22 @@ pub fn calculate_control_points(
     p3: Point<f64>,
     t: f64,
 ) -> Vec<Point<f64>> {
-    // let d21 = p2.distanceTo(p1);
-    // let d23 = p2.distanceTo(p3);
-    // let fa = t * d21 / (d21 + d23);
-    // let fb = t * d23 / (d21 + d23);
-    // let v13 = p3 - p1;
-    // let cp1 = p2 - v13 * fa;
-    // let cp2 = p2 + v13 * fb;
-    // vec![cp1, cp2]
-    unimplemented!()
+    let d21 = p2.distance_to(p1);
+    let d23 = p2.distance_to(p3);
+    let fa = t * d21 / (d21 + d23);
+    let fb = t * d23 / (d21 + d23);
+    let v13 = p3 - p1;
+    let cp1 = p2 - v13 * fa;
+    let cp2 = p2 + v13 * fb;
+    vec![cp1, cp2]
 }
 
 /// Returns the number of decimal digits of [value].
-pub fn get_decimal_places(value: i64) -> i64 {
-    // if (value % 1 == 0) return 0;
-    // // See https://code.google.com/p/dart/issues/detail?id=1533
+pub fn get_decimal_places(value: f64) -> usize {
+    if value.fract() == 0. {
+        return 0;
+    }
+    // See https://code.google.com/p/dart/issues/detail?id=1533
     // return "$value.0".split(".")[1].length;
     unimplemented!()
 }

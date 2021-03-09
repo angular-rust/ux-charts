@@ -204,7 +204,7 @@ where
     }
 }
 
-impl<'a, C, M, D> Chart<PieEntity> for PieChart<'a, C, M, D>
+impl<'a, C, M, D> Chart<'a, C, M, D, PieEntity> for PieChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
@@ -247,6 +247,12 @@ where
         // };
 
         // self.start_angle = deg2rad(opt.start_angle);
+    }
+
+    fn set_stream(&self, stream: DataStream<'a, M, D>) {
+    }
+
+    fn draw(&self, ctx: C) {
     }
 
     fn draw_series(&self, percent: f64) -> bool {
@@ -351,8 +357,8 @@ where
         // let angle = .5 * (pie.startAngle + pie.endAngle);
         // let radius = .5 * (inner_radius + outer_radius);
         // let point = polarToCartesian(center, radius, angle);
-        // let x = point.x - .5 * tooltip.offsetWidth;
-        // let y = point.y - tooltip.offsetHeight;
+        // let x = point.x - .5 * tooltip.offset_width;
+        // let y = point.y - tooltip.offset_height;
         // return Point(x, y);
         unimplemented!()
     }

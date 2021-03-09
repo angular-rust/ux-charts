@@ -6,13 +6,10 @@ use ux_primitives::{
     canvas::CanvasContext,
     geom::Point
 };
+use ux_dataflow::*;
 
 #[macro_use] 
 extern crate lazy_static;
-
-// was named before "animation"
-mod easing;
-pub use easing::*;
 
 mod basechart;
 pub use basechart::*;
@@ -149,9 +146,12 @@ where
     }
 }
 
-pub trait Chart<E>
+pub trait Chart<'a, C, M, D, E>
 where
     E: Entity,
+    C: CanvasContext,
+    M: fmt::Display,
+    D: fmt::Display,
 {
     /// Calculates various drawing sizes.
     ///
@@ -235,6 +235,10 @@ where
     /// Returns the position of the tooltip based on [focused_entity_index].
     /// To be overridden.
     fn get_tooltip_position(&self) -> Point<f64>;
+
+    fn set_stream(&self, stream: DataStream<'a, M, D>);
+
+    fn draw(&self, ctx: C);
 }
 
 #[cfg(test)]

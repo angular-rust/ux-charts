@@ -161,7 +161,7 @@ where
         //     // y-axis min-max.
 
         //     self.y_max_value = self.base.options.y_axis.max_value ?? f64::NEG_INFINITY;
-        //     y_max_value = max(y_max_value, findMaxValue(data_table));
+        //     y_max_value = max(y_max_value, find_max_value(data_table));
         //     if (y_max_value == f64::NEG_INFINITY) y_max_value = 0.0;
 
         //     y_min_value = self.base.options.y_axis.min_value ?? f64::INFINITY;
@@ -169,7 +169,7 @@ where
         //     if (y_min_value == f64::INFINITY) y_min_value = 0.0;
 
         //     y_interval = self.base.options.y_axis.interval;
-        //     let minInterval = self.base.options.y_axis.min_interval;
+        //     let min_interval = self.base.options.y_axis.min_interval;
 
         //     if (y_interval == null) {
         //       if (y_min_value == y_max_value) {
@@ -184,11 +184,11 @@ where
         //           y_min_value -= y_interval;
         //           y_max_value += y_interval;
         //         }
-        //         if (minInterval != null) {
-        //           y_interval = max(y_interval, minInterval);
+        //         if (min_interval != null) {
+        //           y_interval = max(y_interval, min_interval);
         //         }
         //       } else {
-        //         y_interval = calculateInterval(y_max_value - y_min_value, 5, minInterval);
+        //         y_interval = utils::calculate_interval(y_max_value - y_min_value, 5, min_interval);
         //       }
         //     }
 
@@ -202,7 +202,7 @@ where
         //     y_label_formatter = self.base.options.y_axis.labels.formatter;
         //     if (y_label_formatter == null) {
         //       let maxDecimalPlaces =
-        //           max(getDecimalPlaces(y_interval), getDecimalPlaces(y_min_value));
+        //           max(utils::get_decimal_places(y_interval), utils::get_decimal_places(y_min_value));
         //       let numberFormat = NumberFormat.decimalPattern()
         //         ..maximumFractionDigits = maxDecimalPlaces
         //         ..minimumFractionDigits = maxDecimalPlaces;
@@ -581,7 +581,7 @@ where
     }
 }
 
-impl<'a, C, M, D> Chart<LinePoint> for LineChart<'a, C, M, D>
+impl<'a, C, M, D> Chart<'a, C, M, D, LinePoint> for LineChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
@@ -592,6 +592,12 @@ where
     fn calculate_drawing_sizes(&self) {
         self.base.calculate_drawing_sizes();
         // tooltip_offset = self.base.options.series.markers.size * 2 + 5;
+    }
+
+    fn set_stream(&self, stream: DataStream<'a, M, D>) {
+    }
+
+    fn draw(&self, ctx: C) {
     }
 
     fn draw_series(&self, percent: f64) -> bool {
@@ -813,9 +819,9 @@ where
         // FIXME: as usuze
         let x = self.x_label_x(focused_entity_index as usize) + props.tooltip_offset;
         // let y = max(x_axis_top - y_axis_length,
-        //     average_y_values[focused_entity_index] - tooltip.offsetHeight ~/ 2);
-        // if (x + tooltip.offsetWidth > width) {
-        //   x -= tooltip.offsetWidth + 2 * tooltip_offset;
+        //     average_y_values[focused_entity_index] - tooltip.offset_height ~/ 2);
+        // if (x + tooltip.offset_width > width) {
+        //   x -= tooltip.offset_width + 2 * tooltip_offset;
         //   x = max(x, y_axis_left);
         // }
         // return Point(x, y);

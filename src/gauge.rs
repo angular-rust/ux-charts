@@ -190,7 +190,7 @@ where
     }
 }
 
-impl<'a, C, M, D> Chart<GaugeEntity> for GaugeChart<'a, C, M, D>
+impl<'a, C, M, D> Chart<'a, C, M, D, GaugeEntity> for GaugeChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
@@ -213,6 +213,12 @@ where
         // let availH = self.base.series_and_axes_box.height - 2 * labelTotalHeight;
         // gaugeOuterRadius = .5 * min(availW, availH) / HIGHLIGHT_OUTER_RADIUS_FACTOR;
         // gaugeInnerRadius = .5 * gaugeOuterRadius;
+    }
+
+    fn set_stream(&self, stream: DataStream<'a, M, D>) {
+    }
+
+    fn draw(&self, ctx: C) {
     }
 
     fn draw_series(&self, percent: f64) -> bool {
@@ -293,10 +299,10 @@ where
 
     fn get_tooltip_position(&self) -> Point<f64> {
         // let gauge = series_list[0].entities[focused_entity_index] as Gauge;
-        // let x = gauge.center.x - tooltip.offsetWidth ~/ 2;
+        // let x = gauge.center.x - tooltip.offset_width ~/ 2;
         // let y = gauge.center.y -
         //     HIGHLIGHT_OUTER_RADIUS_FACTOR * gauge.outer_radius -
-        //     tooltip.offsetHeight -
+        //     tooltip.offset_height -
         //     5;
         // return Point(x, y);
         unimplemented!()

@@ -4,6 +4,7 @@ use ux_primitives::{
     geom::{Point, Size, Rect}
 };
 use ux_dataflow::*;
+use ux_animate::easing::{EasingFunction, Easing};
 
 use super::*;
 
@@ -263,8 +264,8 @@ where
         // Consider the legend.
 
         if let Some(legend) = props.legend {
-            //   let lwm = self.legend.offsetWidth + legend_margin;
-            //   let lhm = self.legend.offsetHeight + legend_margin;
+            //   let lwm = self.legend.offset_width + legend_margin;
+            //   let lhm = self.legend.offset_height + legend_margin;
             let position = self.options.legend().position;
             match position {
                 "right" => {
@@ -824,7 +825,7 @@ where
     }
 }
 
-impl<'a, C, E, M, D, O> Chart<E> for BaseChart<'a, C, E, M, D, O>
+impl<'a, C, E, M, D, O> Chart<'a, C, M, D, E> for BaseChart<'a, C, E, M, D, O>
 where
     C: CanvasContext,
     E: Entity,
@@ -834,6 +835,12 @@ where
 {
     fn calculate_drawing_sizes(&self) {
         todo!()
+    }
+
+    fn set_stream(&self, stream: DataStream<'a, M, D>) {
+    }
+
+    fn draw(&self, ctx: C) {
     }
 
     fn create_entity(
