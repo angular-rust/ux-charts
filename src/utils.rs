@@ -9,6 +9,7 @@ use ux_primitives::{
     geom::Point
 };
 use ux_dataflow::*;
+use super::StyleOption;
 
 /// Converts [angle] in radians to degrees.
 pub fn rad2deg(angle: f64) -> f64 {
@@ -178,10 +179,10 @@ pub fn get_decimal_places(value: f64) -> usize {
 
 /// Returns a CSS font string given a map that contains at least three keys:
 /// `fontStyle`, `fontSize`, and `fontFamily`.
-pub fn get_font(style: Option<String>, size: Option<f64>, family: Option<String>) -> String {
-    if let Some(style) = style {
-        if let Some(size) = size {
-            if let Some(family) = family {
+pub fn get_font(opt: &StyleOption) -> String {
+    if let Some(style) = opt.font_style {
+        if let Some(size) = opt.font_size {
+            if let Some(family) = opt.font_family {
                 return format!("{} {}px {}", style, size, family);
             }
             return format!("{} {}px", style, size);
@@ -189,14 +190,14 @@ pub fn get_font(style: Option<String>, size: Option<f64>, family: Option<String>
         return format!("{}", style);
     }
 
-    if let Some(size) = size {
-        if let Some(family) = family {
+    if let Some(size) = opt.font_size {
+        if let Some(family) = opt.font_family {
             return format!("{}px {}", size, family);
         }
         return format!("{}px", size);
     }
 
-    if let Some(family) = style {
+    if let Some(family) = opt.font_family {
         return format!("{}", family);
     }
 

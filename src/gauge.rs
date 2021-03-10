@@ -2,12 +2,9 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
-use ux_primitives::{
-    canvas::CanvasContext,
-    geom::Point
-};
+use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use ux_dataflow::*;
+use ux_primitives::{canvas::CanvasContext, geom::Point};
 
 use crate::*;
 
@@ -119,11 +116,10 @@ where
         // let w2 = ctx.measureText(text2).width;
 
         // let y = center.y + .3 * fs1;
-        // ctx
-        //   ..font = font1
-        //   ..fill_text(text1, center.x - .5 * w2, y)
-        //   ..font = font2
-        //   ..fill_text(text2, center.x + .5 * w1, y);
+        // ctx.set_font(font1);
+        // ctx.fill_text(text1, center.x - .5 * w2, y);
+        // ctx.set_font(font2);
+        // ctx.fill_text(text2, center.x + .5 * w1, y);
     }
 }
 
@@ -202,7 +198,7 @@ where
         // let labelTotalHeight = 0;
         // if (self.base.options.gauge_labels.enabled) {
         //   labelTotalHeight =
-        //       axis_label_margin + self.base.options.gauge_labels.style.font_size;
+        //       AXIS_LABEL_MARGIN + self.base.options.gauge_labels.style.font_size;
         // }
 
         // gauge_center_y = series_and_axes_box.top + .5 * series_and_axes_box.height;
@@ -214,10 +210,9 @@ where
         // gaugeInnerRadius = .5 * gaugeOuterRadius;
     }
 
-    fn set_stream(&self, stream: DataStream<'a, M, D>) {
-    }
+    fn set_stream(&self, stream: DataStream<'a, M, D>) {}
 
-    fn draw(&self, ctx: C) {
+    fn draw(&self, ctx: &C) {
         self.base.dispose();
         // data_tableSubscriptionTracker
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
@@ -226,15 +221,67 @@ where
         // self.easing_function = get_easing(self.options.animation().easing);
         self.base.initialize_legend();
         self.base.initialize_tooltip();
-        // self.resize(container.clientWidth, container.clientHeight, true);
+
+        // self.axes_context.clearRect(0, 0, self.width, self.height);
+        self.draw_axes_and_grid(ctx);
+        self.base.start_animation();
+    }
+
+    fn update(&self, ctx: &C) {
+        self.base.update(ctx);
+    }
+
+    fn resize(&self, w: f64, h: f64) {
+        self.base.resize(w, h);
+    }
+
+    /// Draws the axes and the grid.
+    ///
+    fn draw_axes_and_grid(&self, ctx: &C) {
+        self.base.draw_axes_and_grid(ctx);
+    }
+
+    /// Draws the current animation frame.
+    ///
+    /// If [time] is `null`, draws the last frame (i.e. no animation).
+    fn draw_frame(&self, ctx: &C, time: Option<i64>) {
+        self.base.draw_frame(ctx, time);
+
+        let mut percent = self.base.calculate_percent(time);
+
+        if percent >= 1.0 {
+            percent = 1.0;
+
+            // Update the visibility states of all series before the last frame.
+            // for (let i = series_states.length - 1; i >= 0; i--) {
+            //     if (series_states[i] == Visibility::showing) {
+            //         series_states[i] = Visibility::shown;
+            //     } else if (series_states[i] == Visibility::hiding) {
+            //         series_states[i] = Visibility::hidden;
+            //     }
+            // }
+        }
+
+        let props = self.base.props.borrow();
+
+        let ease = props.easing_function.unwrap();
+        self.draw_series(ease(percent));
+        // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
+        // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
+        self.base.draw_title(ctx);
+
+        if percent < 1.0 {
+            // animation_frame_id = window.requestAnimationFrame(draw_frame);
+        } else if time.is_some() {
+            self.base.animation_end();
+        }
     }
 
     fn draw_series(&self, percent: f64) -> bool {
         // let style = self.base.options.gauge_labels.style;
         // let labelsEnabled = self.base.options.gauge_labels.enabled;
-        // series_context
-        //   ..strokeStyle = "white"
-        //   ..textAlign = "center";
+        // ctx.set_stroke_style_color("white");
+        // ctx.set_text_align("center");
         // for (Gauge gauge in series_list[0].entities) {
         //   let highlight = gauge.index == focused_entity_index;
         //   gauge.draw(series_context, percent, highlight);
@@ -245,12 +292,11 @@ where
         //   let y = gauge.center.y +
         //       gauge.outer_radius +
         //       style["fontSize"] +
-        //       axis_label_margin;
-        //   series_context
-        //     ..fillStyle = style["color"]
-        //     ..font = get_font(style)
-        //     ..textAlign = "center"
-        //     ..fill_text(gauge.name, x, y);
+        //       AXIS_LABEL_MARGIN;
+        //   ctx.set_fill_style_color(style.color);
+        //   ctx.set_font(utils::get_font(style));
+        //   ctx.set_text_align("center");
+        //   ctx.fill_text(gauge.name, x, y);
         // }
         // return false;
         unimplemented!()

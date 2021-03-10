@@ -2,12 +2,12 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use ux_dataflow::*;
 use ux_primitives::{
     canvas::CanvasContext,
     geom::{Point, Rect},
 };
-use ux_dataflow::*;
 
 use crate::*;
 
@@ -156,152 +156,10 @@ where
 
     fn data_cell_changed(&self, record: DataCellChangeRecord<D>) {
         if record.column_index == 0 {
-        //   xlabels[record.rowIndex] = record.newValue;
+            //   xlabels[record.rowIndex] = record.newValue;
         } else {
-          self.base.data_cell_changed(record);
+            self.base.data_cell_changed(record);
         }
-    }
-
-    fn draw_axes_and_grid(&self) {
-        // // x-axis title.
-
-        // if (x_title_center != null) {
-        //   let opt = self.base.options.x_axis.title;
-        //   axes_context
-        //     ..fillStyle = opt["style"]["color"]
-        //     ..font = get_font(opt["style"])
-        //     ..textAlign = "center"
-        //     ..textBaseline = "middle"
-        //     ..fill_text(opt["text"], x_title_center.x, x_title_center.y);
-        // }
-
-        // // y-axis title.
-
-        // if (y_title_center != null) {
-        //   let opt = self.base.options.y_axis.title;
-        //   axes_context
-        //     ..save()
-        //     ..fillStyle = opt["style"]["color"]
-        //     ..font = get_font(opt["style"])
-        //     ..translate(y_title_center.x, y_title_center.y)
-        //     ..rotate(-PI_2)
-        //     ..textAlign = "center"
-        //     ..textBaseline = "middle"
-        //     ..fill_text(opt["text"], 0, 0)
-        //     ..restore();
-        // }
-
-        // // x-axis labels.
-
-        // let opt = self.base.options.x_axis.labels;
-        // axes_context.fillStyle = opt["style"]["color"];
-        // axes_context.font = get_font(opt["style"]);
-        // let x = xlabel_x(0);
-        // let y = x_axis_top + axis_label_margin + opt["style"]["fontSize"];
-        // let scaledLabelHop = xlabel_step * xlabel_hop;
-
-        // if (xlabel_rotation == 0) {
-        //   axes_context.textAlign = "center";
-        //   axes_context.textBaseline = "alphabetic";
-        //   for (let i = 0; i < xlabels.length; i += xlabel_step) {
-        //     axes_context.fill_text(xlabels[i], x, y);
-        //     x += scaledLabelHop;
-        //   }
-        // } else {
-        //   axes_context.textAlign = xlabel_rotation < 0 ? "right" : "left";
-        //   axes_context.textBaseline = "middle";
-        //   if (xlabel_rotation == 90) {
-        //     x += xlabel_rotation.sign * (opt["style"]["fontSize"] / 8).trunc();
-        //   }
-        //   let angle = deg2rad(xlabel_rotation);
-        //   for (let i = 0; i < xlabels.length; i += xlabel_step) {
-        //     axes_context
-        //       ..save()
-        //       ..translate(x, y)
-        //       ..rotate(angle)
-        //       ..fill_text(xlabels[i], 0, 0)
-        //       ..restore();
-        //     x += scaledLabelHop;
-        //   }
-        // }
-
-        // // y-axis labels.
-
-        // axes_context
-        //   ..fillStyle = self.base.options.y_axis.labels.style.color
-        //   ..font = get_font(self.base.options.y_axis.labels.style)
-        //   ..textAlign = "right"
-        //   ..textBaseline = "middle";
-        // x = y_axis_left - axis_label_margin;
-        // y = x_axis_top - (self.base.options.y_axis.labels.style.font_size / 8).trunc();
-        // for (let label in ylabels) {
-        //   axes_context.fill_text(label, x, y);
-        //   y -= ylabel_hop;
-        // }
-
-        // // x grid lines - draw bottom up.
-
-        // if (self.base.options.x_axis.grid_line_width > 0) {
-        //   axes_context
-        //     ..lineWidth = self.base.options.x_axis.grid_line_width
-        //     ..strokeStyle = self.base.options.x_axis.grid_line_color
-        //     ..begin_path();
-        //   y = x_axis_top - ylabel_hop;
-        //   for (let i = ylabels.length - 1; i >= 1; i--) {
-        //     axes_context.moveTo(y_axis_left, y);
-        //     axes_context.lineTo(y_axis_left + x_axis_length, y);
-        //     y -= ylabel_hop;
-        //   }
-        //   axes_context.stroke();
-        // }
-
-        // // y grid lines or x-axis ticks - draw from left to right.
-
-        // let lineWidth = self.base.options.y_axis.grid_line_width;
-        // x = y_axis_left;
-        // if (xlabel_step > 1) {
-        //   x = xlabel_x(0);
-        // }
-        // if (lineWidth > 0) {
-        //   y = x_axis_top - y_axis_length;
-        // } else {
-        //   lineWidth = 1;
-        //   y = x_axis_top + axis_label_margin;
-        // }
-        // axes_context
-        //   ..lineWidth = lineWidth
-        //   ..strokeStyle = self.base.options.y_axis.grid_line_color
-        //   ..begin_path();
-        // for (let i = 0; i < xlabels.length; i += xlabel_step) {
-        //   axes_context.moveTo(x, y);
-        //   axes_context.lineTo(x, x_axis_top);
-        //   x += scaledLabelHop;
-        // }
-        // axes_context.stroke();
-
-        // // x-axis itself.
-
-        // if (self.base.options.x_axis.line_width > 0) {
-        //   axes_context
-        //     ..lineWidth = self.base.options.x_axis.line_width
-        //     ..strokeStyle = self.base.options.x_axis.line_color
-        //     ..begin_path()
-        //     ..moveTo(y_axis_left, x_axis_top)
-        //     ..lineTo(y_axis_left + x_axis_length, x_axis_top)
-        //     ..stroke();
-        // }
-
-        // // y-axis itself.
-
-        // if (self.base.options.y_axis.line_width > 0) {
-        //   axes_context
-        //     ..lineWidth = self.base.options.y_axis.line_width
-        //     ..strokeStyle = self.base.options.y_axis.line_color
-        //     ..begin_path()
-        //     ..moveTo(y_axis_left, x_axis_top - y_axis_length)
-        //     ..lineTo(y_axis_left, x_axis_top)
-        //     ..stroke();
-        // }
     }
 
     fn get_entity_group_index(&self, x: f64, num: f64) -> i64 {
@@ -319,18 +177,12 @@ where
         unimplemented!()
     }
 
-    fn update(&self, options: HashMap<String, String>) {
-        self.base.update(options);
-        self.calculate_average_y_values(0);
-    }
-
     /// Calculates average y values for the visible series to help position the
     /// tooltip.
     ///
     /// If [index] is given, calculates the average y value for the entity group
     /// at [index] only.
     ///
-    /// To be overridden.
     // index is opt
     fn calculate_average_y_values(&self, index: usize) {
         // if !self.base.options.tooltip.enabled return;
@@ -496,11 +348,11 @@ where
 
         //     // Axes" size and position.
 
-        //     y_axis_left = self.base.series_and_axes_box.left + ylabel_max_width + axis_label_margin;
+        //     y_axis_left = self.base.series_and_axes_box.left + ylabel_max_width + AXIS_LABEL_MARGIN;
         //     if (yTitleWidth > 0) {
         //       y_axis_left += yTitleWidth + CHART_TITLE_MARGIN;
         //     } else {
-        //       y_axis_left += axis_label_margin;
+        //       y_axis_left += AXIS_LABEL_MARGIN;
         //     }
 
         //     x_axis_length = self.base.series_and_axes_box.right - y_axis_left;
@@ -509,9 +361,9 @@ where
         //     if (xTitleHeight > 0) {
         //       x_axis_top -= xTitleHeight + CHART_TITLE_MARGIN;
         //     } else {
-        //       x_axis_top -= axis_label_margin;
+        //       x_axis_top -= AXIS_LABEL_MARGIN;
         //     }
-        //     x_axis_top -= axis_label_margin;
+        //     x_axis_top -= AXIS_LABEL_MARGIN;
 
         //     // x-axis labels and x-axis"s position.
 
@@ -590,10 +442,9 @@ where
         unimplemented!()
     }
 
-    fn set_stream(&self, stream: DataStream<'a, M, D>) {
-    }
+    fn set_stream(&self, stream: DataStream<'a, M, D>) {}
 
-    fn draw(&self, ctx: C) {
+    fn draw(&self, ctx: &C) {
         self.base.dispose();
         // data_tableSubscriptionTracker
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
@@ -602,7 +453,202 @@ where
         // self.easing_function = get_easing(self.options.animation().easing);
         self.base.initialize_legend();
         self.base.initialize_tooltip();
-        // self.resize(container.clientWidth, container.clientHeight, true);
+
+        // self.axes_context.clearRect(0, 0, self.width, self.height);
+        self.draw_axes_and_grid(ctx);
+        self.base.start_animation();
+    }
+
+    fn update(&self, ctx: &C) {
+        self.base.update(ctx);
+        self.calculate_average_y_values(0);
+    }
+
+    fn resize(&self, w: f64, h: f64) {
+        self.base.resize(w, h);
+    }
+
+    /// Draws the axes and the grid.
+    ///
+    fn draw_axes_and_grid(&self, ctx: &C) {
+        self.base.draw_axes_and_grid(ctx);
+        // TODO: if ok then remove below commented code
+        // coz it implemented in basis
+
+        // // x-axis title.
+
+        // if (x_title_center != null) {
+        //   let opt = self.base.options.x_axis.title;
+        //   ctx.set_fill_style_color(opt.style.color);
+        //   ctx.set_font(utils::get_font(opt.style))
+        //   ctx.set_text_align("center");
+        //   ctx.set_text_baseline("middle");
+        //   ctx.fill_text(opt.text, x_title_center.x, x_title_center.y);
+        // }
+
+        // // y-axis title.
+
+        // if (y_title_center != null) {
+        //   let opt = self.base.options.y_axis.title;
+        //   axes_context
+        //     ..save()
+        //     ..fillStyle = opt.style.["color"]
+        //     ..font = get_font(opt.style.)
+        //     ..translate(y_title_center.x, y_title_center.y)
+        //     ..rotate(-PI_2)
+        //     ..textAlign = "center"
+        //     ..textBaseline = "middle"
+        //     ..fill_text(opt["text"], 0, 0)
+        //     ..restore();
+        // }
+
+        // // x-axis labels.
+
+        // let opt = self.base.options.x_axis.labels;
+        // axes_context.fillStyle = opt.style.["color"];
+        // axes_context.font = get_font(opt.style.);
+        // let x = xlabel_x(0);
+        // let y = x_axis_top + AXIS_LABEL_MARGIN + opt.style.["fontSize"];
+        // let scaledLabelHop = xlabel_step * xlabel_hop;
+
+        // if (xlabel_rotation == 0) {
+        //   axes_context.textAlign = "center";
+        //   axes_context.textBaseline = "alphabetic";
+        //   for (let i = 0; i < xlabels.length; i += xlabel_step) {
+        //     axes_context.fill_text(xlabels[i], x, y);
+        //     x += scaledLabelHop;
+        //   }
+        // } else {
+        //   axes_context.textAlign = xlabel_rotation < 0 ? "right" : "left";
+        //   axes_context.textBaseline = "middle";
+        //   if (xlabel_rotation == 90) {
+        //     x += xlabel_rotation.sign * (opt.style.["fontSize"] / 8).trunc();
+        //   }
+        //   let angle = deg2rad(xlabel_rotation);
+        //   for (let i = 0; i < xlabels.length; i += xlabel_step) {
+        //     axes_context
+        //       ..save()
+        //       ..translate(x, y)
+        //       ..rotate(angle)
+        //       ..fill_text(xlabels[i], 0, 0)
+        //       ..restore();
+        //     x += scaledLabelHop;
+        //   }
+        // }
+
+        // // y-axis labels.
+
+        // axes_context
+        //   ..fillStyle = self.base.options.y_axis.labels.style.color
+        //   ..font = get_font(self.base.options.y_axis.labels.style)
+        //   ..textAlign = "right"
+        //   ..textBaseline = "middle";
+        // x = y_axis_left - AXIS_LABEL_MARGIN;
+        // y = x_axis_top - (self.base.options.y_axis.labels.style.font_size / 8).trunc();
+        // for (let label in ylabels) {
+        //   axes_context.fill_text(label, x, y);
+        //   y -= ylabel_hop;
+        // }
+
+        // // x grid lines - draw bottom up.
+
+        // if (self.base.options.x_axis.grid_line_width > 0) {
+        //   axes_context
+        //     ..lineWidth = self.base.options.x_axis.grid_line_width
+        //     ..strokeStyle = self.base.options.x_axis.grid_line_color
+        //     ..begin_path();
+        //   y = x_axis_top - ylabel_hop;
+        //   for (let i = ylabels.length - 1; i >= 1; i--) {
+        //     axes_context.moveTo(y_axis_left, y);
+        //     axes_context.lineTo(y_axis_left + x_axis_length, y);
+        //     y -= ylabel_hop;
+        //   }
+        //   axes_context.stroke();
+        // }
+
+        // // y grid lines or x-axis ticks - draw from left to right.
+
+        // let lineWidth = self.base.options.y_axis.grid_line_width;
+        // x = y_axis_left;
+        // if (xlabel_step > 1) {
+        //   x = xlabel_x(0);
+        // }
+        // if (lineWidth > 0) {
+        //   y = x_axis_top - y_axis_length;
+        // } else {
+        //   lineWidth = 1;
+        //   y = x_axis_top + AXIS_LABEL_MARGIN;
+        // }
+        // axes_context
+        //   ..lineWidth = lineWidth
+        //   ..strokeStyle = self.base.options.y_axis.grid_line_color
+        //   ..begin_path();
+        // for (let i = 0; i < xlabels.length; i += xlabel_step) {
+        //   axes_context.moveTo(x, y);
+        //   axes_context.lineTo(x, x_axis_top);
+        //   x += scaledLabelHop;
+        // }
+        // axes_context.stroke();
+
+        // // x-axis itself.
+
+        // if (self.base.options.x_axis.line_width > 0) {
+        //   axes_context
+        //     ..lineWidth = self.base.options.x_axis.line_width
+        //     ..strokeStyle = self.base.options.x_axis.line_color
+        //     ..begin_path()
+        //     ..moveTo(y_axis_left, x_axis_top)
+        //     ..lineTo(y_axis_left + x_axis_length, x_axis_top)
+        //     ..stroke();
+        // }
+
+        // // y-axis itself.
+
+        // if (self.base.options.y_axis.line_width > 0) {
+        //   axes_context
+        //     ..lineWidth = self.base.options.y_axis.line_width
+        //     ..strokeStyle = self.base.options.y_axis.line_color
+        //     ..begin_path()
+        //     ..moveTo(y_axis_left, x_axis_top - y_axis_length)
+        //     ..lineTo(y_axis_left, x_axis_top)
+        //     ..stroke();
+        // }
+    }
+
+    /// Draws the current animation frame.
+    ///
+    /// If [time] is `null`, draws the last frame (i.e. no animation).
+    fn draw_frame(&self, ctx: &C, time: Option<i64>) {
+        self.base.draw_frame(ctx, time);
+
+        let mut percent = self.base.calculate_percent(time);
+
+        if percent >= 1.0 {
+            percent = 1.0;
+
+            // Update the visibility states of all series before the last frame.
+            // for (let i = series_states.length - 1; i >= 0; i--) {
+            //     if (series_states[i] == Visibility::showing) {
+            //         series_states[i] = Visibility::shown;
+            //     } else if (series_states[i] == Visibility::hiding) {
+            //         series_states[i] = Visibility::hidden;
+            //     }
+            // }
+        }
+
+        let props = self.base.props.borrow();
+
+        let ease = props.easing_function.unwrap();
+        self.draw_series(ease(percent));
+        // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
+        // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
+        self.base.draw_title(ctx);
+
+        if percent < 1.0 {
+            // animation_frame_id = window.requestAnimationFrame(draw_frame);
+        } else if time.is_some() {
+            self.base.animation_end();
+        }
     }
 
     fn draw_series(&self, percent: f64) -> bool {

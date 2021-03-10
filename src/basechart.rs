@@ -3,6 +3,7 @@ use ux_animate::easing::{Easing, EasingFunction};
 use ux_dataflow::*;
 use ux_primitives::{
     canvas::CanvasContext,
+    color::{palette, Color},
     geom::{Point, Rect, Size},
 };
 
@@ -173,10 +174,10 @@ where
         unimplemented!()
     }
 
-    pub fn get_color(&self, index: usize) -> String {
+    pub fn get_color(&self, index: usize) -> Color {
         let colors = self.options.colors();
         let color = colors.get(index % colors.len()).unwrap();
-        color.clone().into()
+        color.clone()
     }
 
     pub fn get_highlight_color(&self, color: &str) -> String {
@@ -207,7 +208,6 @@ where
     /// Overriding methods must call this method first to have [series_and_axes_box]
     /// calculated.
     ///
-    /// To be overridden.
     pub fn calculate_drawing_sizes(&self) {
         println!("BaseChart calculate_drawing_sizes");
         let title = self.options.title();
@@ -216,7 +216,7 @@ where
         let title_w = 0.0;
         let mut title_h = 0.0;
         if title.position != "none" && title.text.is_some() {
-            title_h = title.style.font_size + 2.0 * TITLE_PADDING;
+            title_h = title.style.font_size.unwrap_or(12.) + 2.0 * TITLE_PADDING;
         }
 
         let mut props = self.props.borrow_mut();
@@ -367,65 +367,19 @@ where
         unimplemented!()
     }
 
-    /// Draws the current animation frame.
-    ///
-    /// If [time] is `null`, draws the last frame (i.e. no animation).
-    pub fn draw_frame(&mut self, ctx: C, time: Option<i64>) {
-        let mut percent = 1.0;
-        let duration = self.options.animation().duration;
-        let mut props = self.props.borrow_mut();
-
-        if let None = props.animation_start_time {
-            props.animation_start_time = time
-        }
-
-        if let Some(time) = time {
-            if duration > 0 {
-                percent = (time - props.animation_start_time.unwrap()) as f64 / duration as f64;
-            }
-        }
-
-        if percent >= 1.0 {
-            percent = 1.0;
-
-            // Update the visibility states of all series before the last frame.
-            // for (let i = series_states.length - 1; i >= 0; i--) {
-            //     if (series_states[i] == Visibility::showing) {
-            //         series_states[i] = Visibility::shown;
-            //     } else if (series_states[i] == Visibility::hiding) {
-            //         series_states[i] = Visibility::hidden;
-            //     }
-            // }
-        }
-
-        // context.fillStyle = self.options.background();
-        // context.fillRect(0, 0, width, height);
-        // series_context.clearRect(0, 0, width, height);
-        let ease = props.easing_function.unwrap();
-        self.draw_series(ease(percent));
-        // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
-        // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
-        self.draw_title(ctx);
-
-        if percent < 1.0 {
-            // animation_frame_id = window.requestAnimationFrame(draw_frame);
-        } else if time.is_some() {
-            self.animation_end();
-        }
-    }
-
     /// Draws the chart title using the main rendering context.
-    pub fn draw_title(&self, ctx: C) {
+    pub fn draw_title(&self, ctx: &C) {
+        println!("BarChart draw_title");
         let title = self.options.title();
         if let Some(text) = title.text {
             let props = self.props.borrow();
             let x = ((props.title_box.origin.x + props.title_box.size.width) / 2.).trunc();
             let y = (props.title_box.origin.y + props.title_box.size.height) - TITLE_PADDING;
-            // context
-            //   ..font = get_font(title["style"])
-            //   ..fillStyle = title["style"]["color"]
-            //   ..textAlign = "center"
-            //   ..fill_text(title["text"], x, y);
+            println!("Title [{}] {},{}", text, x, y);
+            // ctx.set_font(utils::get_font(title.style));
+            // ctx.set_fill_style_color(title.style.color));
+            // ctx.set_text_align("center");
+            // ctx.fill_text(title.text, x, y);
         }
     }
 
@@ -578,13 +532,11 @@ where
     ///
     /// [index] is the index of the affected series.
     ///
-    /// To be overridden.
     pub fn series_visibility_changed(&self, index: usize) {}
 
     /// Returns the index of the point group/bar group/pie/... near the position
     /// specified by [x] and [y].
     ///
-    /// To be overridden.
     pub fn get_entity_group_index(&self, x: f64, num: f64) -> i64 {
         -1
     }
@@ -627,7 +579,7 @@ where
 
         // tooltip_label_formatter = opt["labelFormatter"] ?? default_label_formatter;
         // tooltip_value_formatter = opt["value_formatter"] ?? default_value_formatter;
-        // tooltip = create_tooltip_or_legend(opt["style"])
+        // tooltip = create_tooltip_or_legend(opt.style.)
         //   ..hidden = true
         //   ..style.left = "0"
         //   ..style.top = "0"
@@ -705,7 +657,7 @@ where
 
     // real drawing
     pub fn start_animation(&self) {
-        println!("BarChart start_animation");
+        println!("BaseChart start_animation");
         // animation_frame_id = window.requestAnimationFrame(draw_frame);
     }
 
@@ -753,80 +705,21 @@ where
         // legend_item_subscription_tracker.clear();
     }
 
-    /// Resizes the chart to fit the new size of the container.
-    /// w = container.clientWidth;
-    /// h = container.clientHeight;
-    // [bool force_redraw = false]
-    pub fn resize(&self, w: f64, h: f64, force_redraw: bool) {
-        println!("BaseChart resize");
-        let mut force_redraw = force_redraw;
+    pub fn calculate_percent(&self, time: Option<i64>) -> f64 {
+        let mut percent = 1.0;
+        let mut props = self.props.borrow_mut();
 
-        if w == 0_f64 || h == 0_f64 {
-            return;
+        if let None = props.animation_start_time {
+            props.animation_start_time = time
         }
 
-        {
-            let mut props = self.props.borrow_mut();
-            let width = props.width;
-            let height = props.height;
-            if w != width || h != height {
-                props.width = props.width + w;
-                props.height = props.height + h;
-                force_redraw = true;
-
-                //   let dpr = window.devicePixelRatio;
-                //   let scaledW = (w * dpr).round();
-                //   let scaledH = (h * dpr).round();
-
-                self.set_canvas_size(&self.context);
-                self.set_canvas_size(&self.axes_context);
-                self.set_canvas_size(&self.series_context);
+        if let Some(time) = time {
+            let duration = self.options.animation().duration;
+            if duration > 0 {
+                percent = (time - props.animation_start_time.unwrap()) as f64 / duration as f64;
             }
         }
-
-        if force_redraw {
-            println!("BaseChart force_redraw");
-            self.stop_animation();
-            self.data_table_changed();
-            self.position_legend();
-            self.update(Default::default());
-        }
-    }
-
-    fn set_canvas_size(&self, ctx: &Option<C>) {
-        // Scale the drawing canvas by [dpr] to ensure sharp rendering on
-        // high pixel density displays.
-        if let Some(ctx) = ctx {
-            // ctx.canvas
-            //   ..style.width = "${w}px"
-            //   ..style.height = "${h}px"
-            //   ..width = scaledW
-            //   ..height = scaledH;
-            // ctx.set_transform(dpr, 0, 0, dpr, 0, 0);
-        }
-    }
-
-    /// Updates the chart.
-    ///
-    ///  This method should be called after [dataTable] has been modified.
-    // TODO: handle updates while animation is happening.
-    pub fn update(&self, options: HashMap<String, String>) {
-        println!("BaseChart update");
-        {
-            let props = self.props.borrow();
-
-            if props.width == 0_f64 || props.height == 0_f64 {
-                return;
-            }
-        }
-
-        // This call is redundant for row and column changes but necessary for
-        // cell changes.
-        self.calculate_drawing_sizes();
-        self.update_series(0);
-        // self.axes_context.clearRect(0, 0, self.width, self.height);
-        self.draw_axes_and_grid();
-        self.start_animation();
+        percent
     }
 }
 
@@ -846,7 +739,8 @@ where
 
     /// Draws the chart given a data table [dataTable] and an optional set of
     /// options [options].
-    fn draw(&self, ctx: C) {
+    fn draw(&self, ctx: &C) {
+        println!("!!!!!!!! BaseChart draw !!!!!!!!");
         self.dispose();
         // data_tableSubscriptionTracker
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
@@ -855,7 +749,95 @@ where
         // self.easing_function = get_easing(self.options.animation().easing);
         self.initialize_legend();
         self.initialize_tooltip();
-        // self.resize(container.clientWidth, container.clientHeight, true);
+
+        // self.axes_context.clearRect(0, 0, self.width, self.height);
+        self.draw_axes_and_grid(ctx);
+        self.start_animation();
+    }
+
+    /// Updates the chart.
+    ///
+    ///  This method should be called after [dataTable] has been modified.
+    // TODO: handle updates while animation is happening.
+    fn update(&self, ctx: &C) {
+        println!("BaseChart update");
+
+        {
+            let props = self.props.borrow();
+
+            if props.width == 0_f64 || props.height == 0_f64 {
+                return;
+            }
+        }
+
+        // if force_redraw {
+        //     println!("BaseChart force_redraw");
+        //     self.stop_animation();
+        //     self.data_table_changed();
+        //     self.position_legend();
+
+        //     // This call is redundant for row and column changes but necessary for
+        //     // cell changes.
+        //     self.calculate_drawing_sizes();
+        //     self.update_series(0);
+        // }
+    }
+
+    /// Resizes just only change size state for chart and do not resize the container/canvas.
+    fn resize(&self, w: f64, h: f64) {
+        println!("BaseChart resize {} {}", w, h);
+        if w == 0_f64 || h == 0_f64 {
+            println!("BaseChart resize OOOPS");
+            return;
+        }
+
+        let mut props = self.props.borrow_mut();
+        if w != props.width || h != props.height {
+            props.width = w;
+            props.height = h;
+            // force_redraw = true; // now_eq
+        }
+    }
+
+    /// Draws the axes and the grid.
+    ///
+    fn draw_axes_and_grid(&self, ctx: &C) {}
+
+    /// Updates the series at index [index]. If [index] is `null`, updates all
+    /// series.
+    ///
+    // index is opt
+    fn update_series(&self, index: usize) {}
+
+    // println!("SIZE {} {}", width, height);
+    // println!("BACKGROUND {}", self.options.background());
+
+    /// Draws the current animation frame.
+    ///
+    /// If [time] is `null`, draws the last frame (i.e. no animation).
+    fn draw_frame(&self, ctx: &C, time: Option<i64>) {
+        let props = self.props.borrow();
+        let width = props.width;
+        let height = props.height;
+
+        ctx.set_fill_style_color(palette::TEAL_9);
+        // just fill instead clear
+        ctx.fill_rect(0., 0., width, height);
+    }
+
+    /// Draws the series given the current animation percent [percent].
+    ///
+    /// If this method returns `false`, the animation is continued until [percent]
+    /// reaches 1.0.
+    ///
+    /// If this method returns `true`, the animation is stopped immediately.
+    /// This is useful as there are cases where no animation is expected.
+    /// In those cases, the overriding method will return `true` to stop the
+    /// animation.
+    ///
+    fn draw_series(&self, percent: f64) -> bool {
+        // Should not be implemented atm
+        panic!("Implement concrete method draw_series");
     }
 
     fn create_entity(

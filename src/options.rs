@@ -1,11 +1,12 @@
 use super::{LabelFormatter, ValueFormatter};
+use ux_primitives::color::{palette, Color};
 pub trait BaseOption<'a> {
     fn animation(&self) -> &AnimationOptions;
-    fn colors(&self) -> &Vec<&'a str>;
+    fn colors(&self) -> &Vec<Color>;
     fn title(&self) -> &TitleOptions<'a>;
     fn legend(&self) -> &LegendOptions<'a>;
     fn tooltip(&self) -> &TooltipOptions<'a>;
-    fn background(&self) -> &'a str;
+    fn background(&self) -> &Color;
 }
 
 pub struct AnimationOptions {
@@ -69,7 +70,7 @@ pub struct BarChartSeriesOptions<'a> {
 
 pub struct BarChartCrosshairOptions {
     /// The fill color of the crosshair.
-    pub color: String,
+    pub color: Color,
 }
 
 pub struct BarChartXAxisLabelsOptions<'a> {
@@ -87,16 +88,16 @@ pub struct BarChartXAxisOptions<'a> {
     pub crosshair: Option<BarChartCrosshairOptions>,
 
     /// The color of the horizontal grid lines.
-    pub grid_line_color: &'a str,
+    pub grid_line_color: Color,
 
     /// The width of the horizontal grid lines.
-    pub grid_line_width: usize,
+    pub grid_line_width: f64,
 
     /// The color of the axis itself.
-    pub line_color: &'a str,
+    pub line_color: Color,
 
     /// The width of the axis itself.
-    pub line_width: usize,
+    pub line_width: f64,
 
     /// An object that controls the axis labels.
     pub labels: BarChartXAxisLabelsOptions<'a>,
@@ -119,16 +120,16 @@ pub struct BarChartYAxisLabelsOptions<'a> {
 
 pub struct BarChartYAxisOptions<'a> {
     /// The color of the vertical grid lines.
-    pub grid_line_color: &'a str,
+    pub grid_line_color: Color,
 
     /// The width of the vertical grid lines.
-    pub grid_line_width: usize,
+    pub grid_line_width: f64,
 
     /// The color of the axis itself.
-    pub line_color: &'a str,
+    pub line_color: Color,
 
     /// The width of the axis itself.
-    pub line_width: usize,
+    pub line_width: f64,
 
     /// The interval of the tick marks in axis unit. If `null`, this value
     /// is automatically calculated.
@@ -171,11 +172,11 @@ pub struct BarChartOptions<'a> {
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background_color: &'a str,
+    pub background_color: Color,
 
     /// The color list used to render the series. If there are more series than
     /// colors, the colors will be reused.
-    pub colors: Vec<&'a str>,
+    pub colors: Vec<Color>,
 
     /// An object that controls the legend.
     pub legend: LegendOptions<'a>,
@@ -192,7 +193,7 @@ impl<'a> BaseOption<'a> for BarChartOptions<'a> {
         &self.animation
     }
 
-    fn colors(&self) -> &Vec<&'a str> {
+    fn colors(&self) -> &Vec<Color> {
         &self.colors
     }
 
@@ -208,7 +209,7 @@ impl<'a> BaseOption<'a> for BarChartOptions<'a> {
         &self.tooltip
     }
 
-    fn background(&self) -> &'a str {
+    fn background(&self) -> &Color {
         &self.background_color
     }
 }
@@ -227,10 +228,10 @@ impl<'a> Default for BarChartOptions<'a> {
             series: BarChartSeriesOptions { labels: None },
             x_axis: BarChartXAxisOptions {
                 crosshair: None,
-                grid_line_color: "#c0c0c0",
-                grid_line_width: 1,
-                line_color: "#c0c0c0",
-                line_width: 1,
+                grid_line_color: palette::GRAY_5,
+                grid_line_width: 1.,
+                line_color: palette::GRAY_5,
+                line_width: 1.,
                 labels: BarChartXAxisLabelsOptions {
                     max_rotation: 0,
                     min_rotation: -90,
@@ -243,10 +244,10 @@ impl<'a> Default for BarChartOptions<'a> {
                 },
             },
             y_axis: BarChartYAxisOptions {
-                grid_line_color: "#c0c0c0",
-                grid_line_width: 0,
-                line_color: "#c0c0c0",
-                line_width: 0,
+                grid_line_color: palette::GRAY_5,
+                grid_line_width: 0.,
+                line_color: palette::GRAY_5,
+                line_width: 0.,
                 interval: None,
                 labels: BarChartYAxisLabelsOptions {
                     formatter: None,
@@ -266,10 +267,18 @@ impl<'a> Default for BarChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background_color: "white",
+            background_color: palette::WHITE,
             colors: vec![
-                "#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354",
-                "#8085e8", "#8d4653", "#91e8e1",
+                Color::RGB(0x7c, 0xb5, 0xec),
+                Color::RGB(0x43, 0x43, 0x48),
+                Color::RGB(0x90, 0xed, 0x7d),
+                Color::RGB(0xf7, 0xa3, 0x5c),
+                Color::RGB(0x80, 0x85, 0xe9),
+                Color::RGB(0xf1, 0x5c, 0x80),
+                Color::RGB(0xe4, 0xd3, 0x54),
+                Color::RGB(0x80, 0x85, 0xe8),
+                Color::RGB(0x8d, 0x46, 0x53),
+                Color::RGB(0x91, 0xe8, 0xe1),
             ],
             legend: LegendOptions {
                 label_formatter: None,
@@ -293,29 +302,29 @@ impl<'a> Default for BarChartOptions<'a> {
 
 #[derive(Debug, Clone)]
 pub struct StyleOption<'a> {
-    pub background_color: &'a str,
-    pub border_color: &'a str,
+    pub background_color: Color,
+    pub border_color: Color,
     pub border_width: f64, // i32?
     /// The title"s color
-    pub color: &'a str,
+    pub color: Color,
     /// The title"s font family.
-    pub font_family: &'a str,
+    pub font_family: Option<&'a str>,
     /// The title"s font size.
-    pub font_size: f64,
+    pub font_size: Option<f64>,
     /// The title"s font style.
-    pub font_style: &'a str, // "normal"
+    pub font_style: Option<&'a str>, // "normal"
 }
 
 impl<'a> Default for StyleOption<'a> {
     fn default() -> Self {
         Self {
-            background_color: "",
-            border_color: "",
+            background_color: palette::WHITE,
+            border_color: palette::GRAY_4,
             border_width: 0_f64,
-            color: "",
-            font_family: "",
-            font_size: 0_f64,
-            font_style: "normal", // "normal"
+            color: palette::GRAY_9,
+            font_family: Some("Roboto"),
+            font_size: Some(12_f64),
+            font_style: Some("normal"),
         }
     }
 }
@@ -330,11 +339,11 @@ pub struct GaugeChartOptions<'a> {
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background_color: &'a str,
+    pub background_color: Color,
 
     /// The color list used to render the series. If there are more series than
     /// colors, the colors will be reused.
-    pub colors: Vec<&'a str>,
+    pub colors: Vec<Color>,
 
     /// An object that controls the legend.
     pub legend: LegendOptions<'a>,
@@ -351,7 +360,7 @@ impl<'a> BaseOption<'a> for GaugeChartOptions<'a> {
         &self.animation
     }
 
-    fn colors(&self) -> &Vec<&'a str> {
+    fn colors(&self) -> &Vec<Color> {
         &self.colors
     }
 
@@ -367,7 +376,7 @@ impl<'a> BaseOption<'a> for GaugeChartOptions<'a> {
         &self.tooltip
     }
 
-    fn background(&self) -> &'a str {
+    fn background(&self) -> &Color {
         &self.background_color
     }
 }
@@ -381,10 +390,18 @@ impl<'a> Default for GaugeChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background_color: "#dbdbdb",
+            background_color: palette::GRAY_3,
             colors: vec![
-                "#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354",
-                "#8085e8", "#8d4653", "#91e8e1",
+                Color::RGB(0x7c, 0xb5, 0xec),
+                Color::RGB(0x43, 0x43, 0x48),
+                Color::RGB(0x90, 0xed, 0x7d),
+                Color::RGB(0xf7, 0xa3, 0x5c),
+                Color::RGB(0x80, 0x85, 0xe9),
+                Color::RGB(0xf1, 0x5c, 0x80),
+                Color::RGB(0xe4, 0xd3, 0x54),
+                Color::RGB(0x80, 0x85, 0xe8),
+                Color::RGB(0x8d, 0x46, 0x53),
+                Color::RGB(0x91, 0xe8, 0xe1),
             ],
             legend: LegendOptions {
                 label_formatter: None,
@@ -406,20 +423,20 @@ impl<'a> Default for GaugeChartOptions<'a> {
     }
 }
 
-pub struct LineChartSeriesMarkersOptions<'a> {
+pub struct LineChartSeriesMarkersOptions {
     /// bool - Whether markers are enabled.
     pub enabled: bool,
 
     /// The fill color. If `null`, the stroke color of the series
     /// will be used.
-    pub fill_color: Option<&'a str>,
+    pub fill_color: Option<Color>,
 
     /// The line width of the markers.
     pub line_width: usize,
 
     /// The stroke color. If `null`, the stroke color of the series
     /// will be used.
-    pub stroke_color: &'a str,
+    pub stroke_color: Color,
 
     /// Size of the markers.
     pub size: usize,
@@ -441,7 +458,7 @@ pub struct LineChartSeriesOptions<'a> {
     pub labels: Option<StyleOption<'a>>,
 
     /// An object that controls the markers.
-    pub markers: LineChartSeriesMarkersOptions<'a>,
+    pub markers: LineChartSeriesMarkersOptions,
 }
 
 pub struct LineChartXAxisLabelsOptions<'a> {
@@ -456,13 +473,13 @@ pub struct LineChartXAxisLabelsOptions<'a> {
 
 pub struct LineChartXAxisOptions<'a> {
     /// The color of the horizontal grid lines.
-    pub grid_line_color: &'a str,
+    pub grid_line_color: Color,
 
     /// The width of the horizontal grid lines.
     pub grid_line_width: usize,
 
     /// The color of the axis itself.
-    pub line_color: &'a str,
+    pub line_color: Color,
 
     /// The width of the axis itself.
     pub line_width: usize,
@@ -487,13 +504,13 @@ pub struct LineChartYAxisLabelsOptions<'a> {
 }
 pub struct LineChartYAxisOptions<'a> {
     /// The color of the vertical grid lines.
-    pub grid_line_color: &'a str,
+    pub grid_line_color: Color,
 
     /// The width of the vertical grid lines.
     pub grid_line_width: usize,
 
     /// The color of the axis itself.
-    pub line_color: &'a str,
+    pub line_color: Color,
 
     /// The width of the axis itself.
     pub line_width: usize,
@@ -539,11 +556,11 @@ pub struct LineChartOptions<'a> {
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background_color: &'a str,
+    pub background_color: Color,
 
     /// The color list used to render the series. If there are more series than
     /// colors, the colors will be reused.
-    pub colors: Vec<&'a str>,
+    pub colors: Vec<Color>,
 
     /// An object that controls the legend.
     pub legend: LegendOptions<'a>,
@@ -560,7 +577,7 @@ impl<'a> BaseOption<'a> for LineChartOptions<'a> {
         &self.animation
     }
 
-    fn colors(&self) -> &Vec<&'a str> {
+    fn colors(&self) -> &Vec<Color> {
         &self.colors
     }
 
@@ -576,7 +593,7 @@ impl<'a> BaseOption<'a> for LineChartOptions<'a> {
         &self.tooltip
     }
 
-    fn background(&self) -> &'a str {
+    fn background(&self) -> &Color {
         &self.background_color
     }
 }
@@ -593,14 +610,14 @@ impl<'a> Default for LineChartOptions<'a> {
                     enabled: true,
                     fill_color: None,
                     line_width: 1,
-                    stroke_color: "white",
+                    stroke_color: palette::WHITE,
                     size: 4,
                 },
             },
             x_axis: LineChartXAxisOptions {
-                grid_line_color: "#c0c0c0",
+                grid_line_color: palette::GRAY_5,
                 grid_line_width: 1,
-                line_color: "#c0c0c0",
+                line_color: palette::GRAY_5,
                 line_width: 1,
                 labels: LineChartXAxisLabelsOptions {
                     max_rotation: 0,
@@ -614,9 +631,9 @@ impl<'a> Default for LineChartOptions<'a> {
                 },
             },
             y_axis: LineChartYAxisOptions {
-                grid_line_color: "#c0c0c0",
+                grid_line_color: palette::GRAY_5,
                 grid_line_width: 0,
-                line_color: "#c0c0c0",
+                line_color: palette::GRAY_5,
                 line_width: 0,
                 interval: None,
                 labels: LineChartYAxisLabelsOptions {
@@ -637,10 +654,18 @@ impl<'a> Default for LineChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background_color: "white",
+            background_color: palette::WHITE,
             colors: vec![
-                "#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354",
-                "#8085e8", "#8d4653", "#91e8e1",
+                Color::RGB(0x7c, 0xb5, 0xec),
+                Color::RGB(0x43, 0x43, 0x48),
+                Color::RGB(0x90, 0xed, 0x7d),
+                Color::RGB(0xf7, 0xa3, 0x5c),
+                Color::RGB(0x80, 0x85, 0xe9),
+                Color::RGB(0xf1, 0x5c, 0x80),
+                Color::RGB(0xe4, 0xd3, 0x54),
+                Color::RGB(0x80, 0x85, 0xe8),
+                Color::RGB(0x8d, 0x46, 0x53),
+                Color::RGB(0x91, 0xe8, 0xe1),
             ],
             legend: LegendOptions {
                 label_formatter: None,
@@ -695,11 +720,11 @@ pub struct PieChartOptions<'a> {
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background_color: &'a str,
+    pub background_color: Color,
 
     /// The color list used to render the series. If there are more series than
     /// colors, the colors will be reused.
-    pub colors: Vec<&'a str>,
+    pub colors: Vec<Color>,
 
     /// An object that controls the legend.
     pub legend: LegendOptions<'a>,
@@ -716,7 +741,7 @@ impl<'a> BaseOption<'a> for PieChartOptions<'a> {
         &self.animation
     }
 
-    fn colors(&self) -> &Vec<&'a str> {
+    fn colors(&self) -> &Vec<Color> {
         &self.colors
     }
 
@@ -732,7 +757,7 @@ impl<'a> BaseOption<'a> for PieChartOptions<'a> {
         &self.tooltip
     }
 
-    fn background(&self) -> &'a str {
+    fn background(&self) -> &Color {
         &self.background_color
     }
 }
@@ -755,10 +780,18 @@ impl<'a> Default for PieChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background_color: "white",
+            background_color: palette::WHITE,
             colors: vec![
-                "#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354",
-                "#8085e8", "#8d4653", "#91e8e1",
+                Color::RGB(0x7c, 0xb5, 0xec),
+                Color::RGB(0x43, 0x43, 0x48),
+                Color::RGB(0x90, 0xed, 0x7d),
+                Color::RGB(0xf7, 0xa3, 0x5c),
+                Color::RGB(0x80, 0x85, 0xe9),
+                Color::RGB(0xf1, 0x5c, 0x80),
+                Color::RGB(0xe4, 0xd3, 0x54),
+                Color::RGB(0x80, 0x85, 0xe8),
+                Color::RGB(0x8d, 0x46, 0x53),
+                Color::RGB(0x91, 0xe8, 0xe1),
             ],
             legend: LegendOptions {
                 label_formatter: None,
@@ -780,20 +813,20 @@ impl<'a> Default for PieChartOptions<'a> {
     }
 }
 
-pub struct RadarChartSeriesMarkersOptions<'a> {
+pub struct RadarChartSeriesMarkersOptions {
     /// bool - Whether markers are enabled.
     pub enabled: bool,
 
     /// The fill color. If `null`, the stroke color of the series
     /// will be used.
-    pub fill_color: Option<&'a str>,
+    pub fill_color: Option<Color>,
 
     /// The line width of the markers.
     pub line_width: usize,
 
     /// The stroke color. If `null`, the stroke color of the series
     /// will be used.
-    pub stroke_color: &'a str,
+    pub stroke_color: Color,
 
     /// Size of the markers. To disable markers, set this to zero.
     pub size: usize,
@@ -811,12 +844,12 @@ pub struct RadarChartSeriesOptions<'a> {
     pub labels: Option<StyleOption<'a>>,
 
     /// An object that controls the markers.
-    pub markers: RadarChartSeriesMarkersOptions<'a>,
+    pub markers: RadarChartSeriesMarkersOptions,
 }
 
 pub struct RadarChartXAxisOptions<'a> {
     /// The color of the horizontal grid lines.
-    pub grid_line_color: &'a str,
+    pub grid_line_color: Color,
 
     /// The width of the horizontal grid lines.
     pub grid_line_width: f64,
@@ -835,7 +868,7 @@ pub struct RadarChartYAxisLabelsOptions<'a> {
 
 pub struct RadarChartYAxisOptions<'a> {
     /// The color of the vertical grid lines.
-    pub grid_line_color: &'a str,
+    pub grid_line_color: Color,
 
     /// The width of the vertical grid lines.
     pub grid_line_width: f64,
@@ -866,11 +899,11 @@ pub struct RadarChartOptions<'a> {
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background_color: &'a str,
+    pub background_color: Color,
 
     /// The color list used to render the series. If there are more series than
     /// colors, the colors will be reused.
-    pub colors: Vec<&'a str>,
+    pub colors: Vec<Color>,
 
     /// An object that controls the legend.
     pub legend: LegendOptions<'a>,
@@ -887,7 +920,7 @@ impl<'a> BaseOption<'a> for RadarChartOptions<'a> {
         &self.animation
     }
 
-    fn colors(&self) -> &Vec<&'a str> {
+    fn colors(&self) -> &Vec<Color> {
         &self.colors
     }
 
@@ -903,7 +936,7 @@ impl<'a> BaseOption<'a> for RadarChartOptions<'a> {
         &self.tooltip
     }
 
-    fn background(&self) -> &'a str {
+    fn background(&self) -> &Color {
         &self.background_color
     }
 }
@@ -919,17 +952,17 @@ impl<'a> Default for RadarChartOptions<'a> {
                     enabled: true,
                     fill_color: None,
                     line_width: 1,
-                    stroke_color: "white",
+                    stroke_color: palette::WHITE,
                     size: 4,
                 },
             },
             x_axis: RadarChartXAxisOptions {
-                grid_line_color: "#c0c0c0",
+                grid_line_color: palette::GRAY_5,
                 grid_line_width: 1_f64,
                 labels: Some(Default::default()),
             },
             y_axis: RadarChartYAxisOptions {
-                grid_line_color: "#c0c0c0",
+                grid_line_color: palette::GRAY_5,
                 grid_line_width: 1_f64,
                 interval: None,
                 labels: RadarChartYAxisLabelsOptions {
@@ -943,10 +976,18 @@ impl<'a> Default for RadarChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background_color: "white",
+            background_color: palette::WHITE,
             colors: vec![
-                "#7cb5ec", "#434348", "#90ed7d", "#f7a35c", "#8085e9", "#f15c80", "#e4d354",
-                "#8085e8", "#8d4653", "#91e8e1",
+                Color::RGB(0x7c, 0xb5, 0xec),
+                Color::RGB(0x43, 0x43, 0x48),
+                Color::RGB(0x90, 0xed, 0x7d),
+                Color::RGB(0xf7, 0xa3, 0x5c),
+                Color::RGB(0x80, 0x85, 0xe9),
+                Color::RGB(0xf1, 0x5c, 0x80),
+                Color::RGB(0xe4, 0xd3, 0x54),
+                Color::RGB(0x80, 0x85, 0xe8),
+                Color::RGB(0x8d, 0x46, 0x53),
+                Color::RGB(0x91, 0xe8, 0xe1),
             ],
             legend: LegendOptions {
                 label_formatter: None,

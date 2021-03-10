@@ -157,24 +157,17 @@ where
     /// Overriding methods must call this method first to have [series_and_axes_box]
     /// calculated.
     ///
-    /// To be overridden.
     fn calculate_drawing_sizes(&self);
 
     /// Updates the series at index [index]. If [index] is `null`, updates all
     /// series.
     ///
-    /// To be overridden.
     // index is opt
-    fn update_series(&self, index: usize) {
-        println!("Chart Trait update_series");
-    }
+    fn update_series(&self, index: usize);
 
     /// Draws the axes and the grid.
     ///
-    /// To be overridden.
-    fn draw_axes_and_grid(&self) {
-        println!("Chart Trait draw_axes_and_grid");
-    }
+    fn draw_axes_and_grid(&self, ctx: &C);
 
     /// Draws the series given the current animation percent [percent].
     ///
@@ -186,11 +179,12 @@ where
     /// In those cases, the overriding method will return `true` to stop the
     /// animation.
     ///
-    /// To be overridden.
-    fn draw_series(&self, percent: f64) -> bool {
-        println!("Chart Trait draw_series");
-        true
-    }
+    fn draw_series(&self, percent: f64) -> bool;
+
+    /// Draws the current animation frame.
+    ///
+    /// If [time] is `null`, draws the last frame (i.e. no animation).
+    fn draw_frame(&self, ctx: &C, time: Option<i64>);
 
     // when we impl for concrete chart implementation then it call concrete
     fn create_entities(
@@ -225,7 +219,7 @@ where
     fn create_series_list(&self, start: usize, end: usize) -> Vec<Series<E>> {
         println!("Chart Trait create_series_list");
         let result = Vec::new();
-        // let entityCount = data_table.rows.length;
+        // let entityCount = self.data_table.frames.length;
         // while (start < end) {
         //   let name = data_table.columns[start + 1].name;
         //   let color = get_color(start);
@@ -238,13 +232,22 @@ where
         result
     }
 
-    /// Returns the position of the tooltip based on [focused_entity_index].
-    /// To be overridden.
+    /// Returns the position of the tooltip based on 
+    /// [focused_entity_index].
     fn get_tooltip_position(&self) -> Point<f64>;
 
     fn set_stream(&self, stream: DataStream<'a, M, D>);
 
-    fn draw(&self, ctx: C);
+    /// called to commit calculations using non_eq pattern
+    fn update(&self, ctx: &C);
+
+    /// called to redraw using non_eq pattern
+    fn draw(&self, ctx: &C);
+
+    /// Resizes the chart to fit the new size of the container.
+    /// w = container.clientWidth;
+    /// h = container.clientHeight;
+    fn resize(&self, w: f64, h: f64);
 }
 
 #[cfg(test)]

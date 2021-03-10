@@ -192,12 +192,6 @@ where
 
         // calculate_bounding_boxes();
     }
-
-    fn update(&self, options: HashMap<String, String>) {
-        // self.base.update(options);
-        // calculate_bounding_boxes();
-        unimplemented!()
-    }
 }
 
 impl<'a, C, M, D> Chart<'a, C, M, D, PolarPoint> for RadarChart<'a, C, M, D>
@@ -218,7 +212,7 @@ where
         // // [_radius]*factor equals the height of the largest polygon.
         // let factor = 1 + sin((xlabels.length >> 1) * angle_interval - PI_2);
         // radius = min(rect.width, rect.height) / factor -
-        //     factor * (xLabelFontSize + axis_label_margin);
+        //     factor * (xLabelFontSize + AXIS_LABEL_MARGIN);
         // center =
         //     Point(rect.left + rect.width / 2, rect.top + rect.height / factor);
 
@@ -260,7 +254,7 @@ where
     fn set_stream(&self, stream: DataStream<'a, M, D>) {
     }
 
-    fn draw(&self, ctx: C) {
+    fn draw(&self, ctx: &C) {
         self.base.dispose();
         // data_tableSubscriptionTracker
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
@@ -269,10 +263,22 @@ where
         // self.easing_function = get_easing(self.options.animation().easing);
         self.base.initialize_legend();
         self.base.initialize_tooltip();
-        // self.base.resize(container.clientWidth, container.clientHeight, true);
+                
+        // self.axes_context.clearRect(0, 0, self.width, self.height);
+        self.draw_axes_and_grid(ctx);
+        self.base.start_animation();
     }
 
-    fn draw_axes_and_grid(&self) {
+    fn update(&self, ctx: &C) {
+        self.base.update(ctx);
+        self.calculate_bounding_boxes();
+    }
+
+    fn resize(&self, w: f64, h: f64) {
+        self.base.resize(w, h);
+    }
+
+    fn draw_axes_and_grid(&self, ctx: &C) {
         let props = self.props.borrow();
         let xlabel_count = props.xlabels.len();
         let ylabel_count = props.ylabels.len();
@@ -321,7 +327,7 @@ where
         // // y-axis labels - don"t draw the first (at center) and the last ones.
 
         // let style = self.base.options.y_axis.labels.style;
-        // let x = center.x - axis_label_margin;
+        // let x = center.x - AXIS_LABEL_MARGIN;
         // let y = center.y - ylabel_hop;
         // axes_context
         //   ..fillStyle = style["color"]
@@ -343,12 +349,48 @@ where
         //   ..textBaseline = "middle";
         // let fontSize = style["fontSize"];
         // let angle = -PI_2;
-        // let radius = radius + axis_label_margin;
+        // let radius = radius + AXIS_LABEL_MARGIN;
         // for (let i = 0; i < xLabelCount; i++) {
         //   drawText(axes_context, xlabels[i], radius, angle, fontSize);
         //   angle += angle_interval;
         // }
         unimplemented!()
+    }
+
+    /// Draws the current animation frame.
+    ///
+    /// If [time] is `null`, draws the last frame (i.e. no animation).
+    fn draw_frame(&self, ctx: &C, time: Option<i64>) {
+        self.base.draw_frame(ctx, time);
+
+        let mut percent = self.base.calculate_percent(time);
+
+        if percent >= 1.0 {
+            percent = 1.0;
+
+            // Update the visibility states of all series before the last frame.
+            // for (let i = series_states.length - 1; i >= 0; i--) {
+            //     if (series_states[i] == Visibility::showing) {
+            //         series_states[i] = Visibility::shown;
+            //     } else if (series_states[i] == Visibility::hiding) {
+            //         series_states[i] = Visibility::hidden;
+            //     }
+            // }
+        }
+
+        let props = self.base.props.borrow();
+
+        let ease = props.easing_function.unwrap();
+        self.draw_series(ease(percent));
+        // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
+        // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
+        self.base.draw_title(ctx);
+
+        if percent < 1.0 {
+            // animation_frame_id = window.requestAnimationFrame(draw_frame);
+        } else if time.is_some() {
+            self.base.animation_end();
+        }
     }
 
     fn draw_series(&self, percent: f64) -> bool {
