@@ -153,7 +153,6 @@ where
     D: fmt::Display,
 {
     pub fn new(options: GaugeChartOptions<'a>) -> Self {
-        // default_options["legend"]["position"] = "none";
         Self {
             props: Default::default(),
             base: BaseChart::new(options),
@@ -219,6 +218,15 @@ where
     }
 
     fn draw(&self, ctx: C) {
+        self.base.dispose();
+        // data_tableSubscriptionTracker
+        //   ..add(dataTable.onCellChange.listen(data_cell_changed))
+        //   ..add(dataTable.onColumnsChange.listen(dataColumnsChanged))
+        //   ..add(dataTable.onRowsChange.listen(data_rows_changed));
+        // self.easing_function = get_easing(self.options.animation().easing);
+        self.base.initialize_legend();
+        self.base.initialize_tooltip();
+        // self.resize(container.clientWidth, container.clientHeight, true);
     }
 
     fn draw_series(&self, percent: f64) -> bool {
@@ -299,7 +307,7 @@ where
 
     fn get_tooltip_position(&self) -> Point<f64> {
         // let gauge = series_list[0].entities[focused_entity_index] as Gauge;
-        // let x = gauge.center.x - tooltip.offset_width ~/ 2;
+        // let x = gauge.center.x - (tooltip.offset_width / 2).trunc();
         // let y = gauge.center.y -
         //     HIGHLIGHT_OUTER_RADIUS_FACTOR * gauge.outer_radius -
         //     tooltip.offset_height -

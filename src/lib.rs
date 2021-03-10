@@ -130,7 +130,6 @@ where
         }
     }
 
-    // end is optional
     pub fn free_entities(&self, start: usize, end: Option<usize>) {
         let end = match end {
             Some(end) => end,
@@ -166,12 +165,16 @@ where
     ///
     /// To be overridden.
     // index is opt
-    fn update_series(&self, index: usize) {}
+    fn update_series(&self, index: usize) {
+        println!("Chart Trait update_series");
+    }
 
     /// Draws the axes and the grid.
     ///
     /// To be overridden.
-    fn draw_axes_and_grid(&self) {}
+    fn draw_axes_and_grid(&self) {
+        println!("Chart Trait draw_axes_and_grid");
+    }
 
     /// Draws the series given the current animation percent [percent].
     ///
@@ -185,6 +188,7 @@ where
     ///
     /// To be overridden.
     fn draw_series(&self, percent: f64) -> bool {
+        println!("Chart Trait draw_series");
         true
     }
 
@@ -197,6 +201,7 @@ where
         color: String,
         highlight_color: String,
     ) -> Vec<E> {
+        println!("Chart Trait create_entities");
         let result = Vec::new();
         // while (start < end) {
         //   let value = data_table.rows[start][seriesIndex + 1];
@@ -218,6 +223,7 @@ where
     ) -> E;
 
     fn create_series_list(&self, start: usize, end: usize) -> Vec<Series<E>> {
+        println!("Chart Trait create_series_list");
         let result = Vec::new();
         // let entityCount = data_table.rows.length;
         // while (start < end) {

@@ -53,7 +53,7 @@ pub fn round2places(value: f64, places: usize) -> f64 {
 
 /// Converts [hexColor] and [alpha] to an RGBA color string.
 pub fn hex2rgba(hex_color: &str, alpha: f64) -> String {
-    // let componentLength = hexColor.length ~/ 3;
+    // let componentLength = (hexColor.length / 3).trunc();
     // let i = 1 + componentLength;
     // let j = i + componentLength;
     // let r = int.parse(hexColor.substring(1, i), radix: 16);
@@ -201,30 +201,6 @@ pub fn get_font(style: Option<String>, size: Option<f64>, family: Option<String>
     }
 
     "".into()
-}
-
-/// Deeply merges [map1] and [map2] into a new [Map].
-///
-/// [map1] must not be `null`.
-///
-/// If [map2] is `null`, returns [map1].
-pub fn merge_maps(
-    map1: HashMap<String, String>,
-    map2: HashMap<String, String>,
-) -> HashMap<String, String> {
-    // if (map2 == null) {
-    //   return map1;
-    // }
-
-    // let result = {};
-    // cb(k, v) {
-    //   result[k] = v is Map ? mergeMaps(result[k], v) : v;
-    // }
-
-    // map1?.forEach(cb);
-    // map2?.forEach(cb);
-    // result
-    unimplemented!()
 }
 
 // pub struct StreamSubscriptionTracker {

@@ -1,10 +1,10 @@
 use super::{LabelFormatter, ValueFormatter};
 pub trait BaseOption<'a> {
-    fn animation(&self) -> AnimationOptions;
-    fn colors(&self) -> Vec<&'a str>;
-    fn title(&self) -> TitleOptions<'a>;
-    fn legend(&self) -> LegendOptions<'a>;
-    fn tooltip(&self) -> TooltipOptions<'a>;
+    fn animation(&self) -> &AnimationOptions;
+    fn colors(&self) -> &Vec<&'a str>;
+    fn title(&self) -> &TitleOptions<'a>;
+    fn legend(&self) -> &LegendOptions<'a>;
+    fn tooltip(&self) -> &TooltipOptions<'a>;
     fn background(&self) -> &'a str;
 }
 
@@ -188,28 +188,28 @@ pub struct BarChartOptions<'a> {
 }
 
 impl<'a> BaseOption<'a> for BarChartOptions<'a> {
-    fn animation(&self) -> AnimationOptions {
-        unimplemented!()
+    fn animation(&self) -> &AnimationOptions {
+        &self.animation
     }
 
-    fn colors(&self) -> Vec<&'a str> {
-        unimplemented!()
+    fn colors(&self) -> &Vec<&'a str> {
+        &self.colors
     }
 
-    fn title(&self) -> TitleOptions<'a> {
-        unimplemented!()
+    fn title(&self) -> &TitleOptions<'a> {
+        &self.title
     }
 
-    fn legend(&self) -> LegendOptions<'a> {
-        unimplemented!()
+    fn legend(&self) -> &LegendOptions<'a> {
+        &self.legend
     }
 
-    fn tooltip(&self) -> TooltipOptions<'a> {
-        unimplemented!()
+    fn tooltip(&self) -> &TooltipOptions<'a> {
+        &self.tooltip
     }
 
     fn background(&self) -> &'a str {
-        unimplemented!()
+        &self.background_color
     }
 }
 
@@ -347,28 +347,28 @@ pub struct GaugeChartOptions<'a> {
 }
 
 impl<'a> BaseOption<'a> for GaugeChartOptions<'a> {
-    fn animation(&self) -> AnimationOptions {
-        unimplemented!()
+    fn animation(&self) -> &AnimationOptions {
+        &self.animation
     }
 
-    fn colors(&self) -> Vec<&'a str> {
-        unimplemented!()
+    fn colors(&self) -> &Vec<&'a str> {
+        &self.colors
     }
 
-    fn title(&self) -> TitleOptions<'a> {
-        unimplemented!()
+    fn title(&self) -> &TitleOptions<'a> {
+        &self.title
     }
 
-    fn legend(&self) -> LegendOptions<'a> {
-        unimplemented!()
+    fn legend(&self) -> &LegendOptions<'a> {
+        &self.legend
     }
 
-    fn tooltip(&self) -> TooltipOptions<'a> {
-        unimplemented!()
+    fn tooltip(&self) -> &TooltipOptions<'a> {
+        &self.tooltip
     }
 
     fn background(&self) -> &'a str {
-        unimplemented!()
+        &self.background_color
     }
 }
 
@@ -556,28 +556,28 @@ pub struct LineChartOptions<'a> {
 }
 
 impl<'a> BaseOption<'a> for LineChartOptions<'a> {
-    fn animation(&self) -> AnimationOptions {
-        unimplemented!()
+    fn animation(&self) -> &AnimationOptions {
+        &self.animation
     }
 
-    fn colors(&self) -> Vec<&'a str> {
-        unimplemented!()
+    fn colors(&self) -> &Vec<&'a str> {
+        &self.colors
     }
 
-    fn title(&self) -> TitleOptions<'a> {
-        unimplemented!()
+    fn title(&self) -> &TitleOptions<'a> {
+        &self.title
     }
 
-    fn legend(&self) -> LegendOptions<'a> {
-        unimplemented!()
+    fn legend(&self) -> &LegendOptions<'a> {
+        &self.legend
     }
 
-    fn tooltip(&self) -> TooltipOptions<'a> {
-        unimplemented!()
+    fn tooltip(&self) -> &TooltipOptions<'a> {
+        &self.tooltip
     }
 
     fn background(&self) -> &'a str {
-        unimplemented!()
+        &self.background_color
     }
 }
 
@@ -712,28 +712,28 @@ pub struct PieChartOptions<'a> {
 }
 
 impl<'a> BaseOption<'a> for PieChartOptions<'a> {
-    fn animation(&self) -> AnimationOptions {
-        unimplemented!()
+    fn animation(&self) -> &AnimationOptions {
+        &self.animation
     }
 
-    fn colors(&self) -> Vec<&'a str> {
-        unimplemented!()
+    fn colors(&self) -> &Vec<&'a str> {
+        &self.colors
     }
 
-    fn title(&self) -> TitleOptions<'a> {
-        unimplemented!()
+    fn title(&self) -> &TitleOptions<'a> {
+        &self.title
     }
 
-    fn legend(&self) -> LegendOptions<'a> {
-        unimplemented!()
+    fn legend(&self) -> &LegendOptions<'a> {
+        &self.legend
     }
 
-    fn tooltip(&self) -> TooltipOptions<'a> {
-        unimplemented!()
+    fn tooltip(&self) -> &TooltipOptions<'a> {
+        &self.tooltip
     }
 
     fn background(&self) -> &'a str {
-        unimplemented!()
+        &self.background_color
     }
 }
 
@@ -883,28 +883,28 @@ pub struct RadarChartOptions<'a> {
 }
 
 impl<'a> BaseOption<'a> for RadarChartOptions<'a> {
-    fn animation(&self) -> AnimationOptions {
-        unimplemented!()
+    fn animation(&self) -> &AnimationOptions {
+        &self.animation
     }
 
-    fn colors(&self) -> Vec<&'a str> {
-        unimplemented!()
+    fn colors(&self) -> &Vec<&'a str> {
+        &self.colors
     }
 
-    fn title(&self) -> TitleOptions<'a> {
-        unimplemented!()
+    fn title(&self) -> &TitleOptions<'a> {
+        &self.title
     }
 
-    fn legend(&self) -> LegendOptions<'a> {
-        unimplemented!()
+    fn legend(&self) -> &LegendOptions<'a> {
+        &self.legend
     }
 
-    fn tooltip(&self) -> TooltipOptions<'a> {
-        unimplemented!()
+    fn tooltip(&self) -> &TooltipOptions<'a> {
+        &self.tooltip
     }
 
     fn background(&self) -> &'a str {
-        unimplemented!()
+        &self.background_color
     }
 }
 

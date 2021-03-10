@@ -1,10 +1,10 @@
 use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use ux_animate::easing::{Easing, EasingFunction};
+use ux_dataflow::*;
 use ux_primitives::{
     canvas::CanvasContext,
-    geom::{Point, Size, Rect}
+    geom::{Point, Rect, Size},
 };
-use ux_dataflow::*;
-use ux_animate::easing::{EasingFunction, Easing};
 
 use super::*;
 
@@ -20,7 +20,7 @@ pub struct BaseChartProperties {
     pub animation_frame_id: usize,
 
     /// The starting time of an animation cycle.
-    pub animation_start_time: Option<f64>,
+    pub animation_start_time: Option<i64>,
 
     // dataTableSubscriptionTracker: StreamSubscriptionTracker, // = StreamSubscriptionTracker();
     pub easing_function: Option<EasingFunction>,
@@ -80,8 +80,6 @@ where
     /// Column 1..n - 1 contain series data.
     pub data_table: DataStream<'a, M, D>,
 
-    // /// The default drawing options initialized in the constructor.
-    // default_options: O,
     /// The drawing options initialized in the constructor.
     pub options: O,
 
@@ -95,7 +93,7 @@ where
     pub series_context: Option<C>,
 
     /// The precalcuated datas
-    pub series_list: Vec<Series<E>>,
+    pub series_list: RefCell<Vec<Series<E>>>,
 }
 
 impl<'a, C, E, M, D, O> BaseChart<'a, C, E, M, D, O>
@@ -106,6 +104,9 @@ where
     D: fmt::Display,
     O: BaseOption<'a>,
 {
+    // /// The element that contains this chart.
+    // container: Element;
+
     /// Creates a chart given a container.
     ///
     /// If the CSS position of [container] is "static", it will be changed to
@@ -122,20 +123,17 @@ where
         Self {
             props: Default::default(),
             data_table: Default::default(),
-            // default_options: O,
             options,
             context: None,
             axes_context: None,
             series_context: None,
-            series_list: Vec::new(),
+            series_list: RefCell::new(Vec::new()),
         }
     }
 
     /// Creates a new color by combining the R, G, B components of [color] with
     /// [alpha].
     pub fn change_color_alpha(&self, color: &str, alpha: f64) -> String {
-        let o = self.options.animation();
-
         let key = format!("{}{}", color, alpha);
         let result = COLOR_CACHE.get(&key);
         match result {
@@ -161,7 +159,6 @@ where
 
     /// Counts the number of visible series up to (but not including) the [end]th
     /// series.
-    // end is opt
     pub fn count_visible_series(&self, end: Option<usize>) -> usize {
         let props = self.props.borrow();
         let end = match end {
@@ -191,9 +188,10 @@ where
         let mut props = self.props.borrow_mut();
         props.animation_start_time = None;
 
-        for series in &self.series_list {
+        let series_list = self.series_list.borrow();
+        for series in series_list.iter() {
             for entity in &series.entities {
-                entity.save();
+                //         entity.save();
             }
         }
 
@@ -211,6 +209,7 @@ where
     ///
     /// To be overridden.
     pub fn calculate_drawing_sizes(&self) {
+        println!("BaseChart calculate_drawing_sizes");
         let title = self.options.title();
         let title_x = 0.0;
         let mut title_y = 0.0;
@@ -225,7 +224,7 @@ where
             origin: Point::new(CHART_PADDING, CHART_PADDING),
             size: Size::new(
                 props.width - 2.0 * CHART_PADDING,
-                props.height - 2.0 * CHART_PADDING
+                props.height - 2.0 * CHART_PADDING,
             ),
         };
 
@@ -253,7 +252,7 @@ where
             //   context.set_font(get_font(title.style).as_str());
             //   title_w =
             //       context.measureText(title["text"]).width.round() + 2 * TITLE_PADDING;
-            //   title_x = (width - titleW - 2 * TITLE_PADDING) ~/ 2;
+            //   title_x = ((width - titleW - 2 * TITLE_PADDING) / 2).trunc();
         }
 
         let title_box = Rect {
@@ -269,18 +268,18 @@ where
             let position = self.options.legend().position;
             match position {
                 "right" => {
-                    //   self.series_and_axes_box.width -= lwm;
+                    // props.series_and_axes_box.size.width -= lwm;
                 }
                 "bottom" => {
-                    //   self.series_and_axes_box.height -= lhm;
+                    // props.series_and_axes_box.size.height -= lhm;
                 }
                 "left" => {
-                    //   self.series_and_axes_box.left += lwm;
-                    //   self.series_and_axes_box.width -= lwm;
+                    // props.series_and_axes_box.origin.x += lwm;
+                    // props.series_and_axes_box.size.width -= lwm;
                 }
                 "top" => {
-                    //   self.series_and_axes_box.top += lhm;
-                    //   self.series_and_axes_box.height -= lhm;
+                    // props.series_and_axes_box.origin.y += lhm;
+                    // props.series_and_axes_box.size.height -= lhm;
                 }
                 _ => {}
             }
@@ -304,30 +303,29 @@ where
     /// Event handler for [DataTable.onRowsChanged].
     pub fn data_rows_changed(&self, record: DataCollectionChangeRecord) {
         self.calculate_drawing_sizes();
-        // let entityCount = data_table.rows.length;
-        // let removedEnd = record.index + record.removed_count;
-        // let addedEnd = record.index + record.added_count;
-        // for (let i = 0; i < series_list.length; i++) {
-        //   let series = series_list[i];
+        let entity_count = self.data_table.frames.len();
+        let removed_end = record.index + record.removed_count;
+        let added_end = record.index + record.added_count;
+        let series_list = self.series_list.borrow();
+        for series in series_list.iter() {
+            // Remove old entities.
+            if record.removed_count > 0 {
+                // series.freeEntities(record.index, removedEnd);
+                // series.entities.remove_range(record.index, removedEnd);
+            }
 
-        //   // Remove old entities.
-        //   if (record.removed_count > 0) {
-        //     series.freeEntities(record.index, removedEnd);
-        //     series.entities.remove_range(record.index, removedEnd);
-        //   }
+            // Insert new entities.
+            if record.added_count > 0 {
+                // let newEntities = create_entities(
+                //     i, record.index, addedEnd, series.color, series.highlight_color);
+                // series.entities.insertAll(record.index, newEntities);
 
-        //   // Insert new entities.
-        //   if (record.added_count > 0) {
-        //     let newEntities = create_entities(
-        //         i, record.index, addedEnd, series.color, series.highlight_color);
-        //     series.entities.insertAll(record.index, newEntities);
-
-        //     // Update entity indexes.
-        //     for (let j = addedEnd; j < entityCount; j++) {
-        //       series.entities[j].index = j;
-        //     }
-        //   }
-        // }
+                // // Update entity indexes.
+                // for (let j = addedEnd; j < entityCount; j++) {
+                //     series.entities[j].index = j;
+                // }
+            }
+        }
     }
 
     /// Event handler for [DataTable.onColumnsChanged].
@@ -337,14 +335,14 @@ where
         self.update_series_visible(start, record.removed_count, record.added_count);
         if record.removed_count > 0 {
             let end = start + record.removed_count;
-            //   for (let i = start; i < end; i++) {
-            //     self.series_list[i].freeEntities(0);
-            //   }
-            //   self.series_list.remove_range(start, end);
+            for idx in start..end {
+                // self.series_list[idx].freeEntities(0);
+            }
+            // self.series_list.remove_range(start, end);
         }
 
         if record.added_count > 0 {
-            //   let list = create_series_list(start, start + record.added_count);
+            let list = self.create_series_list(start, start + record.added_count);
             //   self.series_list.insertAll(start, list);
         }
         self.update_legend_content();
@@ -352,28 +350,28 @@ where
 
     /// Called when [data_table] has been changed.
     pub fn data_table_changed(&self) {
+        println!("BaseChart data_table_changed");
         self.calculate_drawing_sizes();
-        // self.series_list = self.create_series_list(0, self.data_table.columns.length - 1);
-        unimplemented!()
+        let mut series_list = self.series_list.borrow_mut();
+        *series_list = self.create_series_list(0, self.data_table.meta.len());
     }
 
     pub fn update_series_visible(&self, index: usize, removed_count: usize, added_count: usize) {
         if removed_count > 0 {
             // self.series_states.remove_range(index, index + removed_count);
-            unimplemented!()
         }
         if added_count > 0 {
             // let list = List.filled(added_count, Visibility::showing);
             // self.series_states.insertAll(index, list);
-            unimplemented!()
         }
+        unimplemented!()
     }
 
     /// Draws the current animation frame.
     ///
     /// If [time] is `null`, draws the last frame (i.e. no animation).
-    pub fn draw_frame(&mut self, time: Option<f64>) {
-        let percent = 1.0;
+    pub fn draw_frame(&mut self, ctx: C, time: Option<i64>) {
+        let mut percent = 1.0;
         let duration = self.options.animation().duration;
         let mut props = self.props.borrow_mut();
 
@@ -381,108 +379,116 @@ where
             props.animation_start_time = time
         }
 
-        // if (duration > 0 && time != null) {
-        //   percent = (time - animation_start_time) / duration;
-        // }
+        if let Some(time) = time {
+            if duration > 0 {
+                percent = (time - props.animation_start_time.unwrap()) as f64 / duration as f64;
+            }
+        }
 
-        // if (percent >= 1.0) {
-        //   percent = 1.0;
+        if percent >= 1.0 {
+            percent = 1.0;
 
-        //   // Update the visibility states of all series before the last frame.
-        //   for (let i = series_states.length - 1; i >= 0; i--) {
-        //     if (series_states[i] == Visibility::showing) {
-        //       series_states[i] = Visibility::shown;
-        //     } else if (series_states[i] == Visibility::hiding) {
-        //       series_states[i] = Visibility::hidden;
-        //     }
-        //   }
-        // }
+            // Update the visibility states of all series before the last frame.
+            // for (let i = series_states.length - 1; i >= 0; i--) {
+            //     if (series_states[i] == Visibility::showing) {
+            //         series_states[i] = Visibility::shown;
+            //     } else if (series_states[i] == Visibility::hiding) {
+            //         series_states[i] = Visibility::hidden;
+            //     }
+            // }
+        }
 
         // context.fillStyle = self.options.background();
         // context.fillRect(0, 0, width, height);
         // series_context.clearRect(0, 0, width, height);
-        // drawSeries(easingFunction(percent));
+        let ease = props.easing_function.unwrap();
+        self.draw_series(ease(percent));
         // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
         // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
-        // drawTitle();
+        self.draw_title(ctx);
 
-        // if (percent < 1.0) {
-        //   animation_frame_id = window.requestAnimationFrame(draw_frame);
-        // } else if (time != null) {
-        //   animationEnd();
-        // }
+        if percent < 1.0 {
+            // animation_frame_id = window.requestAnimationFrame(draw_frame);
+        } else if time.is_some() {
+            self.animation_end();
+        }
     }
 
     /// Draws the chart title using the main rendering context.
-    pub fn draw_title(&self) {
+    pub fn draw_title(&self, ctx: C) {
         let title = self.options.title();
-        // if (title["text"] == null) return;
-
-        // let x = (title_box.left + title_box.right) ~/ 2;
-        // let y = title_box.bottom - TITLE_PADDING;
-        // context
-        //   ..font = get_font(title["style"])
-        //   ..fillStyle = title["style"]["color"]
-        //   ..textAlign = "center"
-        //   ..fill_text(title["text"], x, y);
+        if let Some(text) = title.text {
+            let props = self.props.borrow();
+            let x = ((props.title_box.origin.x + props.title_box.size.width) / 2.).trunc();
+            let y = (props.title_box.origin.y + props.title_box.size.height) - TITLE_PADDING;
+            // context
+            //   ..font = get_font(title["style"])
+            //   ..fillStyle = title["style"]["color"]
+            //   ..textAlign = "center"
+            //   ..fill_text(title["text"], x, y);
+        }
     }
 
     pub fn initialize_legend(&self) {
-        // let n = get_legend_labels().length;
+        println!("BaseChart initialize_legend");
+        let n = self.get_legend_labels().len();
         // series_states = Vec<VISIBILITY>.filled(n, Visibility::showing,
         //     growable: true);
 
-        // if (self.legend != null) {
-        //   self.legend.remove();
-        //   self.legend = null;
-        // }
+        let props = self.props.borrow_mut();
+        if let Some(legend) = props.legend {
+            //   self.legend.remove();
+            //   self.legend = null;
+        }
 
         if self.options.legend().position == "none" {
             return;
         }
 
-        // self.legend = create_tooltip_or_legend(self.options.legend().style);
-        // self.legend.style.lineHeight = "180%";
-        // update_legend_content();
-        // container.append(self.legend);
+        // props.legend = self.create_tooltip_or_legend(self.options.legend().style);
+        // props.legend.style.lineHeight = "180%";
+        self.update_legend_content();
+        // container.append(props.legend);
     }
 
     /// This must be called after [calculate_drawing_sizes] as we need to know
     /// where the title is in order to position the legend correctly.
     pub fn position_legend(&self) {
-        // if (self.legend == null) return;
-
-        // let s = self.legend.style;
-        // switch (self.options.legend().position) {
-        //   case "right":
-        //     s.right = "${CHART_PADDING}px";
-        //     s.top = "50%";
-        //     s.transform = "translateY(-50%)";
-        //     break;
-        //   case "bottom":
-        //     let bottom = CHART_PADDING;
-        //     if (self.options.title().position == "below" && title_box.height > 0) {
-        //       bottom += title_box.height;
-        //     }
-        //     s.bottom = "${bottom}px";
-        //     s.left = "50%";
-        //     s.transform = "translateX(-50%)";
-        //     break;
-        //   case "left":
-        //     s.left = "${CHART_PADDING}px";
-        //     s.top = "50%";
-        //     s.transform = "translateY(-50%)";
-        //     break;
-        //   case "top":
-        //     let top = CHART_PADDING;
-        //     if (self.options.title().position == "above" && title_box.height > 0) {
-        //       top += title_box.height;
-        //     }
-        //     s.top = "${top}px";
-        //     s.left = "50%";
-        //     s.transform = "translateX(-50%)";
-        //     break;
-        // }
+        println!("BaseChart position_legend");
+        let props = self.props.borrow();
+        if let Some(legend) = props.legend {
+            // let s = self.legend.style;
+            // switch (self.options.legend().position) {
+            // case "right":
+            //     s.right = "${CHART_PADDING}px";
+            //     s.top = "50%";
+            //     s.transform = "translateY(-50%)";
+            //     break;
+            // case "bottom":
+            //     let bottom = CHART_PADDING;
+            //     if (self.options.title().position == "below" && title_box.height > 0) {
+            //     bottom += title_box.height;
+            //     }
+            //     s.bottom = "${bottom}px";
+            //     s.left = "50%";
+            //     s.transform = "translateX(-50%)";
+            //     break;
+            // case "left":
+            //     s.left = "${CHART_PADDING}px";
+            //     s.top = "50%";
+            //     s.transform = "translateY(-50%)";
+            //     break;
+            // case "top":
+            //     let top = CHART_PADDING;
+            //     if (self.options.title().position == "above" && title_box.height > 0) {
+            //     top += title_box.height;
+            //     }
+            //     s.top = "${top}px";
+            //     s.left = "50%";
+            //     s.transform = "translateX(-50%)";
+            //     break;
+            // }
+        }
     }
 
     pub fn update_legend_content(&self) {
@@ -522,8 +528,11 @@ where
     }
 
     pub fn get_legend_labels(&self) -> Vec<String> {
-        // data_table.columns.skip(1).map((e) => e.name).toList();
-        unimplemented!()
+        self.data_table
+            .meta
+            .iter()
+            .map(|channel| channel.name.to_string())
+            .collect()
     }
 
     pub fn legend_item_click(&self, e: MouseEvent) {
@@ -607,6 +616,7 @@ where
     }
 
     pub fn initialize_tooltip(&self) {
+        println!("BaseChart initialize_tooltip");
         // if self.tooltip != null {
         //   tooltip.remove();
         //   tooltip = null;
@@ -630,8 +640,12 @@ where
     }
 
     pub fn update_tooltip_content(&self) {
-        // let columnCount = data_table.columns.length;
-        // let row = data_table.rows[focused_entity_index];
+        let props = self.props.borrow();
+        let column_count = self.data_table.meta.len();
+        let row = self
+            .data_table
+            .frames
+            .get(props.focused_entity_index as usize);
         // tooltip.innerHtml = "";
 
         // // Tooltip title.
@@ -640,56 +654,63 @@ where
         //   ..style.padding = "4px 12px"
         //   ..style.fontWeight = "bold");
 
-        // // Tooltip items.
-        // for (let i = 1; i < columnCount; i++) {
-        //   let state = series_states[i - 1];
-        //   if (state == Visibility::hidden) continue;
-        //   if (state == Visibility::hiding) continue;
+        // Tooltip items.
+        for idx in 1..column_count {
+            let state = props.series_states.get(idx - 1);
+            //   if (state == Visibility::hidden) continue;
+            //   if (state == Visibility::hiding) continue;
 
-        //   let series = series_list[i - 1];
-        //   let value = row[i];
-        //   if (value == null) continue;
+            //   let series = series_list[i - 1];
+            //   let value = row[i];
+            //   if (value == null) continue;
 
-        //   value = tooltip_value_formatter(value);
-        //   let label = tooltip_label_formatter(series.name);
+            //   value = tooltip_value_formatter(value);
+            //   let label = tooltip_label_formatter(series.name);
 
-        //   let e = create_tooltip_or_legendItem(
-        //       series.color, "$label: <strong>$value</strong>");
-        //   tooltip.append(e);
-        // }
+            //   let e = create_tooltip_or_legendItem(
+            //       series.color, "$label: <strong>$value</strong>");
+            //   tooltip.append(e);
+        }
     }
 
-    // /// Creates an absolute positioned div with styles specified by [style].
-    // pub fn create_tooltip_or_legend(&self, style: HashMap<String, String>) -> Element {
-    //     // return DivElement()
-    //     //   ..style.backgroundColor = style["backgroundColor"]
-    //     //   ..style.borderColor = style["borderColor"]
-    //     //   ..style.borderStyle = "solid"
-    //     //   ..style.borderWidth = "${style["borderWidth"]}px"
-    //     //   ..style.color = style["color"]
-    //     //   ..style.fontFamily = style["fontFamily"]
-    //     //   ..style.font_size = "${style["fontSize"]}px"
-    //     //   ..style.fontStyle = style["fontStyle"]
-    //     //   ..style.position = "absolute";
-    // }
+    /// Creates an absolute positioned div with styles specified by [style].
+    // TODO: retusns Element
+    pub fn create_tooltip_or_legend(&self, style: HashMap<String, String>) -> Option<bool> {
+        // return DivElement()
+        //   ..style.backgroundColor = style["backgroundColor"]
+        //   ..style.borderColor = style["borderColor"]
+        //   ..style.borderStyle = "solid"
+        //   ..style.borderWidth = "${style["borderWidth"]}px"
+        //   ..style.color = style["color"]
+        //   ..style.fontFamily = style["fontFamily"]
+        //   ..style.font_size = "${style["fontSize"]}px"
+        //   ..style.fontStyle = style["fontStyle"]
+        //   ..style.position = "absolute";
+        unimplemented!()
+    }
 
-    // pub fn create_tooltip_or_legend_item(&self, color: String, text: String) -> Element {
-    //     // let e = DivElement()
-    //     //   ..innerHtml = "<span></span> $text"
-    //     //   ..style.padding = "4px 12px";
-    //     // e.children.first.style
-    //     //   ..backgroundColor = color
-    //     //   ..display = "inline-block"
-    //     //   ..width = "12px"
-    //     //   ..height = "12px";
-    //     // return e;
-    // }
+    // TODO: return Element
+    pub fn create_tooltip_or_legend_item(&self, color: String, text: String) -> Option<bool> {
+        // let e = DivElement()
+        //   ..innerHtml = "<span></span> $text"
+        //   ..style.padding = "4px 12px";
+        // e.children.first.style
+        //   ..backgroundColor = color
+        //   ..display = "inline-block"
+        //   ..width = "12px"
+        //   ..height = "12px";
+        // return e;
+        unimplemented!()
+    }
 
+    // real drawing
     pub fn start_animation(&self) {
+        println!("BarChart start_animation");
         // animation_frame_id = window.requestAnimationFrame(draw_frame);
     }
 
     pub fn stop_animation(&self) {
+        println!("BaseChart stop_animation");
         // animation_start_time = null;
         // if self.animation_frame_id != 0 {
         //     //   window.cancelAnimationFrame(animation_frame_id);
@@ -712,11 +733,8 @@ where
     /// This property returns `false` if the chart is animating or there are no
     /// series to draw.
     pub fn is_interactive(&self) -> bool {
-        !self.is_animating() && self.series_list.len() != 0
+        !self.is_animating() && self.series_list.borrow().len() != 0
     }
-
-    // /// The element that contains this chart.
-    // let Element container;
 
     /// Disposes of resources used by this chart. The chart will become unusable
     /// until [draw] is called again.
@@ -726,6 +744,7 @@ where
     ///
     /// @mustCallSuper
     pub fn dispose(&self) {
+        println!("BaseChart dispose");
         // // This causes [canHandleInteraction] to be `false`.
         // series_list = null;
         // mouse_move_sub?.cancel();
@@ -734,51 +753,39 @@ where
         // legend_item_subscription_tracker.clear();
     }
 
-    /// Draws the chart given a data table [dataTable] and an optional set of
-    /// options [options].
-    pub fn draw(&mut self, data_table: DataStream<'a, M, D>, easing: Easing) {
-        self.dispose();
-        self.data_table = data_table;
-        // data_tableSubscriptionTracker
-        //   ..add(dataTable.onCellChange.listen(data_cell_changed))
-        //   ..add(dataTable.onColumnsChange.listen(dataColumnsChanged))
-        //   ..add(dataTable.onRowsChange.listen(data_rows_changed));
-        // options = mergeMaps(default_options, options);
-        // self.easing_function = get_easing(self.options.animation().easing);
-        self.initialize_legend();
-        self.initialize_tooltip();
-        // self.resize(container.clientWidth, container.clientHeight, true);
-    }
-
     /// Resizes the chart to fit the new size of the container.
     /// w = container.clientWidth;
     /// h = container.clientHeight;
     // [bool force_redraw = false]
     pub fn resize(&self, w: f64, h: f64, force_redraw: bool) {
+        println!("BaseChart resize");
         let mut force_redraw = force_redraw;
 
         if w == 0_f64 || h == 0_f64 {
             return;
         }
 
-        let mut props = self.props.borrow_mut();
-        let width = props.width;
-        let height = props.height;
-        if w != width || h != height {
-            props.width = props.width + w;
-            props.height = props.height + h;
-            force_redraw = true;
+        {
+            let mut props = self.props.borrow_mut();
+            let width = props.width;
+            let height = props.height;
+            if w != width || h != height {
+                props.width = props.width + w;
+                props.height = props.height + h;
+                force_redraw = true;
 
-            //   let dpr = window.devicePixelRatio;
-            //   let scaledW = (w * dpr).round();
-            //   let scaledH = (h * dpr).round();
+                //   let dpr = window.devicePixelRatio;
+                //   let scaledW = (w * dpr).round();
+                //   let scaledH = (h * dpr).round();
 
-            self.set_canvas_size(&self.context);
-            self.set_canvas_size(&self.axes_context);
-            self.set_canvas_size(&self.series_context);
+                self.set_canvas_size(&self.context);
+                self.set_canvas_size(&self.axes_context);
+                self.set_canvas_size(&self.series_context);
+            }
         }
 
         if force_redraw {
+            println!("BaseChart force_redraw");
             self.stop_animation();
             self.data_table_changed();
             self.position_legend();
@@ -804,15 +811,14 @@ where
     ///  This method should be called after [dataTable] has been modified.
     // TODO: handle updates while animation is happening.
     pub fn update(&self, options: HashMap<String, String>) {
-        let props = self.props.borrow();
+        println!("BaseChart update");
+        {
+            let props = self.props.borrow();
 
-        if props.width == 0_f64 || props.height == 0_f64 {
-            return;
+            if props.width == 0_f64 || props.height == 0_f64 {
+                return;
+            }
         }
-
-        // if (options != null) {
-        //   self.options = mergeMaps(self.options, options);
-        // }
 
         // This call is redundant for row and column changes but necessary for
         // cell changes.
@@ -821,7 +827,6 @@ where
         // self.axes_context.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid();
         self.start_animation();
-        unimplemented!()
     }
 }
 
@@ -837,10 +842,20 @@ where
         todo!()
     }
 
-    fn set_stream(&self, stream: DataStream<'a, M, D>) {
-    }
+    fn set_stream(&self, stream: DataStream<'a, M, D>) {}
 
+    /// Draws the chart given a data table [dataTable] and an optional set of
+    /// options [options].
     fn draw(&self, ctx: C) {
+        self.dispose();
+        // data_tableSubscriptionTracker
+        //   ..add(dataTable.onCellChange.listen(data_cell_changed))
+        //   ..add(dataTable.onColumnsChange.listen(dataColumnsChanged))
+        //   ..add(dataTable.onRowsChange.listen(data_rows_changed));
+        // self.easing_function = get_easing(self.options.animation().easing);
+        self.initialize_legend();
+        self.initialize_tooltip();
+        // self.resize(container.clientWidth, container.clientHeight, true);
     }
 
     fn create_entity(

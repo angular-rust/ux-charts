@@ -76,10 +76,10 @@ struct RadarChartProperties {
     center: Point<f64>,
     radius: f64,
     angle_interval: f64,
-    x_labels: Vec<String>,
-    y_labels: Vec<String>,
+    xlabels: Vec<String>,
+    ylabels: Vec<String>,
     y_max_value: f64,
-    y_label_hop: f64,
+    ylabel_hop: f64,
     // yLabelFormatter: ValueFormatter,
     /// Each element is the bounding box of each entity group.
     /// A `null` element means the group has no visible entities.
@@ -209,14 +209,14 @@ where
     fn calculate_drawing_sizes(&self) {
         self.base.calculate_drawing_sizes();
         
-        // x_labels = data_table.getColumnValues<String>(0);
-        // angle_interval = TAU / x_labels.length;
+        // xlabels = data_table.getColumnValues<String>(0);
+        // angle_interval = TAU / xlabels.length;
         
         let rect = &self.base.props.borrow().series_and_axes_box;
         // let xLabelFontSize = self.base.options.x_axis.labels.style.font_size;
 
         // // [_radius]*factor equals the height of the largest polygon.
-        // let factor = 1 + sin((x_labels.length >> 1) * angle_interval - PI_2);
+        // let factor = 1 + sin((xlabels.length >> 1) * angle_interval - PI_2);
         // radius = min(rect.width, rect.height) / factor -
         //     factor * (xLabelFontSize + axis_label_margin);
         // center =
@@ -231,29 +231,29 @@ where
         //   y_max_value = (y_max_value / yInterval).ceilToDouble() * yInterval;
         // }
 
-        // y_label_formatter = self.base.options.y_axis.labels.formatter;
-        // if (y_label_formatter == null) {
+        // ylabel_formatter = self.base.options.y_axis.labels.formatter;
+        // if (ylabel_formatter == null) {
         //   let decimalPlaces = utils::get_decimal_places(yInterval);
         //   let numberFormat = NumberFormat.decimalPattern()
         //     ..maximumFractionDigits = decimalPlaces
         //     ..minimumFractionDigits = decimalPlaces;
-        //   y_label_formatter = numberFormat.format;
+        //   ylabel_formatter = numberFormat.format;
         // }
-        // entity_value_formatter = y_label_formatter;
+        // entity_value_formatter = ylabel_formatter;
 
-        // y_labels = <String>[];
+        // ylabels = <String>[];
         // let value = 0.0;
         // while (value <= y_max_value) {
-        //   y_labels.add(y_label_formatter(value));
+        //   ylabels.add(ylabel_formatter(value));
         //   value += yInterval;
         // }
 
-        // y_label_hop = radius / (y_labels.length - 1);
+        // ylabel_hop = radius / (ylabels.length - 1);
 
         // // Tooltip.
 
         // tooltip_value_formatter =
-        //     self.base.options.tooltip.value_formatter ?? y_label_formatter;
+        //     self.base.options.tooltip.value_formatter ?? ylabel_formatter;
         unimplemented!()
     }
 
@@ -261,12 +261,21 @@ where
     }
 
     fn draw(&self, ctx: C) {
+        self.base.dispose();
+        // data_tableSubscriptionTracker
+        //   ..add(dataTable.onCellChange.listen(data_cell_changed))
+        //   ..add(dataTable.onColumnsChange.listen(dataColumnsChanged))
+        //   ..add(dataTable.onRowsChange.listen(data_rows_changed));
+        // self.easing_function = get_easing(self.options.animation().easing);
+        self.base.initialize_legend();
+        self.base.initialize_tooltip();
+        // self.base.resize(container.clientWidth, container.clientHeight, true);
     }
 
     fn draw_axes_and_grid(&self) {
         let props = self.props.borrow();
-        let x_label_count = props.x_labels.len();
-        let y_label_count = props.y_labels.len();
+        let xlabel_count = props.xlabels.len();
+        let ylabel_count = props.ylabels.len();
 
         // x-axis grid lines (i.e. concentric equilateral polygons).
 
@@ -285,7 +294,7 @@ where
         //       axes_context.lineTo(point.x, point.y);
         //       angle += angle_interval;
         //     }
-        //     radius -= y_label_hop;
+        //     radius -= ylabel_hop;
         //   }
         //   axes_context.stroke();
         // }
@@ -313,15 +322,15 @@ where
 
         // let style = self.base.options.y_axis.labels.style;
         // let x = center.x - axis_label_margin;
-        // let y = center.y - y_label_hop;
+        // let y = center.y - ylabel_hop;
         // axes_context
         //   ..fillStyle = style["color"]
         //   ..font = get_font(style)
         //   ..textAlign = "right"
         //   ..textBaseline = "middle";
         // for (let i = 1; i <= yLabelCount - 2; i++) {
-        //   axes_context.fill_text(y_labels[i], x, y);
-        //   y -= y_label_hop;
+        //   axes_context.fill_text(ylabels[i], x, y);
+        //   y -= ylabel_hop;
         // }
 
         // // x-axis labels.
@@ -336,7 +345,7 @@ where
         // let angle = -PI_2;
         // let radius = radius + axis_label_margin;
         // for (let i = 0; i < xLabelCount; i++) {
-        //   drawText(axes_context, x_labels[i], radius, angle, fontSize);
+        //   drawText(axes_context, xlabels[i], radius, angle, fontSize);
         //   angle += angle_interval;
         // }
         unimplemented!()
@@ -347,7 +356,7 @@ where
         // let seriesLineWidth = self.base.options.series.line_width;
         // let markerOptions = self.base.options.series.markers;
         // let markerSize = markerOptions["size"];
-        // let pointCount = x_labels.length;
+        // let pointCount = xlabels.length;
 
         // for (let i = 0; i < series_list.length; i++) {
         //   if (series_states[i] == Visibility::hidden) continue;
@@ -461,7 +470,7 @@ where
         let bbox = &props.bounding_boxes[focused_entity_index as usize];
         // let offset = self.base.options.series.markers.size * 2 + 5;
         // let x = box.right + offset;
-        // let y = box.top + (box.height - tooltip.offset_height) ~/ 2;
+        // let y = box.top + ((box.height - tooltip.offset_height) / 2).trunc();
         // if (x + tooltip.offset_width > width)
         //   x = box.left - tooltip.offset_width - offset;
         // return Point(x, y);
