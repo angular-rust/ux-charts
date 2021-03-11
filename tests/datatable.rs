@@ -8,7 +8,7 @@
 
 //   test("columns", || {
 //     let table = createDataTable();
-//     expect(table.columns.length, equals(2));
+//     expect(table.columns.len(), equals(2));
 //     expect(table.columns[0].name, equals("Browser"));
 //   });
 
@@ -25,21 +25,21 @@
 
 //   test("rows", || {
 //     let table = createDataTable();
-//     expect(table.rows.length, equals(3));
+//     expect(table.rows.len(), equals(3));
 //     expect(table.rows[1].toList(), orderedEquals(["IE", 30]));
 //   });
 
 //   test("columns.insert", || {
 //     let table = createDataTable();
 //     table.columns.insert(1, DataColumn("Latest Version", num));
-//     expect(table.columns.length, equals(3));
+//     expect(table.columns.len(), equals(3));
 //     expect(table.columns[1].name, equals("Latest Version"));
 //   });
 
 //   test("rows.add", || {
 //     let table = createDataTable();
 //     table.rows.add(["Opera", 10, "discarded"]);
-//     expect(table.rows.length, equals(4));
+//     expect(table.rows.len(), equals(4));
 //     expect(table.rows.last.toList(), orderedEquals(["Opera", 10]));
 //   });
 

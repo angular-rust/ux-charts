@@ -54,7 +54,7 @@ pub fn round2places(value: f64, places: usize) -> f64 {
 
 /// Converts [hexColor] and [alpha] to an RGBA color string.
 pub fn hex2rgba(hex_color: &str, alpha: f64) -> String {
-    // let componentLength = (hexColor.length / 3).trunc();
+    // let componentLength = (hexColor.len() / 3).trunc();
     // let i = 1 + componentLength;
     // let j = i + componentLength;
     // let r = int.parse(hexColor.substring(1, i), radix: 16);
@@ -173,12 +173,12 @@ pub fn get_decimal_places(value: f64) -> usize {
         return 0;
     }
     // See https://code.google.com/p/dart/issues/detail?id=1533
-    // return "$value.0".split(".")[1].length;
+    // return "$value.0".split(".")[1].len();
     unimplemented!()
 }
 
 /// Returns a CSS font string given a map that contains at least three keys:
-/// `fontStyle`, `fontSize`, and `fontFamily`.
+/// `fontStyle`, `font_size`, and `fontFamily`.
 pub fn get_font(opt: &StyleOption) -> String {
     if let Some(style) = opt.font_style {
         if let Some(size) = opt.font_size {

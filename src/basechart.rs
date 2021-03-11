@@ -5,6 +5,7 @@ use ux_primitives::{
     canvas::CanvasContext,
     color::{palette, Color},
     geom::{Point, Rect, Size},
+    text::TextAlign,
 };
 
 use super::*;
@@ -134,28 +135,29 @@ where
 
     /// Creates a new color by combining the R, G, B components of [color] with
     /// [alpha].
-    pub fn change_color_alpha(&self, color: &str, alpha: f64) -> String {
+    pub fn change_color_alpha(&self, color: Color, alpha: f64) -> Color {
         let key = format!("{}{}", color, alpha);
         let result = COLOR_CACHE.get(&key);
-        match result {
-            Some(color) => color.clone(),
-            None => {
-                // Convert [color] to HEX/RGBA format using [context].
+        // match result {
+        //     Some(color) => color.clone(),
+        //     None => {
+        //         // Convert [color] to HEX/RGBA format using [context].
 
-                // context.fillStyle = color;
-                // color = context.fillStyle;
+        //         // context.fillStyle = color;
+        //         // color = context.fillStyle;
 
-                // if (color[0] == "#") {
-                // result = hexToRgba(color, alpha);
-                // } else {
-                // let list = color.split(",");
-                // list[list.length - 1] = "$alpha)";
-                // result = list.join(",");
-                // }
-                // COLOR_CACHE.insert(key, result);
-                "".into()
-            }
-        }
+        //         // if (color[0] == "#") {
+        //         // result = hexToRgba(color, alpha);
+        //         // } else {
+        //         // let list = color.split(",");
+        //         // list[list.len() - 1] = "$alpha)";
+        //         // result = list.join(",");
+        //         // }
+        //         // COLOR_CACHE.insert(key, result);
+        //         "".into()
+        //     }
+        // }
+        unimplemented!()
     }
 
     /// Counts the number of visible series up to (but not including) the [end]th
@@ -170,7 +172,7 @@ where
         // props.series_states
         //     .take(end)
         //     .where((e) => e.index >= Visibility::showing.index)
-        //     .length;
+        //     .len();
         unimplemented!()
     }
 
@@ -180,7 +182,7 @@ where
         color.clone()
     }
 
-    pub fn get_highlight_color(&self, color: &str) -> String {
+    pub fn get_highlight_color(&self, color: Color) -> Color {
         self.change_color_alpha(color, 0.5)
     }
 
@@ -228,8 +230,7 @@ where
             ),
         };
 
-        // // Consider the title.
-
+        // Consider the title.
         if title_h > 0.0 {
             match title.position {
                 "above" => {
@@ -321,7 +322,7 @@ where
                 // series.entities.insertAll(record.index, newEntities);
 
                 // // Update entity indexes.
-                // for (let j = addedEnd; j < entityCount; j++) {
+                // for (let j = addedEnd; j < entity_count; j++) {
                 //     series.entities[j].index = j;
                 // }
             }
@@ -378,7 +379,7 @@ where
             println!("Title [{}] {},{}", text, x, y);
             // ctx.set_font(utils::get_font(title.style));
             // ctx.set_fill_style_color(title.style.color));
-            // ctx.set_text_align("center");
+            // ctx.set_text_align(TextAlign::Center);
             // ctx.fill_text(title.text, x, y);
         }
     }
@@ -451,10 +452,10 @@ where
         //     self.options.legend().labelFormatter ?? default_label_formatter;
         // legend_item_subscription_tracker.clear();
         // legend.innerHtml = "";
-        // for (let i = 0; i < labels.length; i++) {
+        // for (let i = 0; i < labels.len(); i++) {
         //   let label = labels[i];
         //   let formattedLabel = formatter(label);
-        //   let e = create_tooltip_or_legendItem(get_color(i), formattedLabel);
+        //   let e = create_tooltip_or_legendItem(self.get_color(i), formattedLabel);
         //   if (label != formattedLabel) {
         //     e.title = label;
         //   }
@@ -635,7 +636,7 @@ where
         //   ..style.borderWidth = "${style["borderWidth"]}px"
         //   ..style.color = style["color"]
         //   ..style.fontFamily = style["fontFamily"]
-        //   ..style.font_size = "${style["fontSize"]}px"
+        //   ..style.font_size = "${style["font_size"]}px"
         //   ..style.fontStyle = style["fontStyle"]
         //   ..style.position = "absolute";
         unimplemented!()
@@ -806,7 +807,6 @@ where
     /// Updates the series at index [index]. If [index] is `null`, updates all
     /// series.
     ///
-    // index is opt
     fn update_series(&self, index: usize) {}
 
     // println!("SIZE {} {}", width, height);
@@ -835,7 +835,7 @@ where
     /// In those cases, the overriding method will return `true` to stop the
     /// animation.
     ///
-    fn draw_series(&self, percent: f64) -> bool {
+    fn draw_series(&self, ctx: &C, percent: f64) -> bool {
         // Should not be implemented atm
         panic!("Implement concrete method draw_series");
     }
@@ -844,14 +844,14 @@ where
         &self,
         series_index: usize,
         entity_index: usize,
-        value: String,
-        color: String,
-        highlight_color: String,
+        value: f64,
+        color: Color,
+        highlight_color: Color,
     ) -> E {
         todo!()
     }
 
-    fn get_tooltip_position(&self) -> Point<f64> {
+    fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {
         todo!()
     }
 }

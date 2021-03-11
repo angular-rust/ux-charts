@@ -7,17 +7,18 @@ use ux_animate::easing::{get_easing, Easing};
 use ux_dataflow::*;
 use ux_primitives::{
     canvas::CanvasContext,
+    color::Color,
     geom::{Point, Rect, Size},
+    text::{BaseLine, TextAlign},
 };
 
 use crate::*;
 
 #[derive(Default, Clone)]
 pub struct BarEntity {
-    // Chart chart,
-    color: String,
-    highlight_color: String,
-    formatted_value: String,
+    color: Color,
+    highlight_color: Color,
+    // formatted_value: String,
     index: usize,
     old_value: f64,
     value: f64,
@@ -41,24 +42,21 @@ impl<C> Drawable<C> for BarEntity
 where
     C: CanvasContext,
 {
-    fn draw(&self, ctx: C, percent: f64, highlight: bool) {
+    fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let x = lerp(self.old_left, self.left, percent);
         let h = lerp(self.old_height, self.height, percent);
         let w = lerp(self.old_width, self.width, percent);
-        // ctx.fillStyle = color;
-        // ctx.fillRect(x, bottom - h, w, h);
+        ctx.set_fill_style_color(self.color);
+        ctx.fill_rect(x, self.bottom - h, w, h);
         if highlight {
-            //   ctx.fillStyle = "rgba(255, 255, 255, .25)";
+            ctx.set_fill_color_rgb(255, 255, 255, 0.25);
             ctx.fill_rect(x, self.bottom - h, w, h);
         }
-        unimplemented!()
     }
 }
 
 impl Entity for BarEntity {
-    fn free(&mut self) {
-        // chart = null;
-    }
+    fn free(&mut self) {}
 
     fn save(&self) {
         // self.old_left = self.left;
@@ -200,29 +198,27 @@ where
         props.x_axis_top - self.value_to_y(value)
     }
 
-    /// Calculates average y values for the visible series to help position the
-    /// tooltip.
+    /// Calculates average y values for the visible series to help position the tooltip
     ///
     /// If [index] is given, calculates the average y value for the entity group
     /// at [index] only.
     ///
-    // index is opt
     fn calculate_average_y_values(&self, index: usize) {
         if !self.base.options.tooltip.enabled {
             return;
         }
 
-        // let entity_count = self.base.series_list.first.entities.length;
+        // let entity_count = self.base.series_list.first.entities.len();
         // let start = index ?? 0;
-        // let end = index == null ? entityCount : index + 1;
+        // let end = index == null ? entity_count : index + 1;
 
         // average_y_values ??= <num>[];
-        // average_y_values.length = entityCount;
+        // average_y_values.len() = entity_count;
 
         // for (let i = start; i < end; i++) {
         //   let sum = 0.0;
         //   let count = 0;
-        //   for (let j = series_list.length - 1; j >= 0; j--) {
+        //   for (let j = series_list.len() - 1; j >= 0; j--) {
         //     let state = seriesStates[j];
         //     if (state == Visibility::hidden) continue;
         //     if (state == Visibility::hiding) continue;
@@ -365,7 +361,7 @@ where
         //       context.font = get_font(xTitle["style"]);
         //       xTitleWidth = context.measureText(xTitle["text"]).width.round() +
         //           2 * TITLE_PADDING;
-        //       xTitleHeight = xTitle["style"]["fontSize"] + 2 * TITLE_PADDING;
+        //       xTitleHeight = xTitle["style"]["font_size"] + 2 * TITLE_PADDING;
         //       xTitleTop = self.base.series_and_axes_box.bottom - xTitleHeight;
         //     }
 
@@ -380,7 +376,7 @@ where
         //       context.font = get_font(yTitle["style"]);
         //       yTitleHeight = context.measureText(yTitle["text"]).width.round() +
         //           2 * TITLE_PADDING;
-        //       yTitleWidth = yTitle["style"]["fontSize"] + 2 * TITLE_PADDING;
+        //       yTitleWidth = yTitle["style"]["font_size"] + 2 * TITLE_PADDING;
         //       yTitleLeft = self.base.series_and_axes_box.left;
         //     }
 
@@ -405,10 +401,10 @@ where
 
         //     // x-axis labels and x-axis"s position.
 
-        //     let rowCount = data_table.rows.length;
+        //     let rowCount = self.base.data_table.rows.len();
         //     xlabels = <String>[];
         //     for (let i = 0; i < rowCount; i++) {
-        //       xlabels.add(data_table.rows[i][0].to_string());
+        //       xlabels.add(self.base.data_table.rows[i][0].to_string());
         //     }
         //     xlabel_max_width = calculateMaxTextWidth(
         //         context, get_font(self.base.options.x_axis.labels.style), xlabels);
@@ -421,7 +417,7 @@ where
         //     }
         //     xlabel_rotation = 0;
 
-        //     let fontSize = self.base.options.x_axis.labels.style.font_size;
+        //     let font_size = self.base.options.x_axis.labels.style.font_size;
         //     let maxRotation = self.base.options.x_axis.labels.max_rotation;
         //     let minRotation = self.base.options.x_axis.labels.min_rotation;
         //     const angles = [0, -45, 45, -90, 90];
@@ -437,13 +433,13 @@ where
         //         let absAngleRad = deg2rad(angle).abs();
         //         let labelSpacing = angle == 0
         //             ? scaledLabelHop - xlabel_max_width
-        //             : scaledLabelHop * sin(absAngleRad) - fontSize;
+        //             : scaledLabelHop * sin(absAngleRad) - font_size;
         //         if (labelSpacing < minSpacing) continue;
 
         //         xlabel_rotation = angle;
         //         xlabel_step = step;
         //         x_axis_top -=
-        //             xlabel_max_width * sin(absAngleRad) + fontSize * cos(absAngleRad);
+        //             xlabel_max_width * sin(absAngleRad) + font_size * cos(absAngleRad);
         //         break outer;
         //       }
         //     }
@@ -453,7 +449,7 @@ where
         //     y_axis_length = x_axis_top -
         //         self.base.series_and_axes_box.top -
         //         (self.base.options.y_axis.labels.style.font_size / 2.).trunc();
-        //     ylabel_hop = y_axis_length / (ylabels.length - 1);
+        //     ylabel_hop = y_axis_length / (ylabels.len() - 1);
 
         //     xTitleLeft = y_axis_left + ((x_axis_length - xTitleWidth) / 2).trunc();
         //     yTitleTop = self.base.series_and_axes_box.top + ((y_axis_length - yTitleHeight) / 2).trunc();
@@ -517,9 +513,9 @@ where
                 ctx.save();
                 ctx.set_fill_style_color(opt.style.color);
                 ctx.set_font(utils::get_font(&opt.style).as_str());
-                ctx.set_text_align("center");
-                ctx.set_text_baseline("middle");
-                ctx.fill_text(text, x_title_center.x, x_title_center.y, f64::INFINITY);
+                ctx.set_text_align(TextAlign::Center);
+                ctx.set_text_baseline(BaseLine::Middle);
+                ctx.fill_text(text, x_title_center.x, x_title_center.y);
                 ctx.restore();
             }
         }
@@ -533,9 +529,9 @@ where
                 ctx.set_font(utils::get_font(&opt.style).as_str());
                 ctx.translate(y_title_center.x, y_title_center.y);
                 ctx.rotate(-std::f64::consts::FRAC_PI_2);
-                ctx.set_text_align("center");
-                ctx.set_text_baseline("middle");
-                ctx.fill_text(text, 0., 0., f64::INFINITY);
+                ctx.set_text_align(TextAlign::Center);
+                ctx.set_text_baseline(BaseLine::Middle);
+                ctx.fill_text(text, 0., 0.);
                 ctx.restore();
             }
         }
@@ -550,27 +546,22 @@ where
         let scaled_label_hop = props.xlabel_step as f64 * props.xlabel_hop;
 
         if props.xlabel_rotation == 0. {
-            ctx.set_text_align("center");
-            ctx.set_text_baseline("alphabetic");
+            ctx.set_text_align(TextAlign::Center);
+            ctx.set_text_baseline(BaseLine::Alphabetic);
 
             let mut idx = 0;
             while idx < props.xlabels.len() {
-                ctx.fill_text(
-                    props.xlabels.get(idx).unwrap().as_str(),
-                    x,
-                    y,
-                    f64::INFINITY,
-                );
+                ctx.fill_text(props.xlabels.get(idx).unwrap().as_str(), x, y);
                 x += scaled_label_hop;
                 idx += props.xlabel_step as usize;
             }
         } else {
             ctx.set_text_align(if props.xlabel_rotation < 0. {
-                "right"
+                TextAlign::Right
             } else {
-                "left"
+                TextAlign::Left
             });
-            ctx.set_text_baseline("middle");
+            ctx.set_text_baseline(BaseLine::Middle);
             if props.xlabel_rotation == 90. {
                 x += props.xlabel_rotation.signum()
                     * ((opt.style.font_size.unwrap_or(12.) / 8.).trunc());
@@ -582,12 +573,7 @@ where
                 ctx.save();
                 ctx.translate(x, y);
                 ctx.rotate(angle);
-                ctx.fill_text(
-                    props.xlabels.get(idx).unwrap().as_str(),
-                    0.,
-                    0.,
-                    f64::INFINITY,
-                );
+                ctx.fill_text(props.xlabels.get(idx).unwrap().as_str(), 0., 0.);
                 ctx.restore();
                 x += scaled_label_hop;
                 idx += props.xlabel_step as usize;
@@ -598,12 +584,12 @@ where
         let opt = &self.base.options.y_axis.labels;
         ctx.set_fill_style_color(opt.style.color);
         ctx.set_font(utils::get_font(&opt.style).as_str());
-        ctx.set_text_align("right");
-        ctx.set_text_baseline("middle");
+        ctx.set_text_align(TextAlign::Right);
+        ctx.set_text_baseline(BaseLine::Middle);
         x = props.y_axis_left - AXIS_LABEL_MARGIN as f64;
         y = props.x_axis_top - (opt.style.font_size.unwrap_or(12.) / 8.).trunc();
         for label in props.ylabels.iter() {
-            ctx.fill_text(label.as_str(), x, y, f64::INFINITY);
+            ctx.fill_text(label.as_str(), x, y);
             y -= props.ylabel_hop;
         }
 
@@ -689,7 +675,7 @@ where
             percent = 1.0;
 
             // Update the visibility states of all series before the last frame.
-            // for (let i = series_states.length - 1; i >= 0; i--) {
+            // for (let i = series_states.len() - 1; i >= 0; i--) {
             //     if (series_states[i] == Visibility::showing) {
             //         series_states[i] = Visibility::shown;
             //     } else if (series_states[i] == Visibility::hiding) {
@@ -705,7 +691,7 @@ where
             None => get_easing(Easing::Linear),
         };
 
-        self.draw_series(ease(percent));
+        self.draw_series(ctx, ease(percent));
         // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
         // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
@@ -717,9 +703,9 @@ where
         }
     }
 
-    fn draw_series(&self, percent: f64) -> bool {
+    fn draw_series(&self, ctx: &C, percent: f64) -> bool {
         println!("BarChart draw_series");
-        // for (let i = 0, n = series_list.length; i < n; i++) {
+        // for (let i = 0, n = series_list.len(); i < n; i++) {
         //   if (series_states[i] == Visibility::hidden) continue;
 
         //   let series = series_list[i];
@@ -743,7 +729,7 @@ where
         //     if (!opt["enabled"]) continue;
         //       ctx.set_fill_style_color(opt.style.color);
         //       ctx.set_font(utils::get_font(opt.style));
-        //       ctx.set_text_align("center")
+        //       ctx.set_text_align(TextAlign::Center)
         //       ctx.set_text_baseline("alphabetic");
         //     for (Bar bar in series.entities) {
         //       if (bar.value == null) continue;
@@ -758,19 +744,19 @@ where
     }
 
     fn update_series(&self, index: usize) {
-        // let entityCount = data_table.frames.length;
-        // for (let i = 0; i < series_list.length; i++) {
+        // let entity_count = self.base.data_table.frames.len();
+        // for (let i = 0; i < series_list.len(); i++) {
         //   let series = series_list[i];
         //   let left = get_bar_left(i, 0);
-        //   let barWidth = 0.0;
+        //   let bar_width = 0.0;
         //   if (series_states[i].index >= Visibility::showing.index) {
-        //     barWidth = barWidth;
+        //     bar_width = bar_width;
         //   }
-        //   let color = get_color(i);
+        //   let color = self.base.get_color(i);
         //   let highlight_color = get_highlight_color(color);
         //   series.color = color;
         //   series.highlight_color = highlight_color;
-        //   for (let j = 0; j < entityCount; j++) {
+        //   for (let j = 0; j < entity_count; j++) {
         //     let bar = series.entities[j] as Bar;
         //     bar.index = j;
         //     bar.color = color;
@@ -778,7 +764,7 @@ where
         //     bar.left = left;
         //     bar.bottom = x_axis_top;
         //     bar.height = valueToBarHeight(bar.value);
-        //     bar.width = barWidth;
+        //     bar.width = bar_width;
         //     left += xlabel_hop;
         //   }
         // }
@@ -789,41 +775,44 @@ where
         &self,
         series_index: usize,
         entity_index: usize,
-        value: String,
-        color: String,
-        highlight_color: String,
+        value: f64,
+        color: Color,
+        highlight_color: Color,
     ) -> BarEntity {
-        // let left = get_bar_left(seriesIndex, entityIndex);
-        // let oldLeft = left;
-        // let height = valueToBarHeight(value);
+        let left = self.get_bar_left(series_index, entity_index);
+        let old_left = left;
+        let height = self.value_to_bar_height(value);
 
-        // // Animate width.
-        // num oldHeight = height;
-        // num oldWidth = 0;
+        // Animate width.
+        let mut old_height = height;
+        let mut old_width = 0.;
 
-        // if (series_list == null) {
-        //   // Data table changed. Animate height.
-        //   oldHeight = 0;
-        //   oldWidth = barWidth;
-        // }
+        let props = self.props.borrow();
+        let series_list = self.base.series_list.borrow();
+        if series_list.len() == 0 {
+          // Data table changed. Animate height.
+          old_height = 0.;
+          old_width = props.bar_width;
+        }
 
-        // BarEntity()
-        //   ..index = entityIndex
-        //   ..value = value
-        //   ..formatted_value = value != null ? entity_value_formatter(value) : null
-        //   ..color = color
-        //   ..highlight_color = highlight_color
-        //   ..bottom = x_axis_top
-        //   ..oldLeft = oldLeft
-        //   ..left = left
-        //   ..oldHeight = oldHeight
-        //   ..height = height
-        //   ..oldWidth = oldWidth
-        //   ..width = barWidth;
-        unimplemented!()
+        BarEntity {
+          index: entity_index,
+          old_value: 0.,
+          value,
+        //   formatted_value: value != null ? entity_value_formatter(value) : null
+          color,
+          highlight_color,
+          bottom: props.x_axis_top,
+          old_left,
+          left,
+          old_height,
+          height,
+          old_width,
+          width: props.bar_width
+        }
     }
 
-    fn get_tooltip_position(&self) -> Point<f64> {
+    fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {
         let props = self.props.borrow();
         let focused_entity_index = self.base.props.borrow().focused_entity_index;
 

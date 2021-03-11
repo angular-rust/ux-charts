@@ -2,21 +2,22 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::{collections::HashMap, fmt, cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use ux_dataflow::*;
 use ux_primitives::{
     canvas::CanvasContext,
-    geom::{Point, Rect}
+    color::Color,
+    geom::{Point, Rect, Size},
+    text::TextAlign,
 };
-use ux_dataflow::*;
 
 use crate::*;
 
 #[derive(Default, Clone)]
 pub struct PolarPoint {
-    // Chart chart,
-    color: String,
-    highlight_color: String,
-    formatted_value: String,
+    color: Color,
+    highlight_color: Color,
+    // formatted_value: String,
     index: usize,
     old_value: f64,
     value: f64,
@@ -36,31 +37,27 @@ impl<C> Drawable<C> for PolarPoint
 where
     C: CanvasContext,
 {
-    fn draw(&self, ctx: C, percent: f64, highlight: bool) {
+    fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let r = lerp(self.old_radius, self.radius, percent);
         let a = lerp(self.old_angle, self.angle, percent);
         let pr = lerp(self.old_point_radius, self.point_radius, percent);
         let p = polar2cartesian(&self.center, r, a);
         if highlight {
-            // ctx.set_fill_style_color(value)
-            //   ctx.fillStyle = highlight_color;
-            //   ctx.begin_path();
-            //   ctx.arc(p.x, p.y, 2 * pr, 0, TAU);
-            //   ctx.fill();
+            ctx.set_fill_style_color(self.highlight_color);
+            ctx.begin_path();
+            ctx.arc(p.x, p.y, 2. * pr, 0., TAU, false);
+            ctx.fill();
         }
-        // ctx.fillStyle = color;
-        // ctx.begin_path();
-        // ctx.arc(p.x, p.y, pr, 0, TAU);
-        // ctx.fill();
-        // ctx.stroke();
-        unimplemented!()
+        ctx.set_fill_style_color(self.color);
+        ctx.begin_path();
+        ctx.arc(p.x, p.y, pr, 0., TAU, false);
+        ctx.fill();
+        ctx.stroke();
     }
 }
 
 impl Entity for PolarPoint {
-    fn free(&mut self) {
-        // chart = null;
-    }
+    fn free(&mut self) {}
 
     fn save(&self) {
         // self.old_radius = self.radius;
@@ -69,7 +66,6 @@ impl Entity for PolarPoint {
         // self.old_value = self.value;
     }
 }
-
 
 #[derive(Default, Clone)]
 struct RadarChartProperties {
@@ -123,67 +119,103 @@ where
     }
 
     fn calculate_bounding_boxes(&self) {
-        // if !self.base.options.tooltip.enabled return;
+        if !self.base.options.tooltip.enabled {
+            return;
+        }
 
-        // let seriesCount = series_list.length;
-        // let entityCount = series_list.first.entities.length;
-        // bounding_boxes = Vec<Rectangle>(entityCount);
-        // for (let i = 0; i < entityCount; i++) {
-        //   let minX = f64::MAX;
-        //   let minY = f64::MAX;
-        //   let maxX = -f64::MAX;
-        //   let maxY = -f64::MAX;
-        //   let count = 0;
-        //   for (let j = 0; j < seriesCount; j++) {
-        //     if (series_states[j] == Visibility::hidden) continue;
-        //     if (series_states[j] == Visibility::hiding) continue;
+        let series_list = self.base.series_list.borrow();
+        let series_count = series_list.len();
+        let series = series_list.get(0).unwrap();
+        let entity_count = series.entities.len();
 
-        //     let pp = series_list[j].entities[i] as PolarPoint;
-        //     if (pp.value == null) continue;
+        let series_states = &self.base.props.borrow().series_states;
+        let series_list = self.base.series_list.borrow();
+        let mut props = self.props.borrow_mut();
 
-        //     let cp = polarToCartesian(pp.center, pp.radius, pp.angle);
-        //     minX = min(minX, cp.x);
-        //     minY = min(minY, cp.y);
-        //     maxX = max(maxX, cp.x);
-        //     maxY = max(maxY, cp.y);
-        //     count++;
-        //   }
-        //   bounding_boxes[i] =
-        //       count > 0 ? Rectangle(minX, minY, maxX - minX, maxY - minY) : null;
-        // }
-        unimplemented!()
+        // OOCH
+        props
+            .bounding_boxes
+            .resize(entity_count, Default::default());
+
+        for idx in 0..entity_count {
+            let mut min_x = f64::MAX;
+            let mut min_y = f64::MAX;
+            let mut max_x = -f64::MAX;
+            let mut max_y = -f64::MAX;
+            let mut count = 0;
+            for jdx in 0..series_count {
+                let series_state = series_states.get(jdx).unwrap();
+                if *series_state == Visibility::Hidden || *series_state == Visibility::Hiding {
+                    continue;
+                }
+
+                let series = series_list.get(jdx).unwrap();
+                let pp = series.entities.get(idx).unwrap();
+
+                if pp.value == 0. {
+                    continue;
+                }
+
+                let cp = utils::polar2cartesian(&pp.center, pp.radius, pp.angle);
+                min_x = min_x.min(cp.x);
+                min_y = min_y.min(cp.y);
+                max_x = max_x.max(cp.x);
+                max_y = max_y.max(cp.y);
+                count += 1;
+            }
+
+            props.bounding_boxes[idx] = if count > 0 {
+                Rect::new(Point::new(min_x, min_y), Size::new(max_x - min_x, max_y - min_y))
+            } else {
+                unimplemented!()
+            };
+        }
     }
 
-    // fn drawText(ctx: C, text: String, radius: f64, angle: f64, fontSize: f64) {
-    //     // let w = ctx.measureText(text).width;
-    //     // let x = center.x + cos(angle) * (radius + .5 * w);
-    //     // let y = center.y + sin(angle) * (radius + .5 * fontSize);
-    //     // ctx.fill_text(text, x, y);
-    // }
+    fn draw_text(&self, ctx: &C, text: &str, radius: f64, angle: f64, font_size: f64) {
+        let props = self.props.borrow();
+        let w = ctx.measure_text(text).width;
+        let x = props.center.x + angle.cos() * (props.radius + 0.5 * w);
+        let y = props.center.y + angle.sin() * (props.radius + 0.5 * font_size);
+        ctx.fill_text(text, x, y);
+    }
 
     fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
-        // let p = Point(x - center.x, y - center.y);
-        // if (p.magnitude >= radius) return -1;
-        // let angle = atan2(p.y, p.x);
-        // let points = series_list.first.entities.cast<PolarPoint>();
-        // for (let i = points.length - 1; i >= 0; i--) {
-        //   if (bounding_boxes[i] == null) continue;
+        let props = self.props.borrow();
+        let p = Point::new(x - props.center.x, y - props.center.y);
 
-        //   let delta = angle - points[i].angle;
-        //   if (delta.abs() < .5 * angle_interval) return i;
-        //   if ((delta + TAU).abs() < .5 * angle_interval) return i;
-        // }
-        // return -1;
-        unimplemented!()
+        if p.distance_to(Point::zero()) >= props.radius {
+            return -1;
+        }
+
+        let angle = p.y.atan2(p.x);
+        let series_list = self.base.series_list.borrow();
+        let series = series_list.first().unwrap();
+        let points = &series.entities;
+
+        for idx in points.len() - 1..0 {
+            if props.bounding_boxes.get(idx).is_none() {
+                continue;
+            }
+
+            let delta = angle - points[idx].angle;
+            if delta.abs() < 0.5 * props.angle_interval {
+                return idx as i64;
+            }
+            if (delta + TAU).abs() < 0.5 * props.angle_interval {
+                return idx as i64;
+            }
+        }
+        return -1;
     }
 
     fn series_visibility_changed(&self, index: usize) {
         // let visible = series_states[index].index >= Visibility::showing.index;
-        // let markerSize = self.base.options.series.markers.size;
+        // let marker_size = self.base.options.series.markers.size;
         // for (PolarPoint p in series_list[index].entities) {
         //   if (visible) {
         //     p.radius = value2radius(p.value);
-        //     p.pointRadius = markerSize;
+        //     p.pointRadius = marker_size;
         //   } else {
         //     p.radius = 0.0;
         //     p.pointRadius = 0;
@@ -202,17 +234,17 @@ where
 {
     fn calculate_drawing_sizes(&self) {
         self.base.calculate_drawing_sizes();
-        
+
         // xlabels = data_table.getColumnValues<String>(0);
-        // angle_interval = TAU / xlabels.length;
-        
+        // angle_interval = TAU / xlabels.len();
+
         let rect = &self.base.props.borrow().series_and_axes_box;
-        // let xLabelFontSize = self.base.options.x_axis.labels.style.font_size;
+        // let xLabelfont_size = self.base.options.x_axis.labels.style.font_size;
 
         // // [_radius]*factor equals the height of the largest polygon.
-        // let factor = 1 + sin((xlabels.length >> 1) * angle_interval - PI_2);
+        // let factor = 1 + sin((xlabels.len() >> 1) * angle_interval - PI_2);
         // radius = min(rect.width, rect.height) / factor -
-        //     factor * (xLabelFontSize + AXIS_LABEL_MARGIN);
+        //     factor * (xLabelfont_size + AXIS_LABEL_MARGIN);
         // center =
         //     Point(rect.left + rect.width / 2, rect.top + rect.height / factor);
 
@@ -220,7 +252,7 @@ where
         // let yInterval = self.base.options.y_axis.interval;
         // if (yInterval == null) {
         //   let yMinInterval = self.base.options.y_axis.min_interval;
-        //   y_max_value = find_max_value(data_table);
+        //   y_max_value = find_max_value(self.base.data_table);
         //   yInterval = utils::calculate_interval(y_max_value, 3, yMinInterval);
         //   y_max_value = (y_max_value / yInterval).ceilToDouble() * yInterval;
         // }
@@ -242,7 +274,7 @@ where
         //   value += yInterval;
         // }
 
-        // ylabel_hop = radius / (ylabels.length - 1);
+        // ylabel_hop = radius / (ylabels.len() - 1);
 
         // // Tooltip.
 
@@ -251,8 +283,7 @@ where
         unimplemented!()
     }
 
-    fn set_stream(&self, stream: DataStream<'a, M, D>) {
-    }
+    fn set_stream(&self, stream: DataStream<'a, M, D>) {}
 
     fn draw(&self, ctx: &C) {
         self.base.dispose();
@@ -263,7 +294,7 @@ where
         // self.easing_function = get_easing(self.options.animation().easing);
         self.base.initialize_legend();
         self.base.initialize_tooltip();
-                
+
         // self.axes_context.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid(ctx);
         self.base.start_animation();
@@ -286,8 +317,8 @@ where
         // x-axis grid lines (i.e. concentric equilateral polygons).
 
         // let line_width = self.base.options.x_axis.grid_line_width;
-        // if (lineWidth > 0) {
-        //   axes_context
+        // if lineWidth > 0. {
+        //   ctx
         //     ..lineWidth = lineWidth
         //     ..strokeStyle = self.base.options.x_axis.grid_line_color
         //     ..begin_path();
@@ -296,7 +327,7 @@ where
         //     let angle = -PI_2 + angle_interval;
         //     axes_context.moveTo(center.x, center.y - radius);
         //     for (let j = 0; j < xLabelCount; j++) {
-        //       let point = polarToCartesian(center, radius, angle);
+        //       let point = utils::polar2cartesian(center, radius, angle);
         //       axes_context.lineTo(point.x, point.y);
         //       angle += angle_interval;
         //     }
@@ -315,7 +346,7 @@ where
         //     ..begin_path();
         //   let angle = -PI_2;
         //   for (let i = 0; i < xLabelCount; i++) {
-        //     let point = polarToCartesian(center, radius, angle);
+        //     let point = utils::polar2cartesian(center, radius, angle);
         //     axes_context
         //       ..moveTo(center.x, center.y)
         //       ..lineTo(point.x, point.y);
@@ -333,7 +364,7 @@ where
         //   ..fillStyle = style["color"]
         //   ..font = get_font(style)
         //   ..textAlign = "right"
-        //   ..textBaseline = "middle";
+        //   ..textBaseline = BaseLine::Middle;
         // for (let i = 1; i <= yLabelCount - 2; i++) {
         //   axes_context.fill_text(ylabels[i], x, y);
         //   y -= ylabel_hop;
@@ -345,13 +376,13 @@ where
         // axes_context
         //   ..fillStyle = style["color"]
         //   ..font = get_font(style)
-        //   ..textAlign = "center"
-        //   ..textBaseline = "middle";
-        // let fontSize = style["fontSize"];
+        //   ..textAlign = TextAlign::Center
+        //   ..textBaseline = BaseLine::Middle;
+        // let font_size = style["font_size"];
         // let angle = -PI_2;
         // let radius = radius + AXIS_LABEL_MARGIN;
         // for (let i = 0; i < xLabelCount; i++) {
-        //   drawText(axes_context, xlabels[i], radius, angle, fontSize);
+        //   drawText(axes_context, xlabels[i], radius, angle, font_size);
         //   angle += angle_interval;
         // }
         unimplemented!()
@@ -369,7 +400,7 @@ where
             percent = 1.0;
 
             // Update the visibility states of all series before the last frame.
-            // for (let i = series_states.length - 1; i >= 0; i--) {
+            // for (let i = series_states.len() - 1; i >= 0; i--) {
             //     if (series_states[i] == Visibility::showing) {
             //         series_states[i] = Visibility::shown;
             //     } else if (series_states[i] == Visibility::hiding) {
@@ -381,7 +412,7 @@ where
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
-        self.draw_series(ease(percent));
+        self.draw_series(ctx, ease(percent));
         // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
         // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
@@ -393,14 +424,14 @@ where
         }
     }
 
-    fn draw_series(&self, percent: f64) -> bool {
-        // let fillOpacity = self.base.options.series.fill_opacity;
-        // let seriesLineWidth = self.base.options.series.line_width;
-        // let markerOptions = self.base.options.series.markers;
-        // let markerSize = markerOptions["size"];
-        // let pointCount = xlabels.length;
+    fn draw_series(&self, ctx: &C, percent: f64) -> bool {
+        // let fill_opacity = self.base.options.series.fill_opacity;
+        // let series_line_width = self.base.options.series.line_width;
+        // let marker_options = self.base.options.series.markers;
+        // let marker_size = marker_options["size"];
+        // let point_count = xlabels.len();
 
-        // for (let i = 0; i < series_list.length; i++) {
+        // for (let i = 0; i < series_list.len(); i++) {
         //   if (series_states[i] == Visibility::hidden) continue;
 
         //   let series = series_list[i];
@@ -409,15 +440,15 @@ where
         //   // Draw the polygon.
 
         //   series_context
-        //     ..lineWidth = scale * seriesLineWidth
+        //     ..lineWidth = scale * series_line_width
         //     ..strokeStyle = series.color
         //     ..begin_path();
-        //   for (let j = 0; j < pointCount; j++) {
+        //   for (let j = 0; j < point_count; j++) {
         //     let point = series.entities[j] as PolarPoint;
         //     // TODO: Optimize.
         //     let radius = lerp(point.oldRadius, point.radius, percent);
         //     let angle = lerp(point.oldAngle, point.angle, percent);
-        //     let p = polarToCartesian(center, radius, angle);
+        //     let p = utils::polar2cartesian(center, radius, angle);
         //     if (j > 0) {
         //       series_context.lineTo(p.x, p.y);
         //     } else {
@@ -429,22 +460,22 @@ where
 
         //   // Optionally fill the polygon.
 
-        //   if (fillOpacity > 0) {
-        //     series_context.fillStyle = change_color_alpha(series.color, fillOpacity);
+        //   if (fill_opacity > 0) {
+        //     series_context.fillStyle = change_color_alpha(series.color, fill_opacity);
         //     series_context.fill();
         //   }
 
         //   // Draw the markers.
 
-        //   if (markerSize > 0) {
-        //     let fillColor = markerOptions["fillColor"] ?? series.color;
-        //     let strokeColor = markerOptions["strokeColor"] ?? series.color;
+        //   if (marker_size > 0) {
+        //     let fillColor = marker_options["fillColor"] ?? series.color;
+        //     let strokeColor = marker_options["strokeColor"] ?? series.color;
         //     series_context
         //       ..fillStyle = fillColor
-        //       ..lineWidth = scale * markerOptions["lineWidth"]
+        //       ..lineWidth = scale * marker_options["lineWidth"]
         //       ..strokeStyle = strokeColor;
         //     for (let p in series.entities) {
-        //       if (markerOptions["enabled"]) {
+        //       if (marker_options["enabled"]) {
         //         p.draw(series_context, percent, p.index == focused_entity_index);
         //       } else if (p.index == focused_entity_index) {
         //         // Only draw marker on hover.
@@ -460,15 +491,15 @@ where
 
     // param should be Option
     fn update_series(&self, index: usize) {
-        // let entityCount = data_table.rows.length;
-        // for (let i = 0; i < series_list.length; i++) {
+        // let entity_count = self.base.data_table.rows.len();
+        // for (let i = 0; i < series_list.len(); i++) {
         //   let series = series_list[i];
-        //   let color = get_color(i);
+        //   let color = self.base.get_color(i);
         //   let highlight_color = get_highlight_color(color);
         //   let visible = series_states[i].index >= Visibility::showing.index;
         //   series.color = color;
         //   series.highlight_color = highlight_color;
-        //   for (let j = 0; j < entityCount; j++) {
+        //   for (let j = 0; j < entity_count; j++) {
         //     let p = series.entities[j] as PolarPoint;
         //     p.index = j;
         //     p.center = center;
@@ -484,38 +515,45 @@ where
         &self,
         series_index: usize,
         entity_index: usize,
-        value: String,
-        color: String,
-        highlight_color: String,
+        value: f64,
+        color: Color,
+        highlight_color: Color,
     ) -> PolarPoint {
-        // let angle = self.get_angle(entity_index);
-        // PolarPoint()
-        //   ..index = entityIndex
-        //   ..value = value
-        //   ..color = color
-        //   ..highlight_color = highlight_color
-        //   ..center = center
-        //   ..oldRadius = 0
-        //   ..oldAngle = angle
-        //   ..oldPointRadius = 0
-        //   ..radius = value2radius(value)
-        //   ..angle = angle
-        //   ..pointRadius = self.base.options.series.markers.size;
-        unimplemented!()
+        let props = self.props.borrow();
+        let angle = self.get_angle(entity_index);
+        let point_radius = self.base.options.series.markers.size as f64;
+
+        PolarPoint {
+            index: entity_index,
+            value,
+            old_value: 0.,
+            color,
+            highlight_color,
+            center: props.center,
+            old_radius: 0.,
+            old_angle: angle,
+            old_point_radius: 0.,
+            radius: self.value2radius(value),
+            angle,
+            point_radius,
+        }
     }
 
-    fn get_tooltip_position(&self) -> Point<f64> {
-        // FIXME: as usize
+    fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {
         let props = self.props.borrow();
         let focused_entity_index = self.base.props.borrow().focused_entity_index;
 
-        let bbox = &props.bounding_boxes[focused_entity_index as usize];
-        // let offset = self.base.options.series.markers.size * 2 + 5;
-        // let x = box.right + offset;
-        // let y = box.top + ((box.height - tooltip.offset_height) / 2).trunc();
-        // if (x + tooltip.offset_width > width)
-        //   x = box.left - tooltip.offset_width - offset;
-        // return Point(x, y);
-        unimplemented!()
+        let bounding_box = &props.bounding_boxes[focused_entity_index as usize];
+        let offset = self.base.options.series.markers.size as f64 * 2. + 5.;
+        let origin = bounding_box.origin;
+        let mut x = origin.x + bounding_box.width() + offset;
+        let y = origin.y + ((bounding_box.height() - tooltip_height) / 2.).trunc();
+
+        let width = self.base.props.borrow().width;
+        if x + tooltip_width > width {
+            x = origin.x - tooltip_width - offset;
+        }
+
+        Point::new(x, y)
     }
 }

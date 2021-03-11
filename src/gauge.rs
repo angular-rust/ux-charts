@@ -4,16 +4,16 @@
 
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use ux_dataflow::*;
-use ux_primitives::{canvas::CanvasContext, geom::Point};
+use ux_primitives::{canvas::CanvasContext, color::Color, geom::Point, text::TextAlign};
 
 use crate::*;
 
 #[derive(Default, Clone)]
 pub struct GaugeEntity {
     // Chart chart,
-    color: String,
-    highlight_color: String,
-    formatted_value: String,
+    color: Color,
+    highlight_color: Color,
+    // formatted_value: String,
     index: usize,
     old_value: f64,
     value: f64,
@@ -30,8 +30,7 @@ pub struct GaugeEntity {
     // [Series] field.
     name: String,
 
-    background_color: String,
-    base: PieEntity,
+    background_color: Color,
 }
 
 impl GaugeEntity {
@@ -47,25 +46,51 @@ impl GaugeEntity {
         }
 
         let angle = f64::atan2(p.y, p.x);
-        // let chartStartAngle = (chart as dynamic).startAngle;
+        // let chartStartAngle = (chart as dynamic).start_angle;
 
         // Make sure [angle] is in range [chartStartAngle]..[chartStartAngle] + TAU.
         // angle = (angle - chartStartAngle) % TAU + chartStartAngle;
 
         // If counterclockwise, make sure [angle] is in range
         // [start] - 2*pi..[start].
-        // if startAngle > endAngle {
+        // if start_angle > end_angle {
         //     angle -= angle - TAU;
         // }
 
-        // if (startAngle <= endAngle) {
+        // if (start_angle <= end_angle) {
         //   // Clockwise.
-        //   return is_in_range(angle, startAngle, endAngle);
+        //   return is_in_range(angle, start_angle, end_angle);
         // } else {
         //   // Counterclockwise.
-        //   return is_in_range(angle, endAngle, startAngle);
+        //   return is_in_range(angle, end_angle, start_angle);
         // }
         unimplemented!()
+    }
+
+    fn draw_entity<C: CanvasContext>(&self, ctx: &C, percent: f64, highlight: bool) {
+        let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
+        let mut a2 = lerp(self.old_end_angle, self.end_angle, percent);
+        if a1 > a2 {
+            let tmp = a1;
+            a1 = a2;
+            a2 = tmp;
+        }
+        let center = &self.center;
+        if highlight {
+            let highlight_outer_radius = HIGHLIGHT_OUTER_RADIUS_FACTOR * self.outer_radius;
+            ctx.set_fill_style_color(self.highlight_color);
+            ctx.begin_path();
+            ctx.arc(center.x, center.y, highlight_outer_radius, a1, a2, false);
+            ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
+            ctx.fill();
+        }
+
+        ctx.set_fill_style_color(self.color);
+        ctx.begin_path();
+        ctx.arc(center.x, center.y, self.outer_radius, a1, a2, false);
+        ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
+        ctx.fill();
+        ctx.stroke();
     }
 }
 
@@ -85,41 +110,42 @@ impl<C> Drawable<C> for GaugeEntity
 where
     C: CanvasContext,
 {
-    fn draw(&self, ctx: C, percent: f64, highlight: bool) {
-        // let tmpColor = color;
-        // let tmpEndAngle = endAngle;
+    fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
+        let tmp_color = &self.color;
+        let tmp_end_angle = self.end_angle;
 
-        // // Draw the background.
+        // Draw the background.
+        // FIXME:
+        // self.end_angle = self.start_angle + TAU;
+        // self.color = self.background_color;
+        self.draw_entity(ctx, 1.0, false);
 
-        // endAngle = startAngle + TAU;
-        // color = backgroundColor;
-        // self.base.draw(ctx, 1.0, false);
+        // Draw the foreground.
+        // FIXME:
+        // self.color = *tmp_color;
+        // self.end_angle = tmp_end_angle;
+        self.draw_entity(ctx, percent, highlight);
 
-        // // Draw the foreground.
+        // Draw the percent.
+        let fs1 = 0.75 * self.inner_radius;
+        let font1 = "${fs1}px $_fontFamily";
+        let text1 = lerp(self.old_value, self.value, percent)
+            .round()
+            .to_string();
+        ctx.set_font(font1);
+        let w1 = ctx.measure_text(text1.as_str()).width;
 
-        // color = tmpColor;
-        // endAngle = tmpEndAngle;
-        // self.base.draw(ctx, percent, highlight);
+        let fs2 = 0.6 * fs1;
+        let font2 = "${fs2}px $_fontFamily";
+        let text2 = "%";
+        ctx.set_font(font2);
+        let w2 = ctx.measure_text(text2).width;
 
-        // // Draw the percent.
-
-        // let fs1 = .75 * inner_radius;
-        // let font1 = "${fs1}px $_fontFamily";
-        // let text1 = lerp(oldValue, value, percent).round().to_string();
-        // ctx.font = font1;
-        // let w1 = ctx.measureText(text1).width;
-
-        // let fs2 = .6 * fs1;
-        // let font2 = "${fs2}px $_fontFamily";
-        // let text2 = "%";
-        // ctx.font = font2;
-        // let w2 = ctx.measureText(text2).width;
-
-        // let y = center.y + .3 * fs1;
-        // ctx.set_font(font1);
-        // ctx.fill_text(text1, center.x - .5 * w2, y);
-        // ctx.set_font(font2);
-        // ctx.fill_text(text2, center.x + .5 * w1, y);
+        let y = self.center.y + 0.3 * fs1;
+        ctx.set_font(font1);
+        ctx.fill_text(text1.as_str(), self.center.x - 0.5 * w2, y);
+        ctx.set_font(font2);
+        ctx.fill_text(text2, self.center.x + 0.5 * w1, y);
     }
 }
 
@@ -194,7 +220,7 @@ where
     fn calculate_drawing_sizes(&self) {
         self.base.calculate_drawing_sizes();
 
-        // let gaugeCount = data_table.rows.length;
+        // let gaugeCount = self.base.data_table.rows.len();
         // let labelTotalHeight = 0;
         // if (self.base.options.gauge_labels.enabled) {
         //   labelTotalHeight =
@@ -253,7 +279,7 @@ where
             percent = 1.0;
 
             // Update the visibility states of all series before the last frame.
-            // for (let i = series_states.length - 1; i >= 0; i--) {
+            // for (let i = series_states.len() - 1; i >= 0; i--) {
             //     if (series_states[i] == Visibility::showing) {
             //         series_states[i] = Visibility::shown;
             //     } else if (series_states[i] == Visibility::hiding) {
@@ -265,7 +291,7 @@ where
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
-        self.draw_series(ease(percent));
+        self.draw_series(ctx, ease(percent));
         // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
         // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
@@ -277,11 +303,11 @@ where
         }
     }
 
-    fn draw_series(&self, percent: f64) -> bool {
+    fn draw_series(&self, ctx: &C, percent: f64) -> bool {
         // let style = self.base.options.gauge_labels.style;
         // let labelsEnabled = self.base.options.gauge_labels.enabled;
         // ctx.set_stroke_style_color("white");
-        // ctx.set_text_align("center");
+        // ctx.set_text_align(TextAlign::Center);
         // for (Gauge gauge in series_list[0].entities) {
         //   let highlight = gauge.index == focused_entity_index;
         //   gauge.draw(series_context, percent, highlight);
@@ -291,11 +317,11 @@ where
         //   let x = gauge.center.x;
         //   let y = gauge.center.y +
         //       gauge.outer_radius +
-        //       style["fontSize"] +
+        //       style["font_size"] +
         //       AXIS_LABEL_MARGIN;
         //   ctx.set_fill_style_color(style.color);
         //   ctx.set_font(utils::get_font(style));
-        //   ctx.set_text_align("center");
+        //   ctx.set_text_align(TextAlign::Center);
         //   ctx.fill_text(gauge.name, x, y);
         // }
         // return false;
@@ -303,20 +329,20 @@ where
     }
 
     fn update_series(&self, index: usize) {
-        // let n = data_table.rows.length;
+        // let n = self.base.data_table.rows.len();
         // for (let i = 0; i < n; i++) {
         //   let gauge = series_list[0].entities[i] as Gauge;
-        //   let color = get_color(i);
+        //   let color = self.base.get_color(i);
         //   let highlight_color = change_color_alpha(color, .5);
         //   gauge
         //     ..index = i
-        //     ..name = data_table.rows[i][0]
+        //     ..name = self.base.data_table.rows[i][0]
         //     ..color = color
         //     ..highlight_color = highlight_color
         //     ..center = getGaugeCenter(i)
         //     ..inner_radius = gaugeInnerRadius
         //     ..outer_radius = gaugeOuterRadius
-        //     ..endAngle = startAngle + valueToAngle(gauge.value);
+        //     ..end_angle = start_angle + valueToAngle(gauge.value);
         // }
     }
 
@@ -324,34 +350,34 @@ where
         &self,
         series_index: usize,
         entity_index: usize,
-        value: String,
-        color: String,
-        highlight_color: String,
+        value: f64,
+        color: Color,
+        highlight_color: Color,
     ) -> GaugeEntity {
         // Override the colors.
-        // let color = self.get_color(entity_index);
-        // let highlight_color = self.change_color_alpha(color, .5);
+        let color = self.base.get_color(entity_index);
+        let highlight_color = self.base.change_color_alpha(color, 0.5);
 
-        // let name = data_table.rows[entityIndex][0];
+        // let name = self.base.data_table.rows[entity_index][0];
         // Gauge()
-        //   ..index = entityIndex
+        //   ..index = entity_index
         //   ..value = value
         //   ..name = name
         //   ..color = color
         //   ..backgroundColor = self.base.options.gauge_background_color
         //   ..highlight_color = highlight_color
         //   ..oldValue = 0
-        //   ..oldStartAngle = startAngle
-        //   ..oldEndAngle = startAngle
-        //   ..center = getGaugeCenter(entityIndex)
+        //   ..old_start_angle = start_angle
+        //   ..old_end_angle = start_angle
+        //   ..center = getGaugeCenter(entity_index)
         //   ..inner_radius = gaugeInnerRadius
         //   ..outer_radius = gaugeOuterRadius
-        //   ..startAngle = startAngle
-        //   ..endAngle = startAngle + valueToAngle(value);
+        //   ..start_angle = start_angle
+        //   ..end_angle = start_angle + valueToAngle(value);
         unimplemented!()
     }
 
-    fn get_tooltip_position(&self) -> Point<f64> {
+    fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {
         // let gauge = series_list[0].entities[focused_entity_index] as Gauge;
         // let x = gauge.center.x - (tooltip.offset_width / 2).trunc();
         // let y = gauge.center.y -

@@ -6,17 +6,18 @@ use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use ux_dataflow::*;
 use ux_primitives::{
     canvas::CanvasContext,
+    color::Color,
     geom::{Point, Rect},
+    text::{BaseLine, TextAlign},
 };
 
 use crate::*;
 
 #[derive(Default, Clone)]
 struct LinePoint {
-    // Chart chart,
-    color: String,
-    highlight_color: String,
-    formatted_value: String,
+    color: Color,
+    highlight_color: Color,
+    // formatted_value: String,
     index: usize,
     old_value: f64,
     value: f64,
@@ -50,27 +51,26 @@ impl<C> Drawable<C> for LinePoint
 where
     C: CanvasContext,
 {
-    fn draw(&self, ctx: C, percent: f64, highlight: bool) {
-        // let cx = lerp(oldX, x, percent);
-        // let cy = lerp(oldY, y, percent);
-        // let pr = lerp(oldPointRadius, pointRadius, percent);
-        // if (highlight) {
-        //   ctx.fillStyle = highlight_color;
-        //   ctx.begin_path();
-        //   ctx.arc(cx, cy, 2 * pr, 0, TAU);
-        //   ctx.fill();
-        // }
-        // ctx.begin_path();
-        // ctx.arc(cx, cy, pr, 0, TAU);
-        // ctx.fill();
-        // ctx.stroke();
-        unimplemented!()
+    fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
+        let cx = lerp(self.old_x, self.x, percent);
+        let cy = lerp(self.old_y, self.y, percent);
+        let pr = lerp(self.old_point_radius, self.point_radius, percent);
+        if highlight {
+          ctx.set_fill_style_color(self.highlight_color);
+          ctx.begin_path();
+          ctx.arc(cx, cy, 2. * pr, 0., TAU, false);
+          ctx.fill();
+        }
+
+        ctx.begin_path();
+        ctx.arc(cx, cy, pr, 0., TAU, false);
+        ctx.fill();
+        ctx.stroke();
     }
 }
 
 impl Entity for LinePoint {
     fn free(&mut self) {
-        // chart = null;
     }
 
     fn save(&self) {
@@ -183,20 +183,19 @@ where
     /// If [index] is given, calculates the average y value for the entity group
     /// at [index] only.
     ///
-    // index is opt
     fn calculate_average_y_values(&self, index: usize) {
         // if !self.base.options.tooltip.enabled return;
 
-        // let entityCount = data_table.rows.length;
+        // let entity_count = self.base.data_table.rows.len();
         // let start = index ?? 0;
-        // let end = index == null ? entityCount : index + 1;
+        // let end = index == null ? entity_count : index + 1;
 
-        // average_y_values.length = entityCount;
+        // average_y_values.len() = entity_count;
 
         // for (let i = start; i < end; i++) {
         //   let sum = 0.0;
         //   let count = 0;
-        //   for (let j = series_list.length - 1; j >= 0; j--) {
+        //   for (let j = series_list.len() - 1; j >= 0; j--) {
         //     if (series_states[j].index <= Visibility::hiding.index) continue;
         //     let point = series_list[j].entities[i] as Point;
         //     if (point.value != null) {
@@ -253,11 +252,11 @@ where
         //     // y-axis min-max.
 
         //     self.y_max_value = self.base.options.y_axis.max_value ?? f64::NEG_INFINITY;
-        //     y_max_value = max(y_max_value, find_max_value(data_table));
+        //     y_max_value = max(y_max_value, find_max_value(self.base.data_table));
         //     if (y_max_value == f64::NEG_INFINITY) y_max_value = 0.0;
 
         //     y_min_value = self.base.options.y_axis.min_value ?? f64::INFINITY;
-        //     y_min_value = min(y_min_value, findMinValue(data_table));
+        //     y_min_value = min(y_min_value, findMinValue(self.base.data_table));
         //     if (y_min_value == f64::INFINITY) y_min_value = 0.0;
 
         //     y_interval = self.base.options.y_axis.interval;
@@ -327,7 +326,7 @@ where
         //       context.font = get_font(xTitle["style"]);
         //       xTitleWidth = context.measureText(xTitle["text"]).width.round() +
         //           2 * TITLE_PADDING;
-        //       xTitleHeight = xTitle["style"]["fontSize"] + 2 * TITLE_PADDING;
+        //       xTitleHeight = xTitle["style"]["font_size"] + 2 * TITLE_PADDING;
         //       xTitleTop = self.base.series_and_axes_box.bottom - xTitleHeight;
         //     }
 
@@ -342,7 +341,7 @@ where
         //       context.font = get_font(yTitle["style"]);
         //       yTitleHeight = context.measureText(yTitle["text"]).width.round() +
         //           2 * TITLE_PADDING;
-        //       yTitleWidth = yTitle["style"]["fontSize"] + 2 * TITLE_PADDING;
+        //       yTitleWidth = yTitle["style"]["font_size"] + 2 * TITLE_PADDING;
         //       yTitleLeft = self.base.series_and_axes_box.left;
         //     }
 
@@ -367,10 +366,10 @@ where
 
         //     // x-axis labels and x-axis"s position.
 
-        //     let rowCount = data_table.rows.length;
+        //     let rowCount = self.base.data_table.rows.len();
         //     xlabels = <String>[];
         //     for (let i = 0; i < rowCount; i++) {
-        //       xlabels.add(data_table.rows[i][0].to_string());
+        //       xlabels.add(self.base.data_table.rows[i][0].to_string());
         //     }
         //     xlabel_max_width = calculateMaxTextWidth(
         //         context, get_font(self.base.options.x_axis.labels.style), xlabels);
@@ -383,7 +382,7 @@ where
         //     }
         //     xlabel_rotation = 0;
 
-        //     let fontSize = self.base.options.x_axis.labels.style.font_size;
+        //     let font_size = self.base.options.x_axis.labels.style.font_size;
         //     let maxRotation = self.base.options.x_axis.labels.max_rotation;
         //     let minRotation = self.base.options.x_axis.labels.min_rotation;
         //     const angles = [0, -45, 45, -90, 90];
@@ -399,13 +398,13 @@ where
         //         let absAngleRad = deg2rad(angle).abs();
         //         let labelSpacing = angle == 0
         //             ? scaledLabelHop - xlabel_max_width
-        //             : scaledLabelHop * sin(absAngleRad) - fontSize;
+        //             : scaledLabelHop * sin(absAngleRad) - font_size;
         //         if (labelSpacing < minSpacing) continue;
 
         //         xlabel_rotation = angle;
         //         xlabel_step = step;
         //         x_axis_top -=
-        //             xlabel_max_width * sin(absAngleRad) + fontSize * cos(absAngleRad);
+        //             xlabel_max_width * sin(absAngleRad) + font_size * cos(absAngleRad);
         //         break outer;
         //       }
         //     }
@@ -415,7 +414,7 @@ where
         //     y_axis_length = x_axis_top -
         //         self.base.series_and_axes_box.top -
         //         (self.base.options.y_axis.labels.style.font_size / 2).trunc();
-        //     ylabel_hop = y_axis_length / (ylabels.length - 1);
+        //     ylabel_hop = y_axis_length / (ylabels.len() - 1);
 
         //     xTitleLeft = y_axis_left + ((x_axis_length - xTitleWidth) / 2).trunc();
         //     yTitleTop = self.base.series_and_axes_box.top + ((y_axis_length - yTitleHeight) / 2).trunc();
@@ -481,8 +480,8 @@ where
         //   let opt = self.base.options.x_axis.title;
         //   ctx.set_fill_style_color(opt.style.color);
         //   ctx.set_font(utils::get_font(opt.style))
-        //   ctx.set_text_align("center");
-        //   ctx.set_text_baseline("middle");
+        //   ctx.set_text_align(TextAlign::Center);
+        //   ctx.set_text_baseline(BaseLine::Middle);
         //   ctx.fill_text(opt.text, x_title_center.x, x_title_center.y);
         // }
 
@@ -496,8 +495,8 @@ where
         //     ..font = get_font(opt.style.)
         //     ..translate(y_title_center.x, y_title_center.y)
         //     ..rotate(-PI_2)
-        //     ..textAlign = "center"
-        //     ..textBaseline = "middle"
+        //     ..textAlign = TextAlign::Center
+        //     ..textBaseline = BaseLine::Middle
         //     ..fill_text(opt["text"], 0, 0)
         //     ..restore();
         // }
@@ -508,24 +507,24 @@ where
         // axes_context.fillStyle = opt.style.["color"];
         // axes_context.font = get_font(opt.style.);
         // let x = xlabel_x(0);
-        // let y = x_axis_top + AXIS_LABEL_MARGIN + opt.style.["fontSize"];
+        // let y = x_axis_top + AXIS_LABEL_MARGIN + opt.style.["font_size"];
         // let scaledLabelHop = xlabel_step * xlabel_hop;
 
         // if (xlabel_rotation == 0) {
-        //   axes_context.textAlign = "center";
+        //   axes_context.textAlign = TextAlign::Center;
         //   axes_context.textBaseline = "alphabetic";
-        //   for (let i = 0; i < xlabels.length; i += xlabel_step) {
+        //   for (let i = 0; i < xlabels.len(); i += xlabel_step) {
         //     axes_context.fill_text(xlabels[i], x, y);
         //     x += scaledLabelHop;
         //   }
         // } else {
         //   axes_context.textAlign = xlabel_rotation < 0 ? "right" : "left";
-        //   axes_context.textBaseline = "middle";
+        //   axes_context.textBaseline = BaseLine::Middle;
         //   if (xlabel_rotation == 90) {
-        //     x += xlabel_rotation.sign * (opt.style.["fontSize"] / 8).trunc();
+        //     x += xlabel_rotation.sign * (opt.style.["font_size"] / 8).trunc();
         //   }
         //   let angle = deg2rad(xlabel_rotation);
-        //   for (let i = 0; i < xlabels.length; i += xlabel_step) {
+        //   for (let i = 0; i < xlabels.len(); i += xlabel_step) {
         //     axes_context
         //       ..save()
         //       ..translate(x, y)
@@ -542,7 +541,7 @@ where
         //   ..fillStyle = self.base.options.y_axis.labels.style.color
         //   ..font = get_font(self.base.options.y_axis.labels.style)
         //   ..textAlign = "right"
-        //   ..textBaseline = "middle";
+        //   ..textBaseline = BaseLine::Middle;
         // x = y_axis_left - AXIS_LABEL_MARGIN;
         // y = x_axis_top - (self.base.options.y_axis.labels.style.font_size / 8).trunc();
         // for (let label in ylabels) {
@@ -558,7 +557,7 @@ where
         //     ..strokeStyle = self.base.options.x_axis.grid_line_color
         //     ..begin_path();
         //   y = x_axis_top - ylabel_hop;
-        //   for (let i = ylabels.length - 1; i >= 1; i--) {
+        //   for (let i = ylabels.len() - 1; i >= 1; i--) {
         //     axes_context.moveTo(y_axis_left, y);
         //     axes_context.lineTo(y_axis_left + x_axis_length, y);
         //     y -= ylabel_hop;
@@ -583,7 +582,7 @@ where
         //   ..lineWidth = lineWidth
         //   ..strokeStyle = self.base.options.y_axis.grid_line_color
         //   ..begin_path();
-        // for (let i = 0; i < xlabels.length; i += xlabel_step) {
+        // for (let i = 0; i < xlabels.len(); i += xlabel_step) {
         //   axes_context.moveTo(x, y);
         //   axes_context.lineTo(x, x_axis_top);
         //   x += scaledLabelHop;
@@ -627,7 +626,7 @@ where
             percent = 1.0;
 
             // Update the visibility states of all series before the last frame.
-            // for (let i = series_states.length - 1; i >= 0; i--) {
+            // for (let i = series_states.len() - 1; i >= 0; i--) {
             //     if (series_states[i] == Visibility::showing) {
             //         series_states[i] = Visibility::shown;
             //     } else if (series_states[i] == Visibility::hiding) {
@@ -639,7 +638,7 @@ where
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
-        self.draw_series(ease(percent));
+        self.draw_series(ctx, ease(percent));
         // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
         // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
@@ -651,7 +650,7 @@ where
         }
     }
 
-    fn draw_series(&self, percent: f64) -> bool {
+    fn draw_series(&self, ctx: &C, percent: f64) -> bool {
         fn curve_to(cp1: Point<f64>, cp2: Point<f64>, p: LinePoint) {
             //     if cp2 == null && cp1 == null {
             //       series_context.lineTo(p.x, p.y);
@@ -664,14 +663,14 @@ where
             //     }
         }
 
-        //   let seriesCount = series_list.length;
-        //   let entityCount = data_table.rows.length;
-        //   let fillOpacity = self.base.options.series.fill_opacity;
-        //   let seriesLineWidth = self.base.options.series.line_width;
-        //   let markerOptions = self.base.options.series.markers;
-        //   let markerSize = markerOptions["size"];
+        //   let series_count = series_list.len();
+        //   let entity_count = self.base.data_table.rows.len();
+        //   let fill_opacity = self.base.options.series.fill_opacity;
+        //   let series_line_width = self.base.options.series.line_width;
+        //   let marker_options = self.base.options.series.markers;
+        //   let marker_size = marker_options["size"];
 
-        //   for (let i = 0; i < seriesCount; i++) {
+        //   for (let i = 0; i < series_count; i++) {
         //     if (series_states[i] == Visibility::hidden) continue;
 
         //     let series = series_list[i];
@@ -682,17 +681,17 @@ where
 
         //     // Draw series with filling.
 
-        //     if (fillOpacity > 0.0) {
-        //       let color = change_color_alpha(series.color, fillOpacity);
+        //     if (fill_opacity > 0.0) {
+        //       let color = change_color_alpha(series.color, fill_opacity);
         //       series_context.fillStyle = color;
         //       series_context.strokeStyle = color;
         //       let j = 0;
         //       while (true) {
         //         // Skip points with a null value.
-        //         while (j < entityCount && points[j].value == null) j++;
+        //         while (j < entity_count && points[j].value == null) j++;
 
         //         // Stop if we have reached the end of the series.
-        //         if (j == entityCount) break;
+        //         if (j == entity_count) break;
 
         //         // Connect a series of contiguous points with a non-null value and
         //         // fill the area between them and the x-axis.
@@ -703,7 +702,7 @@ where
         //           ..lineTo(p.x, p.y);
         //         let lastPoint = p;
         //         let count = 1;
-        //         while (++j < entityCount && points[j].value != null) {
+        //         while (++j < entity_count && points[j].value != null) {
         //           p = points[j];
         //           curveTo(lastPoint.cp2, p.cp1, p);
         //           lastPoint = p;
@@ -720,10 +719,10 @@ where
 
         //     // Draw series without filling.
 
-        //     if (seriesLineWidth > 0) {
+        //     if (series_line_width > 0) {
         //       let lastPoint = Point();
         //       series_context
-        //         ..lineWidth = scale * seriesLineWidth
+        //         ..lineWidth = scale * series_line_width
         //         ..strokeStyle = series.color
         //         ..begin_path();
         //       for (let p in points) {
@@ -741,16 +740,16 @@ where
 
         //     // Draw markers.
 
-        //     if (markerSize > 0) {
-        //       let fillColor = markerOptions["fillColor"] ?? series.color;
-        //       let strokeColor = markerOptions["strokeColor"] ?? series.color;
+        //     if (marker_size > 0) {
+        //       let fillColor = marker_options["fillColor"] ?? series.color;
+        //       let strokeColor = marker_options["strokeColor"] ?? series.color;
         //       series_context
         //         ..fillStyle = fillColor
-        //         ..lineWidth = scale * markerOptions["lineWidth"]
+        //         ..lineWidth = scale * marker_options["lineWidth"]
         //         ..strokeStyle = strokeColor;
         //       for (let p in points) {
         //         if (p.value != null) {
-        //           if (markerOptions["enabled"]) {
+        //           if (marker_options["enabled"]) {
         //             p.draw(series_context, 1.0, p.index == focused_entity_index);
         //           } else if (p.index == focused_entity_index) {
         //             // Only draw marker on hover.
@@ -768,15 +767,15 @@ where
         //     series_context
         //       ..fillStyle = labelOptions["style"]["color"]
         //       ..font = get_font(labelOptions["style"])
-        //       ..textAlign = "center"
+        //       ..textAlign = TextAlign::Center
         //       ..textBaseline = "alphabetic";
-        //     for (let i = 0; i < seriesCount; i++) {
+        //     for (let i = 0; i < series_count; i++) {
         //       if (series_states[i] != Visibility::shown) continue;
 
         //       let points = series_list[i].entities;
         //       for (Point p in points) {
         //         if (p.value != null) {
-        //           let y = p.y - markerSize - 5;
+        //           let y = p.y - marker_size - 5;
         //           series_context.fill_text(p.formatted_value, p.x, y);
         //         }
         //       }
@@ -787,13 +786,13 @@ where
     }
 
     fn update_series(&self, index: usize) {
-        // let entityCount = data_table.rows.length;
-        // let markerSize = self.base.options.series.markers.size;
+        // let entity_count = self.base.data_table.rows.len();
+        // let marker_size = self.base.options.series.markers.size;
         // let curve_tension = self.base.options.series.curve_tension;
-        // let curve = curve_tension > 0 && entityCount > 2;
+        // let curve = curve_tension > 0 && entity_count > 2;
 
         // let start = index ?? 0;
-        // let end = (index == null) ? series_list.length : index + 1;
+        // let end = (index == null) ? series_list.len() : index + 1;
         // for (let i = start; i < end; i++) {
         //   let visible = series_states[i].index >= Visibility::showing.index;
         //   let series = series_list[i];
@@ -803,14 +802,14 @@ where
         //   series.color = color;
         //   series.highlight_color = highlight_color;
 
-        //   for (let j = 0; j < entityCount; j++) {
+        //   for (let j = 0; j < entity_count; j++) {
         //     let e = entities[j] as Point;
         //     e.index = j;
         //     e.color = color;
         //     e.highlight_color = highlight_color;
         //     e.x = xlabel_x(j);
         //     e.y = visible ? value_to_y(e.value) : x_axis_top;
-        //     e.pointRadius = visible ? markerSize : 0;
+        //     e.pointRadius = visible ? marker_size : 0;
         //   }
 
         //   if (!curve) continue;
@@ -818,7 +817,7 @@ where
         //   let e1;
         //   let e2 = entities[0] as Point;
         //   let e3 = entities[1] as Point;
-        //   for (let j = 2; j < entityCount; j++) {
+        //   for (let j = 2; j < entity_count; j++) {
         //     e1 = e2;
         //     e2 = e3;
         //     e3 = entities[j];
@@ -841,15 +840,15 @@ where
         &self,
         series_index: usize,
         entity_index: usize,
-        value: String,
-        color: String,
-        highlight_color: String,
+        value: f64,
+        color: Color,
+        highlight_color: Color,
     ) -> LinePoint {
-        // let x = xlabel_x(entityIndex);
+        // let x = xlabel_x(entity_index);
         // let oldY = x_axis_top;
         // // oldCp1 and oldCp2 are calculated in [update_series].
         // return Point()
-        //   ..index = entityIndex
+        //   ..index = entity_index
         //   ..value = value
         //   ..formatted_value = value != null ? entity_value_formatter(value) : null
         //   ..color = color
@@ -863,7 +862,7 @@ where
         unimplemented!()
     }
 
-    fn get_tooltip_position(&self) -> Point<f64> {
+    fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {
         let props = self.props.borrow();
         let focused_entity_index = self.base.props.borrow().focused_entity_index;
 

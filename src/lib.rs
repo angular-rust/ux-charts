@@ -2,10 +2,7 @@
 #![allow(unused_variables)]
 
 use std::{collections::HashMap, fmt, rc::Rc, cell::RefCell};
-use ux_primitives::{
-    canvas::CanvasContext,
-    geom::Point
-};
+use ux_primitives::{canvas::CanvasContext, color::Color, geom::Point};
 use ux_dataflow::*;
 
 #[macro_use] 
@@ -34,6 +31,10 @@ pub use radar::*;
 
 mod utils;
 pub use utils::*;
+
+// pub(crate) const CLOCKWISE: i64 = 1;
+// pub(crate) const COUNTERCLOCKWISE: i64 = -1;
+pub(crate) const HIGHLIGHT_OUTER_RADIUS_FACTOR: f64 = 1.05;
 
 pub const PI: f64 = std::f64::consts::PI;
 /// The 2*pi constant - TAU
@@ -77,7 +78,7 @@ pub fn default_value_formatter(value: f64) -> String {
     format!("{}", value)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Visibility {
     Hidden,
     Hiding,
@@ -103,7 +104,7 @@ pub trait Drawable<C>
 where
     C: CanvasContext,
 {
-    fn draw(&self, ctx: C, percent: f64, highlight: bool);
+    fn draw(&self, ctx: &C, percent: f64, highlight: bool);
 }
 
 #[derive(Default, Debug, Clone)]
@@ -162,7 +163,6 @@ where
     /// Updates the series at index [index]. If [index] is `null`, updates all
     /// series.
     ///
-    // index is opt
     fn update_series(&self, index: usize);
 
     /// Draws the axes and the grid.
@@ -179,7 +179,7 @@ where
     /// In those cases, the overriding method will return `true` to stop the
     /// animation.
     ///
-    fn draw_series(&self, percent: f64) -> bool;
+    fn draw_series(&self, ctx: &C, percent: f64) -> bool;
 
     /// Draws the current animation frame.
     ///
@@ -198,7 +198,7 @@ where
         println!("Chart Trait create_entities");
         let result = Vec::new();
         // while (start < end) {
-        //   let value = data_table.rows[start][seriesIndex + 1];
+        //   let value = self.base.data_table.rows[start][seriesIndex + 1];
         //   let e = create_entity(seriesIndex, start, value, color, highlight_color);
         //   e.chart = this;
         //   result.add(e);
@@ -211,21 +211,21 @@ where
         &self,
         series_index: usize,
         entity_index: usize,
-        value: String,
-        color: String,
-        highlight_color: String,
+        value: f64,
+        color: Color,
+        highlight_color: Color,
     ) -> E;
 
     fn create_series_list(&self, start: usize, end: usize) -> Vec<Series<E>> {
         println!("Chart Trait create_series_list");
         let result = Vec::new();
-        // let entityCount = self.data_table.frames.length;
+        // let entity_count = self.data_table.frames.len();
         // while (start < end) {
-        //   let name = data_table.columns[start + 1].name;
+        //   let name = self.base.data_table.columns[start + 1].name;
         //   let color = get_color(start);
         //   let highlight_color = get_highlight_color(color);
         //   let entities =
-        //       create_entities(start, 0, entityCount, color, highlight_color);
+        //       create_entities(start, 0, entity_count, color, highlight_color);
         //   result.add(Series(name, color, highlight_color, entities));
         //   start++;
         // }
@@ -234,7 +234,9 @@ where
 
     /// Returns the position of the tooltip based on 
     /// [focused_entity_index].
-    fn get_tooltip_position(&self) -> Point<f64>;
+    // tooltip_width - oltip.offset_width
+    // tooltip_height - tooltip.offset_height
+    fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64>;
 
     fn set_stream(&self, stream: DataStream<'a, M, D>);
 

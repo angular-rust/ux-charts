@@ -5,21 +5,17 @@
 
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use ux_dataflow::*;
-use ux_primitives::{canvas::CanvasContext, geom::Point};
+use ux_primitives::{canvas::CanvasContext, color::Color, geom::Point, text::TextAlign};
 
 use crate::*;
-
-const CLOCKWISE: i64 = 1;
-const COUNTERCLOCKWISE: i64 = -1;
-const HIGHLIGHT_OUTER_RADIUS_FACTOR: f64 = 1.05;
 
 /// A pie in a pie chart.
 #[derive(Default, Clone)]
 pub struct PieEntity {
     // Chart chart,
-    color: String,
-    highlight_color: String,
-    formatted_value: String,
+    color: Color,
+    highlight_color: Color,
+    // formatted_value: String,
     index: usize,
     old_value: f64,
     value: f64,
@@ -52,7 +48,7 @@ impl PieEntity {
         let mut angle = f64::atan2(p.y, p.x);
 
         //TODO: complete it
-        // let chartStartAngle = (chart as dynamic).startAngle;
+        // let chartStartAngle = (chart as dynamic).start_angle;
 
         // // Make sure [angle] is in range [chartStartAngle]..[chartStartAngle] + TAU.
         // angle = (angle - chartStartAngle) % TAU + chartStartAngle;
@@ -89,7 +85,7 @@ impl<C> Drawable<C> for PieEntity
 where
     C: CanvasContext,
 {
-    fn draw(&self, ctx: C, percent: f64, highlight: bool) {
+    fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
         let mut a2 = lerp(self.old_end_angle, self.end_angle, percent);
         if a1 > a2 {
@@ -97,32 +93,34 @@ where
             a1 = a2;
             a2 = tmp;
         }
+        let center = &self.center;
         if highlight {
-            //   let highlight_outer_radius = HIGHLIGHT_OUTER_RADIUS_FACTOR * outer_radius;
-            //   ctx.fillStyle = highlight_color;
-            //   ctx.begin_path();
-            //   ctx.arc(center.x, center.y, highlight_outer_radius, a1, a2);
-            //   ctx.arc(center.x, center.y, inner_radius, a2, a1, true);
-            //   ctx.fill();
+            let highlight_outer_radius = HIGHLIGHT_OUTER_RADIUS_FACTOR * self.outer_radius;
+            ctx.set_fill_style_color(self.highlight_color);
+            ctx.begin_path();
+            ctx.arc(center.x, center.y, highlight_outer_radius, a1, a2, false);
+            ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
+            ctx.fill();
         }
-        // ctx.fillStyle = color;
-        // ctx.begin_path();
-        // ctx.arc(center.x, center.y, outer_radius, a1, a2);
-        // ctx.arc(center.x, center.y, inner_radius, a2, a1, true);
-        // ctx.fill();
-        // ctx.stroke();
+
+        ctx.set_fill_style_color(self.color);
+        ctx.begin_path();
+        ctx.arc(center.x, center.y, self.outer_radius, a1, a2, false);
+        ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
+        ctx.fill();
+        ctx.stroke();
 
         // && chart is PieChart
-        if !self.formatted_value.is_empty() && a2 - a1 > PI / 36.0 {
-            //   let options = chart.options["series"]["labels"];
-            //   if (options["enabled"]) {
-            //     let r = .25 * inner_radius + .75 * outer_radius;
-            //     let a = .5 * (a1 + a2);
-            //     let p = polarToCartesian(center, r, a);
-            //     ctx.fillStyle = options["style"]["color"];
-            // ctx.fill_text(formatted_value, p.x, p.y);
-            //   }
-        }
+        // if !self.formatted_value.is_empty() && a2 - a1 > PI / 36.0 {
+        //     // let labels = self.chart.options.series.labels;
+        //     // if labels.enabled {
+        //     //     let r = 0.25 * self.inner_radius + 0.75 * self.outer_radius;
+        //     //     let a = 0.5 * (a1 + a2);
+        //     //     let p = utils::polar2cartesian(center, r, a);
+        //     //     ctx.set_fill_style_color(labels.style.color);
+        //     //     ctx.fill_text(self.formatted_value.as_str(), p.x, p.y);
+        //     // }
+        // }
     }
 }
 
@@ -172,7 +170,7 @@ where
     fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
         let p = Point::new(x, y);
         // let entities = series_list.first.entities;
-        // for (let i = entities.length - 1; i >= 0; i--) {
+        // for (let i = entities.len() - 1; i >= 0; i--) {
         //   let pie = entities[i] as Pie;
         //   if (pie.containsPoint(p)) return i;
         // }
@@ -289,7 +287,7 @@ where
             percent = 1.0;
 
             // Update the visibility states of all series before the last frame.
-            // for (let i = series_states.length - 1; i >= 0; i--) {
+            // for (let i = series_states.len() - 1; i >= 0; i--) {
             //     if (series_states[i] == Visibility::showing) {
             //         series_states[i] = Visibility::shown;
             //     } else if (series_states[i] == Visibility::hiding) {
@@ -301,7 +299,7 @@ where
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
-        self.draw_series(ease(percent));
+        self.draw_series(ctx, ease(percent));
         // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
         // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
@@ -313,12 +311,12 @@ where
         }
     }
 
-    fn draw_series(&self, percent: f64) -> bool {
+    fn draw_series(&self, ctx: &C, percent: f64) -> bool {
         // series_context
         //   ..lineWidth = 2
         //   ..strokeStyle = "#fff"
-        //   ..textAlign = "center"
-        //   ..textBaseline = "middle";
+        //   ..textAlign = TextAlign::Center
+        //   ..textBaseline = BaseLine::Middle;
         // let pies = series_list.first.entities;
         // let labelOptions = self.base.options.series.labels;
         // series_context.font = get_font(labelOptions["style"]);
@@ -334,16 +332,9 @@ where
     }
 
     fn update_series(&self, index: usize) {
-        // // Example data table:
-        // //   Browser  Share
-        // //   Chrome   .35
-        // //   IE       .30
-        // //   Firefox  .20
-        // //   Other    .15
-
         // let sum = 0.0;
-        // let startAngle = startAngle;
-        // let pieCount = data_table.rows.length;
+        // let start_angle = start_angle;
+        // let pieCount = self.base.data_table.rows.len();
         // let entities = series_list[0].entities;
 
         // // Sum the values of all visible pies.
@@ -355,9 +346,9 @@ where
 
         // for (let i = 0; i < pieCount; i++) {
         //   Pie pie = entities[i];
-        //   let color = get_color(i);
+        //   let color = self.base.get_color(i);
         //   pie.index = i;
-        //   pie.name = data_table.rows[i][0];
+        //   pie.name = self.base.data_table.rows[i][0];
         //   pie.color = color;
         //   pie.highlight_color = get_highlight_color(color);
         //   pie.center = center;
@@ -365,12 +356,12 @@ where
         //   pie.outer_radius = outer_radius;
 
         //   if (series_states[i].index >= Visibility::showing.index) {
-        //     pie.startAngle = startAngle;
-        //     pie.endAngle = startAngle + direction * pie.value * TAU / sum;
-        //     startAngle = pie.endAngle;
+        //     pie.start_angle = start_angle;
+        //     pie.end_angle = start_angle + direction * pie.value * TAU / sum;
+        //     start_angle = pie.end_angle;
         //   } else {
-        //     pie.startAngle = startAngle;
-        //     pie.endAngle = startAngle;
+        //     pie.start_angle = start_angle;
+        //     pie.end_angle = start_angle;
         //   }
         // }
         unimplemented!()
@@ -380,41 +371,41 @@ where
         &self,
         series_index: usize,
         entity_index: usize,
-        value: String,
-        color: String,
-        highlight_color: String,
+        value: f64,
+        color: Color,
+        highlight_color: Color,
     ) -> PieEntity {
         // // Override the colors.
-        // color = get_color(entityIndex);
+        // color = self.base.get_color(entity_index);
         // highlight_color = change_color_alpha(color, .5);
-        // let name = data_table.rows[entityIndex][0];
-        // let startAngle = startAngle;
-        // if (entityIndex > 0 && series_list != null) {
-        //   let prevPie = series_list[0].entities[entityIndex - 1] as Pie;
-        //   startAngle = prevPie.endAngle;
+        // let name = self.base.data_table.rows[entity_index][0];
+        // let start_angle = start_angle;
+        // if (entity_index > 0 && series_list != null) {
+        //   let prevPie = series_list[0].entities[entity_index - 1] as Pie;
+        //   start_angle = prevPie.end_angle;
         // }
         // return Pie()
-        //   ..index = entityIndex
+        //   ..index = entity_index
         //   ..value = value
         //   ..formatted_value = value != null ? entity_value_formatter(value) : null
         //   ..name = name
         //   ..color = color
         //   ..highlight_color = highlight_color
-        //   ..oldStartAngle = startAngle
-        //   ..oldEndAngle = startAngle
+        //   ..old_start_angle = start_angle
+        //   ..old_end_angle = start_angle
         //   ..center = center
         //   ..inner_radius = inner_radius
         //   ..outer_radius = outer_radius
-        //   ..startAngle = startAngle
-        //   ..endAngle = startAngle; // To be updated in [update_series].
+        //   ..start_angle = start_angle
+        //   ..end_angle = start_angle; // To be updated in [update_series].
         unimplemented!()
     }
 
-    fn get_tooltip_position(&self) -> Point<f64> {
+    fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {
         // let pie = series_list.first.entities[focused_entity_index] as Pie;
-        // let angle = .5 * (pie.startAngle + pie.endAngle);
+        // let angle = .5 * (pie.start_angle + pie.end_angle);
         // let radius = .5 * (inner_radius + outer_radius);
-        // let point = polarToCartesian(center, radius, angle);
+        // let point = utils::polar2cartesian(center, radius, angle);
         // let x = point.x - .5 * tooltip.offset_width;
         // let y = point.y - tooltip.offset_height;
         // return Point(x, y);
