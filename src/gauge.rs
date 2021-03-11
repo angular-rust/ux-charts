@@ -181,7 +181,7 @@ where
         }
     }
 
-    fn get_gauge_center(&self, index: i64) -> Point<D> {
+    fn get_gauge_center(&self, index: usize) -> Point<f64> {
         // Point((index + 0.5) * gauge_hop, gauge_center_y)
         unimplemented!()
     }
@@ -248,7 +248,7 @@ where
         self.base.initialize_legend();
         self.base.initialize_tooltip();
 
-        // self.axes_context.clearRect(0, 0, self.width, self.height);
+        // self.ctx.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid(ctx);
         self.base.start_animation();
     }
@@ -279,21 +279,23 @@ where
             percent = 1.0;
 
             // Update the visibility states of all series before the last frame.
-            // for (let i = series_states.len() - 1; i >= 0; i--) {
-            //     if (series_states[i] == Visibility::showing) {
-            //         series_states[i] = Visibility::shown;
-            //     } else if (series_states[i] == Visibility::hiding) {
-            //         series_states[i] = Visibility::hidden;
-            //     }
-            // }
+            let mut props = self.base.props.borrow_mut();
+
+            for idx in props.series_states.len() - 1..0 {
+                if props.series_states[idx] == Visibility::Showing {
+                    props.series_states[idx] = Visibility::Shown;
+                } else if props.series_states[idx] == Visibility::Hiding {
+                    props.series_states[idx] = Visibility::Hidden;
+                }
+            }
         }
 
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
         self.draw_series(ctx, ease(percent));
-        // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
-        // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
+        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
+        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
 
         if percent < 1.0 {
@@ -310,7 +312,7 @@ where
         // ctx.set_text_align(TextAlign::Center);
         // for (Gauge gauge in series_list[0].entities) {
         //   let highlight = gauge.index == focused_entity_index;
-        //   gauge.draw(series_context, percent, highlight);
+        //   gauge.draw(ctx, percent, highlight);
 
         //   if (!labelsEnabled) continue;
 
@@ -342,7 +344,7 @@ where
         //     ..center = getGaugeCenter(i)
         //     ..inner_radius = gaugeInnerRadius
         //     ..outer_radius = gaugeOuterRadius
-        //     ..end_angle = start_angle + valueToAngle(gauge.value);
+        //     ..end_angle = start_angle + value_to_angle(gauge.value);
         // }
     }
 
@@ -358,33 +360,46 @@ where
         let color = self.base.get_color(entity_index);
         let highlight_color = self.base.change_color_alpha(color, 0.5);
 
-        // let name = self.base.data_table.rows[entity_index][0];
-        // Gauge()
-        //   ..index = entity_index
-        //   ..value = value
-        //   ..name = name
-        //   ..color = color
-        //   ..backgroundColor = self.base.options.gauge_background_color
-        //   ..highlight_color = highlight_color
-        //   ..oldValue = 0
-        //   ..old_start_angle = start_angle
-        //   ..old_end_angle = start_angle
-        //   ..center = getGaugeCenter(entity_index)
-        //   ..inner_radius = gaugeInnerRadius
-        //   ..outer_radius = gaugeOuterRadius
-        //   ..start_angle = start_angle
-        //   ..end_angle = start_angle + valueToAngle(value);
-        unimplemented!()
+        let stream = &self.base.data_table;
+        let frame = stream.frames.get(entity_index).unwrap();
+        let name = format!("{}", frame.metric);
+
+        let props = self.props.borrow();
+        let options = &self.base.options;
+
+        let center = self.get_gauge_center(entity_index);
+
+        GaugeEntity {
+            index: entity_index,
+            value,
+            name,
+            color,
+            background_color: options.background_color,
+            highlight_color,
+            old_value: 0.,
+            old_start_angle: props.start_angle,
+            old_end_angle: props.start_angle,
+            center,
+            inner_radius: props.gauge_inner_radius,
+            outer_radius: props.gauge_outer_radius,
+            start_angle: props.start_angle,
+            end_angle: props.start_angle + self.value_to_angle(value),
+        }
     }
 
     fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {
-        // let gauge = series_list[0].entities[focused_entity_index] as Gauge;
-        // let x = gauge.center.x - (tooltip.offset_width / 2).trunc();
-        // let y = gauge.center.y -
-        //     HIGHLIGHT_OUTER_RADIUS_FACTOR * gauge.outer_radius -
-        //     tooltip.offset_height -
-        //     5;
-        // return Point(x, y);
-        unimplemented!()
+        let series_list = self.base.series_list.borrow();
+        let series = series_list.first().unwrap();
+
+        let focused_entity_index = self.base.props.borrow().focused_entity_index as usize;
+
+        let gauge = series.entities.get(focused_entity_index).unwrap();
+        let x = gauge.center.x - (tooltip_width / 2.).trunc();
+        let y = gauge.center.y
+            - HIGHLIGHT_OUTER_RADIUS_FACTOR * gauge.outer_radius
+            - tooltip_height
+            - 5.;
+
+        Point::new(x, y)
     }
 }

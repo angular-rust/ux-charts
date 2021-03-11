@@ -439,7 +439,7 @@ pub struct LineChartSeriesMarkersOptions {
     pub stroke_color: Color,
 
     /// Size of the markers.
-    pub size: usize,
+    pub size: f64,
 }
 
 pub struct LineChartSeriesOptions<'a> {
@@ -611,7 +611,7 @@ impl<'a> Default for LineChartOptions<'a> {
                     fill_color: None,
                     line_width: 1,
                     stroke_color: palette::WHITE,
-                    size: 4,
+                    size: 4.,
                 },
             },
             x_axis: LineChartXAxisOptions {
@@ -847,6 +847,14 @@ pub struct RadarChartSeriesOptions<'a> {
     pub markers: RadarChartSeriesMarkersOptions,
 }
 
+pub struct RadarChartXAxisLabelsOptions<'a> {
+    /// (num value) -> String - A function that formats the labels.
+    pub formatter: Option<ValueFormatter>,
+
+    /// An object that controls the styling of the axis labels.
+    pub style: StyleOption<'a>,
+}
+
 pub struct RadarChartXAxisOptions<'a> {
     /// The color of the horizontal grid lines.
     pub grid_line_color: Color,
@@ -855,7 +863,7 @@ pub struct RadarChartXAxisOptions<'a> {
     pub grid_line_width: f64,
 
     /// An object that controls the axis labels.
-    pub labels: Option<StyleOption<'a>>,
+    pub labels: RadarChartXAxisLabelsOptions<'a>,
 }
 
 pub struct RadarChartYAxisLabelsOptions<'a> {
@@ -959,7 +967,10 @@ impl<'a> Default for RadarChartOptions<'a> {
             x_axis: RadarChartXAxisOptions {
                 grid_line_color: palette::GRAY_5,
                 grid_line_width: 1_f64,
-                labels: Some(Default::default()),
+                labels: RadarChartXAxisLabelsOptions {
+                    formatter: None,
+                    style: Default::default(),
+                },
             },
             y_axis: RadarChartYAxisOptions {
                 grid_line_color: palette::GRAY_5,

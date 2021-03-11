@@ -1,11 +1,11 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
-use std::{collections::HashMap, fmt, rc::Rc, cell::RefCell};
-use ux_primitives::{canvas::CanvasContext, color::Color, geom::Point};
+use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use ux_dataflow::*;
+use ux_primitives::{canvas::CanvasContext, color::Color, geom::Point};
 
-#[macro_use] 
+#[macro_use]
 extern crate lazy_static;
 
 mod basechart;
@@ -232,7 +232,7 @@ where
         result
     }
 
-    /// Returns the position of the tooltip based on 
+    /// Returns the position of the tooltip based on
     /// [focused_entity_index].
     // tooltip_width - oltip.offset_width
     // tooltip_height - tooltip.offset_height

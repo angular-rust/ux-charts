@@ -8,7 +8,7 @@ use ux_primitives::{
     canvas::CanvasContext,
     color::Color,
     geom::{Point, Rect, Size},
-    text::TextAlign,
+    text::{BaseLine, TextAlign},
 };
 
 use crate::*;
@@ -165,7 +165,10 @@ where
             }
 
             props.bounding_boxes[idx] = if count > 0 {
-                Rect::new(Point::new(min_x, min_y), Size::new(max_x - min_x, max_y - min_y))
+                Rect::new(
+                    Point::new(min_x, min_y),
+                    Size::new(max_x - min_x, max_y - min_y),
+                )
             } else {
                 unimplemented!()
             };
@@ -295,7 +298,7 @@ where
         self.base.initialize_legend();
         self.base.initialize_tooltip();
 
-        // self.axes_context.clearRect(0, 0, self.width, self.height);
+        // self.ctx.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid(ctx);
         self.base.start_animation();
     }
@@ -315,77 +318,67 @@ where
         let ylabel_count = props.ylabels.len();
 
         // x-axis grid lines (i.e. concentric equilateral polygons).
+        let mut line_width = self.base.options.x_axis.grid_line_width;
+        if line_width > 0. {
+            ctx.set_line_width(line_width);
+            ctx.set_stroke_style_color(self.base.options.x_axis.grid_line_color);
+            ctx.begin_path();
+            let mut radius = props.radius;
+            for idx in ylabel_count - 1..1 {
+                let mut angle = -PI_2 + props.angle_interval;
+                ctx.move_to(props.center.x, props.center.y - radius);
+                for jdx in 0..xlabel_count {
+                    let point = utils::polar2cartesian(&props.center, radius, angle);
+                    ctx.line_to(point.x, point.y);
+                    angle += props.angle_interval;
+                }
+                radius -= props.ylabel_hop;
+            }
+            ctx.stroke();
+        }
 
-        // let line_width = self.base.options.x_axis.grid_line_width;
-        // if lineWidth > 0. {
-        //   ctx
-        //     ..lineWidth = lineWidth
-        //     ..strokeStyle = self.base.options.x_axis.grid_line_color
-        //     ..begin_path();
-        //   let radius = radius;
-        //   for (let i = yLabelCount - 1; i >= 1; i--) {
-        //     let angle = -PI_2 + angle_interval;
-        //     axes_context.moveTo(center.x, center.y - radius);
-        //     for (let j = 0; j < xLabelCount; j++) {
-        //       let point = utils::polar2cartesian(center, radius, angle);
-        //       axes_context.lineTo(point.x, point.y);
-        //       angle += angle_interval;
-        //     }
-        //     radius -= ylabel_hop;
-        //   }
-        //   axes_context.stroke();
-        // }
+        // y-axis grid lines (i.e. radii from the center to the x-axis labels).
+        line_width = self.base.options.y_axis.grid_line_width;
+        if line_width > 0. {
+            ctx.set_line_width(line_width);
+            ctx.set_stroke_style_color(self.base.options.y_axis.grid_line_color);
+            ctx.begin_path();
+            let mut angle = -PI_2;
+            for idx in 0..xlabel_count {
+                let point = utils::polar2cartesian(&props.center, props.radius, angle);
+                ctx.move_to(props.center.x, props.center.y);
+                ctx.line_to(point.x, point.y);
+                angle += props.angle_interval;
+            }
+            ctx.stroke();
+        }
 
-        // // y-axis grid lines (i.e. radii from the center to the x-axis labels).
+        // y-axis labels - don"t draw the first (at center) and the last ones.
+        let style = &self.base.options.y_axis.labels.style;
+        let x = props.center.x - AXIS_LABEL_MARGIN as f64;
+        let mut y = props.center.y - props.ylabel_hop;
+        ctx.set_fill_style_color(style.color);
+        ctx.set_font(utils::get_font(&style).as_str());
+        ctx.set_text_align(TextAlign::Right);
+        ctx.set_text_baseline(BaseLine::Middle);
+        for idx in 1..ylabel_count - 2 {
+            ctx.fill_text(props.ylabels[idx].as_str(), x, y);
+            y -= props.ylabel_hop;
+        }
 
-        // lineWidth = self.base.options.y_axis.grid_line_width;
-        // if (lineWidth > 0) {
-        //   axes_context
-        //     ..lineWidth = lineWidth
-        //     ..strokeStyle = self.base.options.y_axis.grid_line_color
-        //     ..begin_path();
-        //   let angle = -PI_2;
-        //   for (let i = 0; i < xLabelCount; i++) {
-        //     let point = utils::polar2cartesian(center, radius, angle);
-        //     axes_context
-        //       ..moveTo(center.x, center.y)
-        //       ..lineTo(point.x, point.y);
-        //     angle += angle_interval;
-        //   }
-        //   axes_context.stroke();
-        // }
-
-        // // y-axis labels - don"t draw the first (at center) and the last ones.
-
-        // let style = self.base.options.y_axis.labels.style;
-        // let x = center.x - AXIS_LABEL_MARGIN;
-        // let y = center.y - ylabel_hop;
-        // axes_context
-        //   ..fillStyle = style["color"]
-        //   ..font = get_font(style)
-        //   ..textAlign = "right"
-        //   ..textBaseline = BaseLine::Middle;
-        // for (let i = 1; i <= yLabelCount - 2; i++) {
-        //   axes_context.fill_text(ylabels[i], x, y);
-        //   y -= ylabel_hop;
-        // }
-
-        // // x-axis labels.
-
-        // style = self.base.options.x_axis.labels.style;
-        // axes_context
-        //   ..fillStyle = style["color"]
-        //   ..font = get_font(style)
-        //   ..textAlign = TextAlign::Center
-        //   ..textBaseline = BaseLine::Middle;
-        // let font_size = style["font_size"];
-        // let angle = -PI_2;
-        // let radius = radius + AXIS_LABEL_MARGIN;
-        // for (let i = 0; i < xLabelCount; i++) {
-        //   drawText(axes_context, xlabels[i], radius, angle, font_size);
-        //   angle += angle_interval;
-        // }
-        unimplemented!()
+        // x-axis labels.
+        let style = &self.base.options.x_axis.labels.style;
+        ctx.set_fill_style_color(style.color);
+        ctx.set_font(utils::get_font(&style).as_str());
+        ctx.set_text_align(TextAlign::Center);
+        ctx.set_text_baseline(BaseLine::Middle);
+        let font_size = style.font_size.unwrap();
+        let mut angle = -PI_2;
+        let radius = props.radius + AXIS_LABEL_MARGIN as f64;
+        for idx in 0..xlabel_count {
+            self.draw_text(ctx, props.xlabels[idx].as_str(), radius, angle, font_size);
+            angle += props.angle_interval;
+        }
     }
 
     /// Draws the current animation frame.
@@ -400,21 +393,23 @@ where
             percent = 1.0;
 
             // Update the visibility states of all series before the last frame.
-            // for (let i = series_states.len() - 1; i >= 0; i--) {
-            //     if (series_states[i] == Visibility::showing) {
-            //         series_states[i] = Visibility::shown;
-            //     } else if (series_states[i] == Visibility::hiding) {
-            //         series_states[i] = Visibility::hidden;
-            //     }
-            // }
+            let mut props = self.base.props.borrow_mut();
+
+            for idx in props.series_states.len() - 1..0 {
+                if props.series_states[idx] == Visibility::Showing {
+                    props.series_states[idx] = Visibility::Shown;
+                } else if props.series_states[idx] == Visibility::Hiding {
+                    props.series_states[idx] = Visibility::Hidden;
+                }
+            }
         }
 
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
         self.draw_series(ctx, ease(percent));
-        // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
-        // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
+        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
+        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
 
         if percent < 1.0 {
@@ -439,8 +434,8 @@ where
 
         //   // Draw the polygon.
 
-        //   series_context
-        //     ..lineWidth = scale * series_line_width
+        //   ctx
+        //     ..line_width = scale * series_line_width
         //     ..strokeStyle = series.color
         //     ..begin_path();
         //   for (let j = 0; j < point_count; j++) {
@@ -450,19 +445,19 @@ where
         //     let angle = lerp(point.oldAngle, point.angle, percent);
         //     let p = utils::polar2cartesian(center, radius, angle);
         //     if (j > 0) {
-        //       series_context.lineTo(p.x, p.y);
+        //       ctx.line_to(p.x, p.y);
         //     } else {
-        //       series_context.moveTo(p.x, p.y);
+        //       ctx.move_to(p.x, p.y);
         //     }
         //   }
-        //   series_context.closePath();
-        //   series_context.stroke();
+        //   ctx.closePath();
+        //   ctx.stroke();
 
         //   // Optionally fill the polygon.
 
         //   if (fill_opacity > 0) {
-        //     series_context.fillStyle = change_color_alpha(series.color, fill_opacity);
-        //     series_context.fill();
+        //     ctx.fillStyle = change_color_alpha(series.color, fill_opacity);
+        //     ctx.fill();
         //   }
 
         //   // Draw the markers.
@@ -470,16 +465,16 @@ where
         //   if (marker_size > 0) {
         //     let fillColor = marker_options["fillColor"] ?? series.color;
         //     let strokeColor = marker_options["strokeColor"] ?? series.color;
-        //     series_context
+        //     ctx
         //       ..fillStyle = fillColor
-        //       ..lineWidth = scale * marker_options["lineWidth"]
+        //       ..line_width = scale * marker_options["line_width"]
         //       ..strokeStyle = strokeColor;
         //     for (let p in series.entities) {
         //       if (marker_options["enabled"]) {
-        //         p.draw(series_context, percent, p.index == focused_entity_index);
+        //         p.draw(ctx, percent, p.index == focused_entity_index);
         //       } else if (p.index == focused_entity_index) {
         //         // Only draw marker on hover.
-        //         p.draw(series_context, percent, true);
+        //         p.draw(ctx, percent, true);
         //       }
         //     }
         //   }

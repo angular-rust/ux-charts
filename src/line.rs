@@ -34,7 +34,6 @@ struct LinePoint {
     // /// The second control point.
     // cp2: Point,
     x: f64,
-
     y: f64,
 
     point_radius: f64,
@@ -56,10 +55,10 @@ where
         let cy = lerp(self.old_y, self.y, percent);
         let pr = lerp(self.old_point_radius, self.point_radius, percent);
         if highlight {
-          ctx.set_fill_style_color(self.highlight_color);
-          ctx.begin_path();
-          ctx.arc(cx, cy, 2. * pr, 0., TAU, false);
-          ctx.fill();
+            ctx.set_fill_style_color(self.highlight_color);
+            ctx.begin_path();
+            ctx.arc(cx, cy, 2. * pr, 0., TAU, false);
+            ctx.fill();
         }
 
         ctx.begin_path();
@@ -70,8 +69,7 @@ where
 }
 
 impl Entity for LinePoint {
-    fn free(&mut self) {
-    }
+    fn free(&mut self) {}
 
     fn save(&self) {
         // self.old_x = self.x;
@@ -162,7 +160,7 @@ where
         }
     }
 
-    fn get_entity_group_index(&self, x: f64, num: f64) -> i64 {
+    fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
         // let dx = x - y_axis_left;
         // // If (x, y) is inside the rectangle defined by the two axes.
         // if (y > x_axis_top - y_axis_length &&
@@ -324,7 +322,7 @@ where
         //     let xTitle = self.base.options.x_axis.title;
         //     if (xTitle["text"] != null) {
         //       context.font = get_font(xTitle["style"]);
-        //       xTitleWidth = context.measureText(xTitle["text"]).width.round() +
+        //       xTitleWidth = context.measure_text(xTitle["text"]).width.round() +
         //           2 * TITLE_PADDING;
         //       xTitleHeight = xTitle["style"]["font_size"] + 2 * TITLE_PADDING;
         //       xTitleTop = self.base.series_and_axes_box.bottom - xTitleHeight;
@@ -339,7 +337,7 @@ where
         //     let yTitle = self.base.options.y_axis.title;
         //     if (yTitle["text"] != null) {
         //       context.font = get_font(yTitle["style"]);
-        //       yTitleHeight = context.measureText(yTitle["text"]).width.round() +
+        //       yTitleHeight = context.measure_text(yTitle["text"]).width.round() +
         //           2 * TITLE_PADDING;
         //       yTitleWidth = yTitle["style"]["font_size"] + 2 * TITLE_PADDING;
         //       yTitleLeft = self.base.series_and_axes_box.left;
@@ -453,7 +451,7 @@ where
         self.base.initialize_legend();
         self.base.initialize_tooltip();
 
-        // self.axes_context.clearRect(0, 0, self.width, self.height);
+        // self.ctx.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid(ctx);
         self.base.start_animation();
     }
@@ -489,7 +487,7 @@ where
 
         // if (y_title_center != null) {
         //   let opt = self.base.options.y_axis.title;
-        //   axes_context
+        //   ctx
         //     ..save()
         //     ..fillStyle = opt.style.["color"]
         //     ..font = get_font(opt.style.)
@@ -504,28 +502,28 @@ where
         // // x-axis labels.
 
         // let opt = self.base.options.x_axis.labels;
-        // axes_context.fillStyle = opt.style.["color"];
-        // axes_context.font = get_font(opt.style.);
+        // ctx.fillStyle = opt.style.["color"];
+        // ctx.font = get_font(opt.style.);
         // let x = xlabel_x(0);
         // let y = x_axis_top + AXIS_LABEL_MARGIN + opt.style.["font_size"];
         // let scaledLabelHop = xlabel_step * xlabel_hop;
 
         // if (xlabel_rotation == 0) {
-        //   axes_context.textAlign = TextAlign::Center;
-        //   axes_context.textBaseline = "alphabetic";
+        //   ctx.textAlign = TextAlign::Center;
+        //   ctx.textBaseline = "alphabetic";
         //   for (let i = 0; i < xlabels.len(); i += xlabel_step) {
-        //     axes_context.fill_text(xlabels[i], x, y);
+        //     ctx.fill_text(xlabels[i], x, y);
         //     x += scaledLabelHop;
         //   }
         // } else {
-        //   axes_context.textAlign = xlabel_rotation < 0 ? "right" : "left";
-        //   axes_context.textBaseline = BaseLine::Middle;
+        //   ctx.textAlign = xlabel_rotation < 0 ? "right" : "left";
+        //   ctx.textBaseline = BaseLine::Middle;
         //   if (xlabel_rotation == 90) {
         //     x += xlabel_rotation.sign * (opt.style.["font_size"] / 8).trunc();
         //   }
         //   let angle = deg2rad(xlabel_rotation);
         //   for (let i = 0; i < xlabels.len(); i += xlabel_step) {
-        //     axes_context
+        //     ctx
         //       ..save()
         //       ..translate(x, y)
         //       ..rotate(angle)
@@ -537,7 +535,7 @@ where
 
         // // y-axis labels.
 
-        // axes_context
+        // ctx
         //   ..fillStyle = self.base.options.y_axis.labels.style.color
         //   ..font = get_font(self.base.options.y_axis.labels.style)
         //   ..textAlign = "right"
@@ -545,71 +543,71 @@ where
         // x = y_axis_left - AXIS_LABEL_MARGIN;
         // y = x_axis_top - (self.base.options.y_axis.labels.style.font_size / 8).trunc();
         // for (let label in ylabels) {
-        //   axes_context.fill_text(label, x, y);
+        //   ctx.fill_text(label, x, y);
         //   y -= ylabel_hop;
         // }
 
         // // x grid lines - draw bottom up.
 
         // if (self.base.options.x_axis.grid_line_width > 0) {
-        //   axes_context
-        //     ..lineWidth = self.base.options.x_axis.grid_line_width
+        //   ctx
+        //     ..line_width = self.base.options.x_axis.grid_line_width
         //     ..strokeStyle = self.base.options.x_axis.grid_line_color
         //     ..begin_path();
         //   y = x_axis_top - ylabel_hop;
         //   for (let i = ylabels.len() - 1; i >= 1; i--) {
-        //     axes_context.moveTo(y_axis_left, y);
-        //     axes_context.lineTo(y_axis_left + x_axis_length, y);
+        //     ctx.move_to(y_axis_left, y);
+        //     ctx.line_to(y_axis_left + x_axis_length, y);
         //     y -= ylabel_hop;
         //   }
-        //   axes_context.stroke();
+        //   ctx.stroke();
         // }
 
         // // y grid lines or x-axis ticks - draw from left to right.
 
-        // let lineWidth = self.base.options.y_axis.grid_line_width;
+        // let line_width = self.base.options.y_axis.grid_line_width;
         // x = y_axis_left;
         // if (xlabel_step > 1) {
         //   x = xlabel_x(0);
         // }
-        // if (lineWidth > 0) {
+        // if (line_width > 0) {
         //   y = x_axis_top - y_axis_length;
         // } else {
-        //   lineWidth = 1;
+        //   line_width = 1;
         //   y = x_axis_top + AXIS_LABEL_MARGIN;
         // }
-        // axes_context
-        //   ..lineWidth = lineWidth
+        // ctx
+        //   ..line_width = line_width
         //   ..strokeStyle = self.base.options.y_axis.grid_line_color
         //   ..begin_path();
         // for (let i = 0; i < xlabels.len(); i += xlabel_step) {
-        //   axes_context.moveTo(x, y);
-        //   axes_context.lineTo(x, x_axis_top);
+        //   ctx.move_to(x, y);
+        //   ctx.line_to(x, x_axis_top);
         //   x += scaledLabelHop;
         // }
-        // axes_context.stroke();
+        // ctx.stroke();
 
         // // x-axis itself.
 
         // if (self.base.options.x_axis.line_width > 0) {
-        //   axes_context
-        //     ..lineWidth = self.base.options.x_axis.line_width
+        //   ctx
+        //     ..line_width = self.base.options.x_axis.line_width
         //     ..strokeStyle = self.base.options.x_axis.line_color
         //     ..begin_path()
-        //     ..moveTo(y_axis_left, x_axis_top)
-        //     ..lineTo(y_axis_left + x_axis_length, x_axis_top)
+        //     ..move_to(y_axis_left, x_axis_top)
+        //     ..line_to(y_axis_left + x_axis_length, x_axis_top)
         //     ..stroke();
         // }
 
         // // y-axis itself.
 
         // if (self.base.options.y_axis.line_width > 0) {
-        //   axes_context
-        //     ..lineWidth = self.base.options.y_axis.line_width
+        //   ctx
+        //     ..line_width = self.base.options.y_axis.line_width
         //     ..strokeStyle = self.base.options.y_axis.line_color
         //     ..begin_path()
-        //     ..moveTo(y_axis_left, x_axis_top - y_axis_length)
-        //     ..lineTo(y_axis_left, x_axis_top)
+        //     ..move_to(y_axis_left, x_axis_top - y_axis_length)
+        //     ..line_to(y_axis_left, x_axis_top)
         //     ..stroke();
         // }
     }
@@ -626,21 +624,23 @@ where
             percent = 1.0;
 
             // Update the visibility states of all series before the last frame.
-            // for (let i = series_states.len() - 1; i >= 0; i--) {
-            //     if (series_states[i] == Visibility::showing) {
-            //         series_states[i] = Visibility::shown;
-            //     } else if (series_states[i] == Visibility::hiding) {
-            //         series_states[i] = Visibility::hidden;
-            //     }
-            // }
+            let mut props = self.base.props.borrow_mut();
+
+            for idx in props.series_states.len() - 1..0 {
+                if props.series_states[idx] == Visibility::Showing {
+                    props.series_states[idx] = Visibility::Shown;
+                } else if props.series_states[idx] == Visibility::Hiding {
+                    props.series_states[idx] = Visibility::Hidden;
+                }
+            }
         }
 
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
         self.draw_series(ctx, ease(percent));
-        // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
-        // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
+        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
+        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
 
         if percent < 1.0 {
@@ -653,13 +653,13 @@ where
     fn draw_series(&self, ctx: &C, percent: f64) -> bool {
         fn curve_to(cp1: Point<f64>, cp2: Point<f64>, p: LinePoint) {
             //     if cp2 == null && cp1 == null {
-            //       series_context.lineTo(p.x, p.y);
+            //       ctx.line_to(p.x, p.y);
             //     } else if cp2 == null {
-            //       series_context.quadraticCurveTo(cp1.x, cp1.y, p.x, p.y);
+            //       ctx.quadraticCurveTo(cp1.x, cp1.y, p.x, p.y);
             //     } else if cp1 == null {
-            //       series_context.quadraticCurveTo(cp2.x, cp2.y, p.x, p.y);
+            //       ctx.quadraticCurveTo(cp2.x, cp2.y, p.x, p.y);
             //     } else {
-            //       series_context.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, p.x, p.y);
+            //       ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, p.x, p.y);
             //     }
         }
 
@@ -677,14 +677,14 @@ where
         //     let points = lerpPoints(series.entities.cast<_Point>(), percent);
         //     let scale = (i != focused_series_index) ? 1 : 2;
 
-        //     series_context.lineJoin = "round";
+        //     ctx.lineJoin = "round";
 
         //     // Draw series with filling.
 
         //     if (fill_opacity > 0.0) {
         //       let color = change_color_alpha(series.color, fill_opacity);
-        //       series_context.fillStyle = color;
-        //       series_context.strokeStyle = color;
+        //       ctx.fillStyle = color;
+        //       ctx.strokeStyle = color;
         //       let j = 0;
         //       while (true) {
         //         // Skip points with a null value.
@@ -696,10 +696,10 @@ where
         //         // Connect a series of contiguous points with a non-null value and
         //         // fill the area between them and the x-axis.
         //         let p = points[j];
-        //         series_context
+        //         ctx
         //           ..begin_path()
-        //           ..moveTo(p.x, x_axis_top)
-        //           ..lineTo(p.x, p.y);
+        //           ..move_to(p.x, x_axis_top)
+        //           ..line_to(p.x, p.y);
         //         let lastPoint = p;
         //         let count = 1;
         //         while (++j < entity_count && points[j].value != null) {
@@ -709,8 +709,8 @@ where
         //           count++;
         //         }
         //         if (count >= 2) {
-        //           series_context
-        //             ..lineTo(lastPoint.x, x_axis_top)
+        //           ctx
+        //             ..line_to(lastPoint.x, x_axis_top)
         //             ..closePath()
         //             ..fill();
         //         }
@@ -721,8 +721,8 @@ where
 
         //     if (series_line_width > 0) {
         //       let lastPoint = Point();
-        //       series_context
-        //         ..lineWidth = scale * series_line_width
+        //       ctx
+        //         ..line_width = scale * series_line_width
         //         ..strokeStyle = series.color
         //         ..begin_path();
         //       for (let p in points) {
@@ -730,12 +730,12 @@ where
         //           if (lastPoint.value != null) {
         //             curveTo(lastPoint.cp2, p.cp1, p);
         //           } else {
-        //             series_context.moveTo(p.x, p.y);
+        //             ctx.move_to(p.x, p.y);
         //           }
         //         }
         //         lastPoint = p;
         //       }
-        //       series_context.stroke();
+        //       ctx.stroke();
         //     }
 
         //     // Draw markers.
@@ -743,17 +743,17 @@ where
         //     if (marker_size > 0) {
         //       let fillColor = marker_options["fillColor"] ?? series.color;
         //       let strokeColor = marker_options["strokeColor"] ?? series.color;
-        //       series_context
+        //       ctx
         //         ..fillStyle = fillColor
-        //         ..lineWidth = scale * marker_options["lineWidth"]
+        //         ..line_width = scale * marker_options["line_width"]
         //         ..strokeStyle = strokeColor;
         //       for (let p in points) {
         //         if (p.value != null) {
         //           if (marker_options["enabled"]) {
-        //             p.draw(series_context, 1.0, p.index == focused_entity_index);
+        //             p.draw(ctx, 1.0, p.index == focused_entity_index);
         //           } else if (p.index == focused_entity_index) {
         //             // Only draw marker on hover.
-        //             p.draw(series_context, 1.0, true);
+        //             p.draw(ctx, 1.0, true);
         //           }
         //         }
         //       }
@@ -764,7 +764,7 @@ where
 
         //   let labelOptions = self.base.options.series.labels;
         //   if (percent == 1.0 && labelOptions["enabled"]) {
-        //     series_context
+        //     ctx
         //       ..fillStyle = labelOptions["style"]["color"]
         //       ..font = get_font(labelOptions["style"])
         //       ..textAlign = TextAlign::Center
@@ -776,7 +776,7 @@ where
         //       for (Point p in points) {
         //         if (p.value != null) {
         //           let y = p.y - marker_size - 5;
-        //           series_context.fill_text(p.formatted_value, p.x, y);
+        //           ctx.fill_text(p.formatted_value, p.x, y);
         //         }
         //       }
         //     }
@@ -844,37 +844,50 @@ where
         color: Color,
         highlight_color: Color,
     ) -> LinePoint {
-        // let x = xlabel_x(entity_index);
-        // let oldY = x_axis_top;
-        // // oldCp1 and oldCp2 are calculated in [update_series].
-        // return Point()
-        //   ..index = entity_index
-        //   ..value = value
-        //   ..formatted_value = value != null ? entity_value_formatter(value) : null
-        //   ..color = color
-        //   ..highlight_color = highlight_color
-        //   ..oldX = x
-        //   ..oldY = oldY
-        //   ..oldPointRadius = 09
-        //   ..x = x
-        //   ..y = value_to_y(value)
-        //   ..pointRadius = self.base.options.series.markers.size;
-        unimplemented!()
+        let x = self.xlabel_x(entity_index);
+
+        let props = self.props.borrow();
+        let old_y = props.x_axis_top;
+        // oldCp1 and oldCp2 are calculated in [update_series].
+
+        // let formatted_value = if value != 0 {
+        //     entity_value_formatter(value)
+        // } else {
+        //     null
+        // };
+
+        LinePoint {
+            index: entity_index,
+            old_value: 0.,
+            value,
+            //   formatted_value,
+            color,
+            highlight_color,
+            old_x: x,
+            old_y,
+            old_point_radius: 9.,
+            x,
+            y: self.value_to_y(value),
+            point_radius: self.base.options.series.markers.size,
+        }
     }
 
     fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {
         let props = self.props.borrow();
-        let focused_entity_index = self.base.props.borrow().focused_entity_index;
+        let focused_entity_index = self.base.props.borrow().focused_entity_index as usize;
 
-        // FIXME: as usuze
-        let x = self.xlabel_x(focused_entity_index as usize) + props.tooltip_offset;
-        // let y = max(x_axis_top - y_axis_length,
-        //     average_y_values[focused_entity_index] - (tooltip.offset_height / 2).trunc());
-        // if (x + tooltip.offset_width > width) {
-        //   x -= tooltip.offset_width + 2 * tooltip_offset;
-        //   x = max(x, y_axis_left);
-        // }
-        // return Point(x, y);
-        unimplemented!()
+        let mut x = self.xlabel_x(focused_entity_index) + props.tooltip_offset;
+        let y = f64::max(
+            props.x_axis_top - props.y_axis_length,
+            props.average_y_values[focused_entity_index] - (tooltip_height / 2.).trunc(),
+        );
+
+        let width = self.base.props.borrow().width;
+        if x + tooltip_width > width {
+            x -= tooltip_width + 2. * props.tooltip_offset;
+            x = x.max(props.y_axis_left);
+        }
+
+        Point::new(x, y)
     }
 }

@@ -89,10 +89,10 @@ where
     pub context: Option<C>,
 
     /// The rendering context for the axes.
-    pub axes_context: Option<C>,
+    // pub ctx: Option<C>,
 
     /// The rendering context for the series.
-    pub series_context: Option<C>,
+    // pub ctx: Option<C>,
 
     /// The precalcuated datas
     pub series_list: RefCell<Vec<Series<E>>>,
@@ -118,8 +118,8 @@ where
         //   container.style.position = "relative";
         // }
         // context = CanvasElement().getContext("2d");
-        // axes_context = CanvasElement().getContext("2d");
-        // series_context = CanvasElement().getContext("2d");
+        // ctx = CanvasElement().getContext("2d");
+        // ctx = CanvasElement().getContext("2d");
 
         // container.append(context.canvas);
         Self {
@@ -127,8 +127,6 @@ where
             data_table: Default::default(),
             options,
             context: None,
-            axes_context: None,
-            series_context: None,
             series_list: RefCell::new(Vec::new()),
         }
     }
@@ -252,7 +250,7 @@ where
             // let context = self.context.unwrap();
             //   context.set_font(get_font(title.style).as_str());
             //   title_w =
-            //       context.measureText(title["text"]).width.round() + 2 * TITLE_PADDING;
+            //       context.measure_text(title["text"]).width.round() + 2 * TITLE_PADDING;
             //   title_x = ((width - titleW - 2 * TITLE_PADDING) / 2).trunc();
         }
 
@@ -538,7 +536,7 @@ where
     /// Returns the index of the point group/bar group/pie/... near the position
     /// specified by [x] and [y].
     ///
-    pub fn get_entity_group_index(&self, x: f64, num: f64) -> i64 {
+    pub fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
         -1
     }
 
@@ -630,7 +628,7 @@ where
     // TODO: retusns Element
     pub fn create_tooltip_or_legend(&self, style: HashMap<String, String>) -> Option<bool> {
         // return DivElement()
-        //   ..style.backgroundColor = style["backgroundColor"]
+        //   ..style.background_color = style["background_color"]
         //   ..style.borderColor = style["borderColor"]
         //   ..style.borderStyle = "solid"
         //   ..style.borderWidth = "${style["borderWidth"]}px"
@@ -648,7 +646,7 @@ where
         //   ..innerHtml = "<span></span> $text"
         //   ..style.padding = "4px 12px";
         // e.children.first.style
-        //   ..backgroundColor = color
+        //   ..background_color = color
         //   ..display = "inline-block"
         //   ..width = "12px"
         //   ..height = "12px";
@@ -751,7 +749,7 @@ where
         self.initialize_legend();
         self.initialize_tooltip();
 
-        // self.axes_context.clearRect(0, 0, self.width, self.height);
+        // self.ctx.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid(ctx);
         self.start_animation();
     }

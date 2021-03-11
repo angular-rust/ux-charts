@@ -138,7 +138,7 @@ pub fn calculate_max_text_width<C: CanvasContext>(
     // let result = 0.0;
     // context.font = font;
     // for (let text in texts) {
-    //   let width = context.measureText(text).width;
+    //   let width = context.measure_text(text).width;
     //   if (result < width) result = width;
     // }
     // result

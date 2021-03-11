@@ -359,7 +359,7 @@ where
         //     let xTitle = self.base.options.x_axis.title;
         //     if (xTitle["text"] != null) {
         //       context.font = get_font(xTitle["style"]);
-        //       xTitleWidth = context.measureText(xTitle["text"]).width.round() +
+        //       xTitleWidth = context.measure_text(xTitle["text"]).width.round() +
         //           2 * TITLE_PADDING;
         //       xTitleHeight = xTitle["style"]["font_size"] + 2 * TITLE_PADDING;
         //       xTitleTop = self.base.series_and_axes_box.bottom - xTitleHeight;
@@ -374,7 +374,7 @@ where
         //     let yTitle = self.base.options.y_axis.title;
         //     if (yTitle["text"] != null) {
         //       context.font = get_font(yTitle["style"]);
-        //       yTitleHeight = context.measureText(yTitle["text"]).width.round() +
+        //       yTitleHeight = context.measure_text(yTitle["text"]).width.round() +
         //           2 * TITLE_PADDING;
         //       yTitleWidth = yTitle["style"]["font_size"] + 2 * TITLE_PADDING;
         //       yTitleLeft = self.base.series_and_axes_box.left;
@@ -666,7 +666,7 @@ where
         println!("BarChart draw_frame");
         self.base.draw_frame(ctx, time);
 
-        // self.axes_context.clearRect(0, 0, self.width, self.height);
+        // self.ctx.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid(ctx);
 
         let mut percent = self.base.calculate_percent(time);
@@ -675,13 +675,15 @@ where
             percent = 1.0;
 
             // Update the visibility states of all series before the last frame.
-            // for (let i = series_states.len() - 1; i >= 0; i--) {
-            //     if (series_states[i] == Visibility::showing) {
-            //         series_states[i] = Visibility::shown;
-            //     } else if (series_states[i] == Visibility::hiding) {
-            //         series_states[i] = Visibility::hidden;
-            //     }
-            // }
+            let mut props = self.base.props.borrow_mut();
+
+            for idx in props.series_states.len() - 1..0 {
+                if props.series_states[idx] == Visibility::Showing {
+                    props.series_states[idx] = Visibility::Shown;
+                } else if props.series_states[idx] == Visibility::Hiding {
+                    props.series_states[idx] = Visibility::Hidden;
+                }
+            }
         }
 
         let props = self.base.props.borrow();
@@ -692,8 +694,8 @@ where
         };
 
         self.draw_series(ctx, ease(percent));
-        // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
-        // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
+        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
+        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
 
         if percent < 1.0 {
@@ -790,42 +792,44 @@ where
         let props = self.props.borrow();
         let series_list = self.base.series_list.borrow();
         if series_list.len() == 0 {
-          // Data table changed. Animate height.
-          old_height = 0.;
-          old_width = props.bar_width;
+            // Data table changed. Animate height.
+            old_height = 0.;
+            old_width = props.bar_width;
         }
 
         BarEntity {
-          index: entity_index,
-          old_value: 0.,
-          value,
-        //   formatted_value: value != null ? entity_value_formatter(value) : null
-          color,
-          highlight_color,
-          bottom: props.x_axis_top,
-          old_left,
-          left,
-          old_height,
-          height,
-          old_width,
-          width: props.bar_width
+            index: entity_index,
+            old_value: 0.,
+            value,
+            //   formatted_value: value != null ? entity_value_formatter(value) : null
+            color,
+            highlight_color,
+            bottom: props.x_axis_top,
+            old_left,
+            left,
+            old_height,
+            height,
+            old_width,
+            width: props.bar_width,
         }
     }
 
     fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {
         let props = self.props.borrow();
-        let focused_entity_index = self.base.props.borrow().focused_entity_index;
+        let focused_entity_index = self.base.props.borrow().focused_entity_index as usize;
 
-        // FIXME: as usize
-        // TODO: tooltip is a Element
-        let x = self.xlabel_x(focused_entity_index as usize) + props.tooltip_offset;
-        // let y = max(x_axis_top - y_axis_length,
-        //     average_y_values[focused_entity_index] - (tooltip.offset_height / 2).trunc());
-        // if (x + tooltip.offset_width > width) {
-        //   x -= tooltip.offset_width + 2 * tooltip_offset;
-        //   x = max(x, y_axis_left);
-        // }
-        // return Point(x, y);
-        unimplemented!()
+        let mut x = self.xlabel_x(focused_entity_index) + props.tooltip_offset;
+        let y = f64::max(
+            props.x_axis_top - props.y_axis_length,
+            props.average_y_values[focused_entity_index] - (tooltip_height / 2.).trunc(),
+        );
+
+        let width = self.base.props.borrow().width;
+        if x + tooltip_width > width {
+            x -= tooltip_width + 2. * props.tooltip_offset;
+            x = x.max(props.y_axis_left);
+        }
+
+        Point::new(x, y)
     }
 }

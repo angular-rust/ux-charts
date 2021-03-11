@@ -3,7 +3,7 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use ux_dataflow::*;
 use ux_primitives::{canvas::CanvasContext, color::Color, geom::Point, text::TextAlign};
 
@@ -256,7 +256,7 @@ where
         self.base.initialize_legend();
         self.base.initialize_tooltip();
 
-        // self.axes_context.clearRect(0, 0, self.width, self.height);
+        // self.ctx.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid(ctx);
         self.base.start_animation();
     }
@@ -287,21 +287,23 @@ where
             percent = 1.0;
 
             // Update the visibility states of all series before the last frame.
-            // for (let i = series_states.len() - 1; i >= 0; i--) {
-            //     if (series_states[i] == Visibility::showing) {
-            //         series_states[i] = Visibility::shown;
-            //     } else if (series_states[i] == Visibility::hiding) {
-            //         series_states[i] = Visibility::hidden;
-            //     }
-            // }
+            let mut props = self.base.props.borrow_mut();
+
+            for idx in props.series_states.len() - 1..0 {
+                if props.series_states[idx] == Visibility::Showing {
+                    props.series_states[idx] = Visibility::Shown;
+                } else if props.series_states[idx] == Visibility::Hiding {
+                    props.series_states[idx] = Visibility::Hidden;
+                }
+            }
         }
 
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
         self.draw_series(ctx, ease(percent));
-        // context.drawImageScaled(axes_context.canvas, 0, 0, width, height);
-        // context.drawImageScaled(series_context.canvas, 0, 0, width, height);
+        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
+        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
 
         if percent < 1.0 {
@@ -312,19 +314,19 @@ where
     }
 
     fn draw_series(&self, ctx: &C, percent: f64) -> bool {
-        // series_context
-        //   ..lineWidth = 2
+        // ctx
+        //   ..line_width = 2
         //   ..strokeStyle = "#fff"
         //   ..textAlign = TextAlign::Center
         //   ..textBaseline = BaseLine::Middle;
         // let pies = series_list.first.entities;
         // let labelOptions = self.base.options.series.labels;
-        // series_context.font = get_font(labelOptions["style"]);
+        // ctx.font = get_font(labelOptions["style"]);
         // for (Pie pie in pies) {
         //   if (pie.isEmpty && percent == 1.0) continue;
         //   let highlight =
         //       pie.index == focused_series_index || pie.index == focused_entity_index;
-        //   pie.draw(series_context, percent, highlight);
+        //   pie.draw(ctx, percent, highlight);
         // }
 
         // return false;
@@ -375,40 +377,63 @@ where
         color: Color,
         highlight_color: Color,
     ) -> PieEntity {
-        // // Override the colors.
-        // color = self.base.get_color(entity_index);
-        // highlight_color = change_color_alpha(color, .5);
-        // let name = self.base.data_table.rows[entity_index][0];
-        // let start_angle = start_angle;
-        // if (entity_index > 0 && series_list != null) {
-        //   let prevPie = series_list[0].entities[entity_index - 1] as Pie;
-        //   start_angle = prevPie.end_angle;
-        // }
-        // return Pie()
-        //   ..index = entity_index
-        //   ..value = value
-        //   ..formatted_value = value != null ? entity_value_formatter(value) : null
-        //   ..name = name
-        //   ..color = color
-        //   ..highlight_color = highlight_color
-        //   ..old_start_angle = start_angle
-        //   ..old_end_angle = start_angle
-        //   ..center = center
-        //   ..inner_radius = inner_radius
-        //   ..outer_radius = outer_radius
-        //   ..start_angle = start_angle
-        //   ..end_angle = start_angle; // To be updated in [update_series].
-        unimplemented!()
+        // Override the colors.
+        let color = self.base.get_color(entity_index);
+        let highlight_color = self.base.change_color_alpha(color, 0.5);
+
+        let stream = &self.base.data_table;
+        let frame = stream.frames.get(entity_index).unwrap();
+        let name = format!("{}", frame.metric);
+
+        let props = self.props.borrow();
+
+        let mut start_angle = props.start_angle;
+
+        if entity_index > 0 {
+            let series_list = self.base.series_list.borrow();
+            let series = series_list.first().unwrap();
+            let prev = series.entities.get(entity_index - 1).unwrap();
+            start_angle = prev.end_angle;
+        }
+
+        // let formatted_value = if value != 0. {
+        //     self.entity_value_formatter(value)
+        // } else {
+        //     null
+        // };
+
+        PieEntity {
+            index: entity_index,
+            old_value: 0.,
+            value,
+            // formatted_value,
+            name,
+            color,
+            highlight_color,
+            old_start_angle: start_angle,
+            old_end_angle: start_angle,
+            center: props.center,
+            inner_radius: props.inner_radius,
+            outer_radius: props.outer_radius,
+            start_angle,
+            end_angle: start_angle, // To be updated in [update_series]
+        }
     }
 
     fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {
-        // let pie = series_list.first.entities[focused_entity_index] as Pie;
-        // let angle = .5 * (pie.start_angle + pie.end_angle);
-        // let radius = .5 * (inner_radius + outer_radius);
-        // let point = utils::polar2cartesian(center, radius, angle);
-        // let x = point.x - .5 * tooltip.offset_width;
-        // let y = point.y - tooltip.offset_height;
-        // return Point(x, y);
-        unimplemented!()
+        let series_list = self.base.series_list.borrow();
+        let series = series_list.first().unwrap();
+
+        let focused_entity_index = self.base.props.borrow().focused_entity_index as usize;
+
+        let props = self.props.borrow();
+
+        let pie = series.entities.get(focused_entity_index).unwrap();
+        let angle = 0.5 * (pie.start_angle + pie.end_angle);
+        let radius = 0.5 * (props.inner_radius + props.outer_radius);
+        let point = utils::polar2cartesian(&props.center, radius, angle);
+        let x = point.x - 0.5 * tooltip_width;
+        let y = point.y - tooltip_height;
+        Point::new(x, y)
     }
 }
