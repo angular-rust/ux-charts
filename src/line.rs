@@ -5,10 +5,10 @@
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use ux_dataflow::*;
 use ux_primitives::{
-    canvas::CanvasContext,
+    canvas::{CanvasContext, LineJoin},
     color::Color,
     geom::{Point, Rect},
-    text::{BaseLine, TextAlign},
+    text::{BaseLine, TextAlign, TextStyle, TextWeight},
 };
 
 use crate::*;
@@ -24,15 +24,15 @@ struct LinePoint {
 
     old_x: f64,
     old_y: f64,
-    // old_cp1: Point,
-    // old_cp2: Point,
+    old_cp1: Point<f64>,
+    old_cp2: Point<f64>,
     old_point_radius: f64,
 
-    // /// The first control point.
-    // cp1: Point,
+    /// The first control point.
+    cp1: Point<f64>,
 
-    // /// The second control point.
-    // cp2: Point,
+    /// The second control point.
+    cp2: Point<f64>,
     x: f64,
     y: f64,
 
@@ -205,7 +205,7 @@ where
         // }
     }
 
-    fn lerp_points(&self, points: Vec<LinePoint>, percent: f64) -> Vec<LinePoint> {
+    fn lerp_points(&self, points: &Vec<LinePoint>, percent: f64) -> Vec<LinePoint> {
         // return points.map((p) {
         //   let x = lerp(p.oldX, p.x, percent);
         //   let y = lerp(p.oldY, p.y, percent);
@@ -231,6 +231,22 @@ where
     fn series_visibility_changed(&self, index: usize) {
         self.update_series(index);
         self.calculate_average_y_values(0);
+    }
+
+    fn curve_to(&self, ctx: &C, cp1: Option<Point<f64>>, cp2: Option<Point<f64>>, p: &LinePoint) {
+        if cp2.is_none() && cp1.is_none() {
+            ctx.line_to(p.x, p.y);
+        } else if cp2.is_none() {
+            let cp = cp1.unwrap();
+            ctx.quadratic_curve_to(cp.x, cp.y, p.x, p.y);
+        } else if cp1.is_none() {
+            let cp = cp2.unwrap();
+            ctx.quadratic_curve_to(cp.x, cp.y, p.x, p.y);
+        } else {
+            let cp1 = cp1.unwrap();
+            let cp2 = cp2.unwrap();
+            ctx.bezier_curve_to(cp1.x, cp1.y, cp2.x, cp2.y, p.x, p.y);
+        }
     }
 }
 
@@ -651,136 +667,151 @@ where
     }
 
     fn draw_series(&self, ctx: &C, percent: f64) -> bool {
-        fn curve_to(cp1: Point<f64>, cp2: Point<f64>, p: LinePoint) {
-            //     if cp2 == null && cp1 == null {
-            //       ctx.line_to(p.x, p.y);
-            //     } else if cp2 == null {
-            //       ctx.quadraticCurveTo(cp1.x, cp1.y, p.x, p.y);
-            //     } else if cp1 == null {
-            //       ctx.quadraticCurveTo(cp2.x, cp2.y, p.x, p.y);
-            //     } else {
-            //       ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, p.x, p.y);
-            //     }
+        let series_list = self.base.series_list.borrow();
+        let series_count = series_list.len();
+        let entity_count = self.base.data_table.frames.len();
+        let fill_opacity = self.base.options.series.fill_opacity;
+        let series_line_width = self.base.options.series.line_width;
+        let marker_options = &self.base.options.series.markers;
+        let marker_size = marker_options.size;
+        let series_states = &self.base.props.borrow().series_states;
+        let focused_series_index = self.base.props.borrow().focused_series_index;
+        let focused_entity_index = self.base.props.borrow().focused_entity_index as usize;
+        let props = self.props.borrow();
+        let label_options = &self.base.options.series.labels;
+
+        for idx in 0..series_count {
+            if series_states[idx] == Visibility::Hidden {
+                continue;
+            }
+
+            let series = series_list.get(idx).unwrap();
+            let entities = self.lerp_points(&series.entities, percent);
+            let scale = if idx as i64 != focused_series_index {
+                1.
+            } else {
+                2.
+            };
+
+            ctx.set_line_join(LineJoin::Round);
+
+            // Draw series with filling.
+            if fill_opacity > 0.0 {
+                let color = self.base.change_color_alpha(series.color, fill_opacity);
+                ctx.set_fill_style_color(color);
+                ctx.set_stroke_style_color(color);
+                let mut jdx = 0;
+                loop {
+                    // Skip points with a null value.
+                    while jdx < entity_count && entities[jdx].value == 0. {
+                        jdx += 1;
+                    }
+
+                    // Stop if we have reached the end of the series.
+                    if jdx == entity_count {
+                        break;
+                    }
+
+                    // Connect a series of contiguous points with a non-null value and
+                    // fill the area between them and the x-axis.
+                    let mut entity = entities.get(jdx).unwrap();
+                    ctx.begin_path();
+                    ctx.move_to(entity.x, props.x_axis_top);
+                    ctx.line_to(entity.x, entity.y);
+                    let mut last_point = entity;
+                    let mut count = 1;
+                    while jdx < entity_count && entities[jdx].value != 0. {
+                        entity = entities.get(jdx).unwrap();
+                        self.curve_to(ctx, Some(last_point.cp2), Some(entity.cp1), entity);
+                        last_point = entity;
+                        count += 1;
+                        jdx += 1;
+                    }
+                    if count >= 2 {
+                        ctx.line_to(last_point.x, props.x_axis_top);
+                        ctx.close_path();
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // Draw series without filling.
+            if series_line_width > 0. {
+                let mut last_point: LinePoint = Default::default();
+                ctx.set_line_width(scale * series_line_width);
+                ctx.set_stroke_style_color(series.color);
+                ctx.begin_path();
+                for entity in entities.iter() {
+                    if entity.value != 0. {
+                        if last_point.value != 0. {
+                            self.curve_to(ctx, Some(last_point.cp2), Some(entity.cp1), entity);
+                        } else {
+                            ctx.move_to(entity.x, entity.y);
+                        }
+                    }
+                    last_point = entity.clone();
+                }
+                ctx.stroke();
+            }
+
+            // Draw markers.
+            if marker_size > 0. {
+                let fill_color = if let Some(color) = marker_options.fill_color {
+                    color
+                } else {
+                    series.color
+                };
+
+                let stroke_color = if let Some(color) = marker_options.stroke_color {
+                    color
+                } else {
+                    series.color
+                };
+                ctx.set_fill_style_color(fill_color);
+                ctx.set_line_width(scale * marker_options.line_width as f64);
+                ctx.set_stroke_style_color(stroke_color);
+                for entity in entities.iter() {
+                    if entity.value != 0. {
+                        if marker_options.enabled {
+                            entity.draw(ctx, 1.0, entity.index == focused_entity_index);
+                        } else if entity.index == focused_entity_index {
+                            // Only draw marker on hover.
+                            entity.draw(ctx, 1.0, true);
+                        }
+                    }
+                }
+            }
         }
 
-        //   let series_count = series_list.len();
-        //   let entity_count = self.base.data_table.rows.len();
-        //   let fill_opacity = self.base.options.series.fill_opacity;
-        //   let series_line_width = self.base.options.series.line_width;
-        //   let marker_options = self.base.options.series.markers;
-        //   let marker_size = marker_options["size"];
+        // Draw labels only on the last frame.
+        if let Some(label_options) = label_options {
+            if percent == 1.0 {
+                ctx.set_fill_style_color(label_options.color);
+                ctx.set_font(
+                    label_options.font_family.unwrap_or("Roboto"),
+                    label_options.font_style.unwrap_or(TextStyle::Normal),
+                    TextWeight::Normal,
+                    label_options.font_size.unwrap_or(12.),
+                );
+                ctx.set_text_align(TextAlign::Center);
+                ctx.set_text_baseline(BaseLine::Alphabetic);
+                for idx in 0..series_count {
+                    if series_states[idx] != Visibility::Shown {
+                        continue;
+                    }
 
-        //   for (let i = 0; i < series_count; i++) {
-        //     if (series_states[i] == Visibility::hidden) continue;
-
-        //     let series = series_list[i];
-        //     let points = lerpPoints(series.entities.cast<_Point>(), percent);
-        //     let scale = (i != focused_series_index) ? 1 : 2;
-
-        //     ctx.lineJoin = "round";
-
-        //     // Draw series with filling.
-
-        //     if (fill_opacity > 0.0) {
-        //       let color = change_color_alpha(series.color, fill_opacity);
-        //       ctx.fillStyle = color;
-        //       ctx.strokeStyle = color;
-        //       let j = 0;
-        //       while (true) {
-        //         // Skip points with a null value.
-        //         while (j < entity_count && points[j].value == null) j++;
-
-        //         // Stop if we have reached the end of the series.
-        //         if (j == entity_count) break;
-
-        //         // Connect a series of contiguous points with a non-null value and
-        //         // fill the area between them and the x-axis.
-        //         let p = points[j];
-        //         ctx
-        //           ..begin_path()
-        //           ..move_to(p.x, x_axis_top)
-        //           ..line_to(p.x, p.y);
-        //         let lastPoint = p;
-        //         let count = 1;
-        //         while (++j < entity_count && points[j].value != null) {
-        //           p = points[j];
-        //           curveTo(lastPoint.cp2, p.cp1, p);
-        //           lastPoint = p;
-        //           count++;
-        //         }
-        //         if (count >= 2) {
-        //           ctx
-        //             ..line_to(lastPoint.x, x_axis_top)
-        //             ..closePath()
-        //             ..fill();
-        //         }
-        //       }
-        //     }
-
-        //     // Draw series without filling.
-
-        //     if (series_line_width > 0) {
-        //       let lastPoint = Point();
-        //       ctx
-        //         ..line_width = scale * series_line_width
-        //         ..strokeStyle = series.color
-        //         ..begin_path();
-        //       for (let p in points) {
-        //         if (p.value != null) {
-        //           if (lastPoint.value != null) {
-        //             curveTo(lastPoint.cp2, p.cp1, p);
-        //           } else {
-        //             ctx.move_to(p.x, p.y);
-        //           }
-        //         }
-        //         lastPoint = p;
-        //       }
-        //       ctx.stroke();
-        //     }
-
-        //     // Draw markers.
-
-        //     if (marker_size > 0) {
-        //       let fillColor = marker_options["fillColor"] ?? series.color;
-        //       let strokeColor = marker_options["strokeColor"] ?? series.color;
-        //       ctx
-        //         ..fillStyle = fillColor
-        //         ..line_width = scale * marker_options["line_width"]
-        //         ..strokeStyle = strokeColor;
-        //       for (let p in points) {
-        //         if (p.value != null) {
-        //           if (marker_options["enabled"]) {
-        //             p.draw(ctx, 1.0, p.index == focused_entity_index);
-        //           } else if (p.index == focused_entity_index) {
-        //             // Only draw marker on hover.
-        //             p.draw(ctx, 1.0, true);
-        //           }
-        //         }
-        //       }
-        //     }
-        //   }
-
-        //   // Draw labels only on the last frame.
-
-        //   let labelOptions = self.base.options.series.labels;
-        //   if (percent == 1.0 && labelOptions["enabled"]) {
-        //     ctx
-        //       ..fillStyle = labelOptions["style"]["color"]
-        //       ..font = get_font(labelOptions["style"])
-        //       ..textAlign = TextAlign::Center
-        //       ..textBaseline = "alphabetic";
-        //     for (let i = 0; i < series_count; i++) {
-        //       if (series_states[i] != Visibility::shown) continue;
-
-        //       let points = series_list[i].entities;
-        //       for (Point p in points) {
-        //         if (p.value != null) {
-        //           let y = p.y - marker_size - 5;
-        //           ctx.fill_text(p.formatted_value, p.x, y);
-        //         }
-        //       }
-        //     }
-        //   }
+                    let entities = &series_list.get(idx).unwrap().entities;
+                    for entity in entities.iter() {
+                        if entity.value != 0. {
+                            let y = entity.y - marker_size - 5.;
+                            // TODO: bar.formatted_value
+                            let formatted_value = format!("{}", entity.value);
+                            ctx.fill_text(formatted_value.as_str(), entity.x, y);
+                        }
+                    }
+                }
+            }
+        }
 
         false
     }
@@ -805,9 +836,9 @@ where
         for idx in start..end {
             let series_state = series_states[idx];
             let visible = series_state == Visibility::Showing || series_state == Visibility::Shown;
-            
+
             let series = series_list.get_mut(idx).unwrap();
-            
+
             let color = self.base.get_color(idx);
             let highlight_color = self.base.get_highlight_color(color);
             series.color = color;
@@ -893,6 +924,10 @@ where
             highlight_color,
             old_x: x,
             old_y,
+            old_cp1: Default::default(),
+            old_cp2: Default::default(),
+            cp1: Default::default(),
+            cp2: Default::default(),
             old_point_radius: 9.,
             x,
             y: self.value_to_y(value),

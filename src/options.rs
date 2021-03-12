@@ -436,7 +436,7 @@ pub struct LineChartSeriesMarkersOptions {
 
     /// The stroke color. If `null`, the stroke color of the series
     /// will be used.
-    pub stroke_color: Color,
+    pub stroke_color: Option<Color>,
 
     /// Size of the markers.
     pub size: f64,
@@ -610,7 +610,7 @@ impl<'a> Default for LineChartOptions<'a> {
                     enabled: true,
                     fill_color: None,
                     line_width: 1,
-                    stroke_color: palette::WHITE,
+                    stroke_color: Some(palette::WHITE),
                     size: 4.,
                 },
             },
