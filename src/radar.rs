@@ -434,68 +434,87 @@ where
     }
 
     fn draw_series(&self, ctx: &C, percent: f64) -> bool {
-        // let fill_opacity = self.base.options.series.fill_opacity;
-        // let series_line_width = self.base.options.series.line_width;
-        // let marker_options = self.base.options.series.markers;
-        // let marker_size = marker_options["size"];
-        // let point_count = xlabels.len();
+        let props = self.props.borrow();
 
-        // for (let i = 0; i < series_list.len(); i++) {
-        //   if (series_states[i] == Visibility::hidden) continue;
+        let focused_series_index = self.base.props.borrow().focused_series_index;
 
-        //   let series = series_list[i];
-        //   let scale = (i != focused_series_index) ? 1 : 2;
+        let fill_opacity = self.base.options.series.fill_opacity;
+        let series_line_width = self.base.options.series.line_width;
+        let marker_options = &self.base.options.series.markers;
+        let marker_size = marker_options.size;
+        let point_count = props.xlabels.len();
 
-        //   // Draw the polygon.
+        let series_list = self.base.series_list.borrow();
+        let series_states = &self.base.props.borrow().series_states;
+        let focused_entity_index = self.base.props.borrow().focused_entity_index;
 
-        //   ctx
-        //     ..line_width = scale * series_line_width
-        //     ..strokeStyle = series.color
-        //     ..begin_path();
-        //   for (let j = 0; j < point_count; j++) {
-        //     let point = series.entities[j] as PolarPoint;
-        //     // TODO: Optimize.
-        //     let radius = lerp(point.oldRadius, point.radius, percent);
-        //     let angle = lerp(point.oldAngle, point.angle, percent);
-        //     let p = utils::polar2cartesian(center, radius, angle);
-        //     if (j > 0) {
-        //       ctx.line_to(p.x, p.y);
-        //     } else {
-        //       ctx.move_to(p.x, p.y);
-        //     }
-        //   }
-        //   ctx.closePath();
-        //   ctx.stroke();
+        for idx in 0..series_list.len() {
+            if series_states[idx] == Visibility::Hidden {
+                continue;
+            }
 
-        //   // Optionally fill the polygon.
+            let series = series_list.get(idx).unwrap();
+            let scale = if idx as i64 != focused_series_index {
+                1.
+            } else {
+                2.
+            };
 
-        //   if (fill_opacity > 0) {
-        //     ctx.fillStyle = change_color_alpha(series.color, fill_opacity);
-        //     ctx.fill();
-        //   }
+            // Draw the polygon.
+            ctx.set_line_width(scale * series_line_width);
+            ctx.set_stroke_style_color(series.color);
+            ctx.begin_path();
 
-        //   // Draw the markers.
+            for jdx in 0..point_count {
+                let point = series.entities.get(jdx).unwrap();
+                // TODO: Optimize.
+                let radius = lerp(point.old_radius, point.radius, percent);
+                let angle = lerp(point.old_angle, point.angle, percent);
+                let p = utils::polar2cartesian(&props.center, radius, angle);
+                if jdx > 0 {
+                    ctx.line_to(p.x, p.y);
+                } else {
+                    ctx.move_to(p.x, p.y);
+                }
+            }
+            ctx.close_path();
+            ctx.stroke();
 
-        //   if (marker_size > 0) {
-        //     let fillColor = marker_options["fillColor"] ?? series.color;
-        //     let strokeColor = marker_options["strokeColor"] ?? series.color;
-        //     ctx
-        //       ..fillStyle = fillColor
-        //       ..line_width = scale * marker_options["line_width"]
-        //       ..strokeStyle = strokeColor;
-        //     for (let p in series.entities) {
-        //       if (marker_options["enabled"]) {
-        //         p.draw(ctx, percent, p.index == focused_entity_index);
-        //       } else if (p.index == focused_entity_index) {
-        //         // Only draw marker on hover.
-        //         p.draw(ctx, percent, true);
-        //       }
-        //     }
-        //   }
-        // }
+            // Optionally fill the polygon.
+            if fill_opacity > 0. {
+                ctx.set_fill_style_color(self.base.change_color_alpha(series.color, fill_opacity));
+                ctx.fill();
+            }
 
-        // return false;
-        unimplemented!()
+            // Draw the markers.
+            if marker_size > 0 {
+                let fill_color = if let Some(color) = marker_options.fill_color {
+                    color
+                } else {
+                    series.color
+                };
+
+                let stroke_color = if let Some(color) = marker_options.stroke_color {
+                    color
+                } else {
+                    series.color
+                };
+
+                ctx.set_fill_style_color(fill_color);
+                ctx.set_line_width(scale * marker_options.line_width);
+                ctx.set_stroke_style_color(stroke_color);
+                for p in series.entities.iter() {
+                    if marker_options.enabled {
+                        p.draw(ctx, percent, p.index as i64 == focused_entity_index);
+                    } else if p.index as i64 == focused_entity_index {
+                        // Only draw marker on hover.
+                        p.draw(ctx, percent, true);
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     // param should be Option
@@ -507,7 +526,7 @@ where
 
         for idx in 0..series_list.len() {
             let mut series = series_list.get_mut(idx).unwrap();
-            
+
             let color = self.base.get_color(idx);
             let highlight_color = self.base.get_highlight_color(color);
             series.color = color;

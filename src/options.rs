@@ -822,11 +822,11 @@ pub struct RadarChartSeriesMarkersOptions {
     pub fill_color: Option<Color>,
 
     /// The line width of the markers.
-    pub line_width: usize,
+    pub line_width: f64,
 
     /// The stroke color. If `null`, the stroke color of the series
     /// will be used.
-    pub stroke_color: Color,
+    pub stroke_color: Option<Color>,
 
     /// Size of the markers. To disable markers, set this to zero.
     pub size: usize,
@@ -837,7 +837,7 @@ pub struct RadarChartSeriesOptions<'a> {
     pub fill_opacity: f64,
 
     /// The line width of the series.
-    pub line_width: usize,
+    pub line_width: f64,
 
     /// An object that controls the series labels.
     ///   Whether to show the labels.
@@ -954,13 +954,13 @@ impl<'a> Default for RadarChartOptions<'a> {
         Self {
             series: RadarChartSeriesOptions {
                 fill_opacity: 0.25,
-                line_width: 2,
+                line_width: 2.,
                 labels: None,
                 markers: RadarChartSeriesMarkersOptions {
                     enabled: true,
                     fill_color: None,
-                    line_width: 1,
-                    stroke_color: palette::WHITE,
+                    line_width: 1.,
+                    stroke_color: Some(palette::WHITE),
                     size: 4,
                 },
             },
