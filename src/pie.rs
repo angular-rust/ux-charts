@@ -5,7 +5,12 @@
 
 use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use ux_dataflow::*;
-use ux_primitives::{canvas::CanvasContext, color::Color, geom::Point, text::TextAlign};
+use ux_primitives::{
+    canvas::CanvasContext,
+    color::{palette, Color},
+    geom::Point,
+    text::{BaseLine, TextAlign, TextStyle, TextWeight},
+};
 
 use crate::*;
 
@@ -314,23 +319,32 @@ where
     }
 
     fn draw_series(&self, ctx: &C, percent: f64) -> bool {
-        // ctx
-        //   ..line_width = 2
-        //   ..strokeStyle = "#fff"
-        //   ..textAlign = TextAlign::Center
-        //   ..textBaseline = BaseLine::Middle;
-        // let pies = series_list.first.entities;
-        // let labelOptions = self.base.options.series.labels;
-        // ctx.font = get_font(labelOptions["style"]);
-        // for (Pie pie in pies) {
-        //   if (pie.isEmpty && percent == 1.0) continue;
-        //   let highlight =
-        //       pie.index == focused_series_index || pie.index == focused_entity_index;
-        //   pie.draw(ctx, percent, highlight);
-        // }
+        ctx.set_line_width(2.);
+        ctx.set_stroke_style_color(palette::WHITE);
+        ctx.set_text_align(TextAlign::Center);
+        ctx.set_text_baseline(BaseLine::Middle);
+        let series_list = self.base.series_list.borrow();
+        let series = series_list.first().unwrap();
+        let labels = &self.base.options.series.labels.style;
+        ctx.set_font(
+            labels.font_family.unwrap_or("Roboto"),
+            labels.font_style.unwrap_or(TextStyle::Normal),
+            TextWeight::Normal,
+            labels.font_size.unwrap_or(12.),
+        );
 
-        // return false;
-        unimplemented!()
+        let focused_series_index = self.base.props.borrow().focused_series_index as usize;
+        let focused_entity_index = self.base.props.borrow().focused_entity_index as usize;
+
+        for entity in series.entities.iter() {
+            if entity.is_empty() && percent == 1.0 {
+                continue;
+            }
+            let highlight = entity.index == focused_series_index || entity.index == focused_entity_index;
+            entity.draw(ctx, percent, highlight);
+        }
+
+        return false;
     }
 
     fn update_series(&self, index: usize) {
