@@ -351,25 +351,25 @@ where
         }
 
         for idx in 0..pie_count {
-            let pie = series.entities.get_mut(idx).unwrap();
+            let entity = series.entities.get_mut(idx).unwrap();
             let color = self.base.get_color(idx);
-            pie.index = idx;
+            entity.index = idx;
             // TODO: deal with name
             //   pie.name = self.base.data_table.frames[idx][0];
-            pie.color = color;
-            pie.highlight_color = self.base.get_highlight_color(color);
-            pie.center = props.center;
-            pie.inner_radius = props.inner_radius;
-            pie.outer_radius = props.outer_radius;
+            entity.color = color;
+            entity.highlight_color = self.base.get_highlight_color(color);
+            entity.center = props.center;
+            entity.inner_radius = props.inner_radius;
+            entity.outer_radius = props.outer_radius;
 
             let series_state = series_states[idx];
             if series_state == Visibility::Showing || series_state == Visibility::Shown {
-                pie.start_angle = start_angle;
-                pie.end_angle = start_angle + props.direction as f64 * pie.value * TAU / sum;
-                start_angle = pie.end_angle;
+                entity.start_angle = start_angle;
+                entity.end_angle = start_angle + props.direction as f64 * entity.value * TAU / sum;
+                start_angle = entity.end_angle;
             } else {
-                pie.start_angle = start_angle;
-                pie.end_angle = start_angle;
+                entity.start_angle = start_angle;
+                entity.end_angle = start_angle;
             }
         }
     }

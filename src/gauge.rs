@@ -6,7 +6,7 @@ use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use ux_dataflow::*;
 use ux_primitives::{
     canvas::CanvasContext,
-    color::Color,
+    color::{palette, Color},
     geom::Point,
     text::{TextAlign, TextStyle, TextWeight},
 };
@@ -310,28 +310,38 @@ where
     }
 
     fn draw_series(&self, ctx: &C, percent: f64) -> bool {
-        // let style = self.base.options.gauge_labels.style;
-        // let labelsEnabled = self.base.options.gauge_labels.enabled;
-        // ctx.set_stroke_style_color("white");
-        // ctx.set_text_align(TextAlign::Center);
-        // for (Gauge gauge in series_list[0].entities) {
-        //   let highlight = gauge.index == focused_entity_index;
-        //   gauge.draw(ctx, percent, highlight);
+        ctx.set_stroke_style_color(palette::WHITE);
+        ctx.set_text_align(TextAlign::Center);
 
-        //   if (!labelsEnabled) continue;
+        let series_list = self.base.series_list.borrow();
+        let series = series_list.first().unwrap();
 
-        //   let x = gauge.center.x;
-        //   let y = gauge.center.y +
-        //       gauge.outer_radius +
-        //       style["font_size"] +
-        //       AXIS_LABEL_MARGIN;
-        //   ctx.set_fill_style_color(style.color);
-        //   ctx.set_font(utils::get_font(style));
-        //   ctx.set_text_align(TextAlign::Center);
-        //   ctx.fill_text(gauge.name, x, y);
-        // }
-        // return false;
-        unimplemented!()
+        let labels = &self.base.options.labels;
+
+        let focused_entity_index = self.base.props.borrow().focused_entity_index as usize;
+
+        for entity in series.entities.iter() {
+            let highlight = entity.index == focused_entity_index;
+            entity.draw(ctx, percent, highlight);
+            if let Some(style) = labels {
+                let x = entity.center.x;
+                let y = entity.center.y
+                    + entity.outer_radius
+                    + style.font_size.unwrap_or(12.)
+                    + AXIS_LABEL_MARGIN as f64;
+                ctx.set_fill_style_color(style.color);
+
+                ctx.set_font(
+                    &style.font_family.unwrap_or("Roboto"),
+                    style.font_style.unwrap_or(TextStyle::Normal),
+                    TextWeight::Normal,
+                    style.font_size.unwrap_or(12.),
+                );
+                ctx.set_text_align(TextAlign::Center);
+                ctx.fill_text(&entity.name, x, y);
+            }
+        }
+        return false;
     }
 
     fn update_series(&self, index: usize) {
@@ -342,16 +352,16 @@ where
         for idx in 0..len {
             let color = self.base.get_color(idx);
             let highlight_color = self.base.change_color_alpha(color, 0.5);
-            let gauge = series.entities.get_mut(idx).unwrap();
-            gauge.index = idx;
+            let entity = series.entities.get_mut(idx).unwrap();
+            entity.index = idx;
             // TODO: deal with name
             //   gauge.name = self.base.data_table.frames[idx][0];
-            gauge.color = color;
-            gauge.highlight_color = highlight_color;
-            gauge.center = self.get_gauge_center(idx);
-            gauge.inner_radius = props.gauge_inner_radius;
-            gauge.outer_radius = props.gauge_outer_radius;
-            gauge.end_angle = props.start_angle + self.value_to_angle(gauge.value);
+            entity.color = color;
+            entity.highlight_color = highlight_color;
+            entity.center = self.get_gauge_center(idx);
+            entity.inner_radius = props.gauge_inner_radius;
+            entity.outer_radius = props.gauge_outer_radius;
+            entity.end_angle = props.start_angle + self.value_to_angle(entity.value);
         }
     }
 

@@ -466,10 +466,10 @@ where
             ctx.begin_path();
 
             for jdx in 0..point_count {
-                let point = series.entities.get(jdx).unwrap();
+                let entity = series.entities.get(jdx).unwrap();
                 // TODO: Optimize.
-                let radius = lerp(point.old_radius, point.radius, percent);
-                let angle = lerp(point.old_angle, point.angle, percent);
+                let radius = lerp(entity.old_radius, entity.radius, percent);
+                let angle = lerp(entity.old_angle, entity.angle, percent);
                 let p = utils::polar2cartesian(&props.center, radius, angle);
                 if jdx > 0 {
                     ctx.line_to(p.x, p.y);
