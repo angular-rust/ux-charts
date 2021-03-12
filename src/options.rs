@@ -883,14 +883,14 @@ pub struct RadarChartYAxisOptions<'a> {
 
     /// The interval of the tick marks in axis unit. If `null`, this value
     /// is automatically calculated.
-    pub interval: Option<usize>,
+    pub interval: Option<f64>,
 
     /// An object that controls the axis labels.
     pub labels: RadarChartYAxisLabelsOptions<'a>,
 
     /// The minimum interval. If `null`, this value is automatically
     /// calculated.
-    pub min_interval: Option<usize>,
+    pub min_interval: Option<f64>,
 }
 
 pub struct RadarChartOptions<'a> {

@@ -76,7 +76,7 @@ struct RadarChartProperties {
     ylabels: Vec<String>,
     y_max_value: f64,
     ylabel_hop: f64,
-    // yLabelFormatter: ValueFormatter,
+    ylabel_formatter: Option<ValueFormatter>,
     /// Each element is the bounding box of each entity group.
     /// A `null` element means the group has no visible entities.
     bounding_boxes: Vec<Rect<f64>>,
@@ -243,52 +243,65 @@ where
     fn calculate_drawing_sizes(&self) {
         self.base.calculate_drawing_sizes();
 
-        // xlabels = data_table.getColumnValues<String>(0);
-        // angle_interval = TAU / xlabels.len();
+        let mut props = self.props.borrow_mut();
+
+        // TODO: complete it
+        // props.xlabels = self.base.data_table.getColumnValues(0);
+
+        props.angle_interval = TAU / props.xlabels.len() as f64;
 
         let rect = &self.base.props.borrow().series_and_axes_box;
-        // let xLabelfont_size = self.base.options.x_axis.labels.style.font_size;
+        let xlabel_font_size = self.base.options.x_axis.labels.style.font_size.unwrap();
 
-        // // [_radius]*factor equals the height of the largest polygon.
-        // let factor = 1 + sin((xlabels.len() >> 1) * angle_interval - PI_2);
-        // radius = min(rect.width, rect.height) / factor -
-        //     factor * (xLabelfont_size + AXIS_LABEL_MARGIN);
-        // center =
-        //     Point(rect.left + rect.width / 2, rect.top + rect.height / factor);
+        // [_radius]*factor equals the height of the largest polygon.
+        let factor = 1. + ((props.xlabels.len() >> 1) as f64 * props.angle_interval - PI_2).sin();
+        props.radius = rect.size.width.min(rect.size.height) / factor -
+            factor * (xlabel_font_size + AXIS_LABEL_MARGIN as f64);
+        props.center =
+            Point::new(rect.origin.x + rect.size.width / 2., rect.origin.y + rect.size.height / factor);
 
-        // // The minimum value on the y-axis is always zero.
-        // let yInterval = self.base.options.y_axis.interval;
-        // if (yInterval == null) {
-        //   let yMinInterval = self.base.options.y_axis.min_interval;
-        //   y_max_value = find_max_value(self.base.data_table);
-        //   yInterval = utils::calculate_interval(y_max_value, 3, yMinInterval);
-        //   y_max_value = (y_max_value / yInterval).ceilToDouble() * yInterval;
-        // }
+        // The minimum value on the y-axis is always zero
+        let yinterval = self.base.options.y_axis.interval.unwrap();
+        if let Some(yinterval) = self.base.options.y_axis.interval {
+          let ymin_interval = self.base.options.y_axis.min_interval.unwrap();
 
-        // ylabel_formatter = self.base.options.y_axis.labels.formatter;
-        // if (ylabel_formatter == null) {
-        //   let decimalPlaces = utils::get_decimal_places(yInterval);
-        //   let numberFormat = NumberFormat.decimalPattern()
-        //     ..maximumFractionDigits = decimalPlaces
-        //     ..minimumFractionDigits = decimalPlaces;
-        //   ylabel_formatter = numberFormat.format;
-        // }
-        // entity_value_formatter = ylabel_formatter;
+          // TODO: complete it
+          // props.y_max_value = utils::find_max_value(&self.base.data_table);
 
-        // ylabels = <String>[];
-        // let value = 0.0;
-        // while (value <= y_max_value) {
-        //   ylabels.add(ylabel_formatter(value));
-        //   value += yInterval;
-        // }
+          let yinterval = utils::calculate_interval(props.y_max_value, 3, ymin_interval);
+          props.y_max_value = (props.y_max_value / yinterval).ceil() * yinterval;
+        }
 
-        // ylabel_hop = radius / (ylabels.len() - 1);
+        props.ylabel_formatter = self.base.options.y_axis.labels.formatter;
+        if props.ylabel_formatter.is_none() {
+            // TODO: Complete it
+            // let decimalPlaces = utils::get_decimal_places(yinterval);
+            // let numberFormat = NumberFormat.decimalPattern()
+            //     ..maximumFractionDigits = decimalPlaces
+            //     ..minimumFractionDigits = decimalPlaces;
+            // props.ylabel_formatter = numberFormat.format;
+        }
 
-        // // Tooltip.
+        let mut baseprops = self.base.props.borrow_mut();
+        baseprops.entity_value_formatter = props.ylabel_formatter;
 
-        // tooltip_value_formatter =
-        //     self.base.options.tooltip.value_formatter ?? ylabel_formatter;
-        unimplemented!()
+        props.ylabels.clear();
+        let ylabel_formatter = props.ylabel_formatter.unwrap();
+
+        let mut value = 0.0;
+        while value <= props.y_max_value {
+          props.ylabels.push(ylabel_formatter(value));
+          value += yinterval;
+        }
+
+        props.ylabel_hop = props.radius / (props.ylabels.len() as f64 - 1.);
+
+        // Tooltip.
+        baseprops.tooltip_value_formatter = if let Some(value_formatter) = self.base.options.tooltip.value_formatter {
+            Some(value_formatter)
+        } else {
+            Some(ylabel_formatter)
+        }
     }
 
     fn set_stream(&self, stream: DataStream<'a, M, D>) {}
