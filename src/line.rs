@@ -788,7 +788,7 @@ where
             if percent == 1.0 {
                 ctx.set_fill_style_color(label_options.color);
                 ctx.set_font(
-                    label_options.font_family.unwrap_or("Roboto"),
+                    label_options.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
                     label_options.font_style.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
                     label_options.font_size.unwrap_or(12.),

@@ -133,7 +133,7 @@ where
 
         // Draw the percent.
         let fs1 = 0.75 * self.inner_radius;
-        let family = "Roboto";
+        let family = DEFAULT_FONT_FAMILY;
         let text1 = lerp(self.old_value, self.value, percent)
             .round()
             .to_string();
@@ -332,7 +332,7 @@ where
                 ctx.set_fill_style_color(style.color);
 
                 ctx.set_font(
-                    &style.font_family.unwrap_or("Roboto"),
+                    &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
                     style.font_style.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
                     style.font_size.unwrap_or(12.),

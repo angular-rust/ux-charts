@@ -829,7 +829,7 @@ pub struct RadarChartSeriesMarkersOptions {
     pub stroke_color: Option<Color>,
 
     /// Size of the markers. To disable markers, set this to zero.
-    pub size: usize,
+    pub size: f64,
 }
 
 pub struct RadarChartSeriesOptions<'a> {
@@ -961,7 +961,7 @@ impl<'a> Default for RadarChartOptions<'a> {
                     fill_color: None,
                     line_width: 1.,
                     stroke_color: Some(palette::WHITE),
-                    size: 4,
+                    size: 4.,
                 },
             },
             x_axis: RadarChartXAxisOptions {

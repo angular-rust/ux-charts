@@ -213,19 +213,24 @@ where
     }
 
     fn series_visibility_changed(&self, index: usize) {
-        // let visible = series_states[index].index >= Visibility::showing.index;
-        // let marker_size = self.base.options.series.markers.size;
-        // for (PolarPoint p in series_list[index].entities) {
-        //   if (visible) {
-        //     p.radius = value2radius(p.value);
-        //     p.pointRadius = marker_size;
-        //   } else {
-        //     p.radius = 0.0;
-        //     p.pointRadius = 0;
-        //   }
-        // }
+        let series_states = &self.base.props.borrow().series_states;
+        let series_state = series_states[index];
+        let visible = series_state == Visibility::Showing || series_state == Visibility::Shown;
+        let marker_size = self.base.options.series.markers.size;
+        let mut series_list = self.base.series_list.borrow_mut();
+        let series = series_list.get_mut(index).unwrap();
 
-        // calculate_bounding_boxes();
+        for entity in series.entities.iter_mut() {
+          if visible {
+            entity.radius = self.value2radius(entity.value);
+            entity.point_radius = marker_size;
+          } else {
+            entity.radius = 0.0;
+            entity.point_radius = 0.;
+          }
+        }
+
+        self.calculate_bounding_boxes();
     }
 }
 
@@ -487,7 +492,7 @@ where
             }
 
             // Draw the markers.
-            if marker_size > 0 {
+            if marker_size > 0. {
                 let fill_color = if let Some(color) = marker_options.fill_color {
                     color
                 } else {

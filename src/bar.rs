@@ -776,7 +776,7 @@ where
                 if percent == 1.0 {
                     if let Some(labels) = labels {
                         ctx.set_fill_style_color(labels.color);
-                        ctx.set_font(labels.font_family.unwrap_or("Roboto"), labels.font_style.unwrap_or(TextStyle::Normal), 
+                        ctx.set_font(labels.font_family.unwrap_or(DEFAULT_FONT_FAMILY), labels.font_style.unwrap_or(TextStyle::Normal), 
                         TextWeight::Normal,
                         labels.font_size.unwrap_or(12.));
                         ctx.set_text_align(TextAlign::Center);

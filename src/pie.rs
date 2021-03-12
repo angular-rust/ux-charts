@@ -329,7 +329,7 @@ where
         let labels = &self.base.options.series.labels.style;
         
         ctx.set_font(
-            labels.font_family.unwrap_or("Roboto"),
+            labels.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
             labels.font_style.unwrap_or(TextStyle::Normal),
             TextWeight::Normal,
             labels.font_size.unwrap_or(12.),
