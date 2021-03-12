@@ -196,7 +196,7 @@ where
         let series = series_list.first().unwrap();
         let points = &series.entities;
 
-        for idx in points.len() - 1..0 {
+        for idx in points.len()..0 {
             if props.bounding_boxes.get(idx).is_none() {
                 continue;
             }
@@ -358,7 +358,7 @@ where
         let x = props.center.x - AXIS_LABEL_MARGIN as f64;
         let mut y = props.center.y - props.ylabel_hop;
         ctx.set_fill_style_color(style.color);
-        
+
         ctx.set_font(
             &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
             style.font_style.unwrap_or(TextStyle::Normal),
@@ -409,7 +409,7 @@ where
             // Update the visibility states of all series before the last frame.
             let mut props = self.base.props.borrow_mut();
 
-            for idx in props.series_states.len() - 1..0 {
+            for idx in props.series_states.len()..0 {
                 if props.series_states[idx] == Visibility::Showing {
                     props.series_states[idx] = Visibility::Shown;
                 } else if props.series_states[idx] == Visibility::Hiding {
@@ -500,24 +500,35 @@ where
 
     // param should be Option
     fn update_series(&self, index: usize) {
-        // let entity_count = self.base.data_table.rows.len();
-        // for (let i = 0; i < series_list.len(); i++) {
-        //   let series = series_list[i];
-        //   let color = self.base.get_color(i);
-        //   let highlight_color = get_highlight_color(color);
-        //   let visible = series_states[i].index >= Visibility::showing.index;
-        //   series.color = color;
-        //   series.highlight_color = highlight_color;
-        //   for (let j = 0; j < entity_count; j++) {
-        //     let p = series.entities[j] as PolarPoint;
-        //     p.index = j;
-        //     p.center = center;
-        //     p.radius = visible ? value2radius(p.value) : 0.0;
-        //     p.angle = get_angle(j);
-        //     p.color = color;
-        //     p.highlight_color = highlight_color;
-        //   }
-        // }
+        let entity_count = self.base.data_table.frames.len();
+        let mut series_list = self.base.series_list.borrow_mut();
+        let props = self.props.borrow();
+        let series_states = &self.base.props.borrow().series_states;
+
+        for idx in 0..series_list.len() {
+            let mut series = series_list.get_mut(idx).unwrap();
+            
+            let color = self.base.get_color(idx);
+            let highlight_color = self.base.get_highlight_color(color);
+            series.color = color;
+            series.highlight_color = highlight_color;
+
+            let series_state = series_states[idx];
+            let visible = series_state == Visibility::Showing || series_state == Visibility::Shown;
+            for jdx in 0..entity_count {
+                let mut entity = series.entities.get_mut(jdx).unwrap();
+                entity.index = jdx;
+                entity.center = props.center;
+                entity.radius = if visible {
+                    self.value2radius(entity.value)
+                } else {
+                    0.0
+                };
+                entity.angle = self.get_angle(jdx);
+                entity.color = color;
+                entity.highlight_color = highlight_color;
+            }
+        }
     }
 
     fn create_entity(

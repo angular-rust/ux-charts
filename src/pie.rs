@@ -289,7 +289,7 @@ where
             // Update the visibility states of all series before the last frame.
             let mut props = self.base.props.borrow_mut();
 
-            for idx in props.series_states.len() - 1..0 {
+            for idx in props.series_states.len()..0 {
                 if props.series_states[idx] == Visibility::Showing {
                     props.series_states[idx] = Visibility::Shown;
                 } else if props.series_states[idx] == Visibility::Hiding {
@@ -334,39 +334,44 @@ where
     }
 
     fn update_series(&self, index: usize) {
-        // let sum = 0.0;
-        // let start_angle = start_angle;
-        // let pieCount = self.base.data_table.rows.len();
-        // let entities = series_list[0].entities;
+        let mut sum = 0.0;
+        let props = self.props.borrow();
+        let mut start_angle = props.start_angle;
+        let pie_count = self.base.data_table.frames.len();
+        let mut series_list = self.base.series_list.borrow_mut();
+        let series = series_list.first_mut().unwrap();
 
-        // // Sum the values of all visible pies.
-        // for (let i = 0; i < pieCount; i++) {
-        //   if (series_states[i].index >= Visibility::showing.index) {
-        //     sum += entities[i].value;
-        //   }
-        // }
+        let series_states = &self.base.props.borrow().series_states;
+        // Sum the values of all visible pies.
+        for idx in 0..pie_count {
+            let series_state = series_states[idx];
+            if series_state == Visibility::Showing || series_state == Visibility::Shown {
+                sum += series.entities[idx].value;
+            }
+        }
 
-        // for (let i = 0; i < pieCount; i++) {
-        //   Pie pie = entities[i];
-        //   let color = self.base.get_color(i);
-        //   pie.index = i;
-        //   pie.name = self.base.data_table.rows[i][0];
-        //   pie.color = color;
-        //   pie.highlight_color = get_highlight_color(color);
-        //   pie.center = center;
-        //   pie.inner_radius = inner_radius;
-        //   pie.outer_radius = outer_radius;
+        for idx in 0..pie_count {
+            let pie = series.entities.get_mut(idx).unwrap();
+            let color = self.base.get_color(idx);
+            pie.index = idx;
+            // TODO: deal with name
+            //   pie.name = self.base.data_table.frames[idx][0];
+            pie.color = color;
+            pie.highlight_color = self.base.get_highlight_color(color);
+            pie.center = props.center;
+            pie.inner_radius = props.inner_radius;
+            pie.outer_radius = props.outer_radius;
 
-        //   if (series_states[i].index >= Visibility::showing.index) {
-        //     pie.start_angle = start_angle;
-        //     pie.end_angle = start_angle + direction * pie.value * TAU / sum;
-        //     start_angle = pie.end_angle;
-        //   } else {
-        //     pie.start_angle = start_angle;
-        //     pie.end_angle = start_angle;
-        //   }
-        // }
-        unimplemented!()
+            let series_state = series_states[idx];
+            if series_state == Visibility::Showing || series_state == Visibility::Shown {
+                pie.start_angle = start_angle;
+                pie.end_angle = start_angle + props.direction as f64 * pie.value * TAU / sum;
+                start_angle = pie.end_angle;
+            } else {
+                pie.start_angle = start_angle;
+                pie.end_angle = start_angle;
+            }
+        }
     }
 
     fn create_entity(

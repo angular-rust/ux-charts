@@ -285,7 +285,7 @@ where
             // Update the visibility states of all series before the last frame.
             let mut props = self.base.props.borrow_mut();
 
-            for idx in props.series_states.len() - 1..0 {
+            for idx in props.series_states.len()..0 {
                 if props.series_states[idx] == Visibility::Showing {
                     props.series_states[idx] = Visibility::Shown;
                 } else if props.series_states[idx] == Visibility::Hiding {
@@ -335,21 +335,24 @@ where
     }
 
     fn update_series(&self, index: usize) {
-        // let n = self.base.data_table.rows.len();
-        // for (let i = 0; i < n; i++) {
-        //   let gauge = series_list[0].entities[i] as Gauge;
-        //   let color = self.base.get_color(i);
-        //   let highlight_color = change_color_alpha(color, .5);
-        //   gauge
-        //     ..index = i
-        //     ..name = self.base.data_table.rows[i][0]
-        //     ..color = color
-        //     ..highlight_color = highlight_color
-        //     ..center = getGaugeCenter(i)
-        //     ..inner_radius = gaugeInnerRadius
-        //     ..outer_radius = gaugeOuterRadius
-        //     ..end_angle = start_angle + value_to_angle(gauge.value);
-        // }
+        let len = self.base.data_table.frames.len();
+        let props = self.props.borrow();
+        let mut series_list = self.base.series_list.borrow_mut();
+        let series = series_list.first_mut().unwrap();
+        for idx in 0..len {
+            let color = self.base.get_color(idx);
+            let highlight_color = self.base.change_color_alpha(color, 0.5);
+            let gauge = series.entities.get_mut(idx).unwrap();
+            gauge.index = idx;
+            // TODO: deal with name
+            //   gauge.name = self.base.data_table.frames[idx][0];
+            gauge.color = color;
+            gauge.highlight_color = highlight_color;
+            gauge.center = self.get_gauge_center(idx);
+            gauge.inner_radius = props.gauge_inner_radius;
+            gauge.outer_radius = props.gauge_outer_radius;
+            gauge.end_angle = props.start_angle + self.value_to_angle(gauge.value);
+        }
     }
 
     fn create_entity(

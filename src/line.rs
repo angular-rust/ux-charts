@@ -24,8 +24,8 @@ struct LinePoint {
 
     old_x: f64,
     old_y: f64,
-    // oldCp1: Point,
-    // oldCp2: Point,
+    // old_cp1: Point,
+    // old_cp2: Point,
     old_point_radius: f64,
 
     // /// The first control point.
@@ -626,7 +626,7 @@ where
             // Update the visibility states of all series before the last frame.
             let mut props = self.base.props.borrow_mut();
 
-            for idx in props.series_states.len() - 1..0 {
+            for idx in props.series_states.len()..0 {
                 if props.series_states[idx] == Visibility::Showing {
                     props.series_states[idx] = Visibility::Shown;
                 } else if props.series_states[idx] == Visibility::Hiding {
@@ -786,54 +786,82 @@ where
     }
 
     fn update_series(&self, index: usize) {
-        // let entity_count = self.base.data_table.rows.len();
-        // let marker_size = self.base.options.series.markers.size;
-        // let curve_tension = self.base.options.series.curve_tension;
-        // let curve = curve_tension > 0 && entity_count > 2;
+        let entity_count = self.base.data_table.frames.len();
+        let marker_size = self.base.options.series.markers.size;
+        let curve_tension = self.base.options.series.curve_tension;
+        let curve = curve_tension > 0. && entity_count > 2;
 
-        // let start = index ?? 0;
-        // let end = (index == null) ? series_list.len() : index + 1;
-        // for (let i = start; i < end; i++) {
-        //   let visible = series_states[i].index >= Visibility::showing.index;
-        //   let series = series_list[i];
-        //   let entities = series.entities;
-        //   let color = get_color(i);
-        //   let highlight_color = get_highlight_color(color);
-        //   series.color = color;
-        //   series.highlight_color = highlight_color;
+        let start = if index != 0 { index } else { 0 };
 
-        //   for (let j = 0; j < entity_count; j++) {
-        //     let e = entities[j] as Point;
-        //     e.index = j;
-        //     e.color = color;
-        //     e.highlight_color = highlight_color;
-        //     e.x = xlabel_x(j);
-        //     e.y = visible ? value_to_y(e.value) : x_axis_top;
-        //     e.pointRadius = visible ? marker_size : 0;
-        //   }
+        let mut series_list = self.base.series_list.borrow_mut();
+        let end = if index == 0 {
+            series_list.len()
+        } else {
+            index + 1
+        };
 
-        //   if (!curve) continue;
+        let series_states = &self.base.props.borrow().series_states;
+        let props = self.props.borrow();
+        for idx in start..end {
+            let series_state = series_states[idx];
+            let visible = series_state == Visibility::Showing || series_state == Visibility::Shown;
+            
+            let series = series_list.get_mut(idx).unwrap();
+            
+            let color = self.base.get_color(idx);
+            let highlight_color = self.base.get_highlight_color(color);
+            series.color = color;
+            series.highlight_color = highlight_color;
 
-        //   let e1;
-        //   let e2 = entities[0] as Point;
-        //   let e3 = entities[1] as Point;
-        //   for (let j = 2; j < entity_count; j++) {
-        //     e1 = e2;
-        //     e2 = e3;
-        //     e3 = entities[j];
-        //     if (e1.value == null) continue;
-        //     if (e2.value == null) continue;
-        //     if (e3.value == null) continue;
-        //     let list = calculateControlPoints(
-        //         e1.asPoint, e2.asPoint, e3.asPoint, curve_tension);
-        //     e2.cp1 = list[0];
-        //     e2.cp2 = list[1];
-        // ??= - Assign the value if the variable is null
-        //     e2.oldCp1 ??= Point(e2.cp1.x, x_axis_top);
-        //     e2.oldCp2 ??= Point(e2.cp2.x, x_axis_top);
-        //   }
-        // }
-        unimplemented!()
+            for jdx in 0..entity_count {
+                let entity = series.entities.get_mut(jdx).unwrap();
+                entity.index = jdx;
+                entity.color = color;
+                entity.highlight_color = highlight_color;
+                entity.x = self.xlabel_x(jdx);
+                entity.y = if visible {
+                    self.value_to_y(entity.value)
+                } else {
+                    props.x_axis_top
+                };
+                entity.point_radius = if visible { marker_size } else { 0. };
+            }
+
+            if !curve {
+                continue;
+            }
+
+            // // TODO: complete it
+            // let mut e1;
+            // let mut e2 = series.entities.get_mut(0).unwrap();
+            // let mut e3 = series.entities.get_mut(1).unwrap();
+            // for jdx in 2..entity_count {
+            //     e1 = e2;
+            //     e2 = e3;
+            //     e3 = series.entities.get_mut(jdx).unwrap();
+            //     if e1.value == 0. {
+            //         continue;
+            //     }
+            //     if e2.value == 0. {
+            //         continue;
+            //     }
+            //     if e3.value == 0. {
+            //         continue;
+            //     }
+
+            //     let list = utils::calculate_control_points(
+            //         e1.as_point(),
+            //         e2.as_point(),
+            //         e3.as_point(),
+            //         curve_tension,
+            //     );
+            //     e2.cp1 = list[0];
+            //     e2.cp2 = list[1];
+            //     // ??= - Assign the value if the variable is null
+            //     e2.oldCp1?? = Point::new(e2.cp1.x, x_axis_top);
+            //     e2.oldCp2?? = Point::new(e2.cp2.x, x_axis_top);
+            // }
+        }
     }
 
     fn create_entity(

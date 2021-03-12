@@ -113,8 +113,8 @@ where
     E: Entity,
 {
     name: String,
-    color: String,
-    highlight_color: String,
+    color: Color,
+    highlight_color: Color,
     entities: Vec<E>,
 }
 
@@ -122,7 +122,7 @@ impl<E> Series<E>
 where
     E: Entity,
 {
-    pub fn new(name: &str, color: String, highlight_color: String, entities: Vec<E>) -> Self {
+    pub fn new(name: &str, color: Color, highlight_color: Color, entities: Vec<E>) -> Self {
         Self {
             name: name.into(),
             color,

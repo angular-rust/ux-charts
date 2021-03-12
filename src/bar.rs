@@ -5,7 +5,12 @@
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use ux_animate::easing::{get_easing, Easing};
 use ux_dataflow::*;
-use ux_primitives::{canvas::CanvasContext, color::Color, geom::{Point, Rect, Size}, text::{BaseLine, TextAlign, TextStyle, TextWeight}};
+use ux_primitives::{
+    canvas::CanvasContext,
+    color::Color,
+    geom::{Point, Rect, Size},
+    text::{BaseLine, TextAlign, TextStyle, TextWeight},
+};
 
 use crate::*;
 
@@ -508,14 +513,14 @@ where
                 let style = &opt.style;
                 ctx.save();
                 ctx.set_fill_style_color(style.color);
-                
+
                 ctx.set_font(
                     &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
                     style.font_style.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
                     style.font_size.unwrap_or(12.),
                 );
-                
+
                 ctx.set_text_align(TextAlign::Center);
                 ctx.set_text_baseline(BaseLine::Middle);
                 ctx.fill_text(text, x_title_center.x, x_title_center.y);
@@ -537,7 +542,7 @@ where
                     TextWeight::Normal,
                     style.font_size.unwrap_or(12.),
                 );
-                
+
                 ctx.translate(y_title_center.x, y_title_center.y);
                 ctx.rotate(-std::f64::consts::FRAC_PI_2);
                 ctx.set_text_align(TextAlign::Center);
@@ -560,8 +565,7 @@ where
         );
 
         let mut x = self.xlabel_x(0);
-        let mut y =
-            props.x_axis_top + AXIS_LABEL_MARGIN as f64 + style.font_size.unwrap_or(12.);
+        let mut y = props.x_axis_top + AXIS_LABEL_MARGIN as f64 + style.font_size.unwrap_or(12.);
         let scaled_label_hop = props.xlabel_step as f64 * props.xlabel_hop;
 
         if props.xlabel_rotation == 0. {
@@ -603,7 +607,7 @@ where
         let opt = &self.base.options.y_axis.labels;
         let style = &opt.style;
         ctx.set_fill_style_color(opt.style.color);
-        
+
         ctx.set_font(
             &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
             style.font_style.unwrap_or(TextStyle::Normal),
@@ -627,7 +631,8 @@ where
             ctx.set_stroke_style_color(opt.grid_line_color);
             ctx.begin_path();
             y = props.x_axis_top - props.ylabel_hop;
-            for idx in 1..props.ylabels.len() - 1 {
+            // TODO: should draw 2 and len - 1 lines
+            for idx in 0..props.ylabels.len() {
                 ctx.move_to(props.y_axis_left, y);
                 ctx.line_to(props.y_axis_left + props.x_axis_length, y);
                 y -= props.ylabel_hop;
@@ -703,8 +708,7 @@ where
 
             // Update the visibility states of all series before the last frame.
             let mut props = self.base.props.borrow_mut();
-
-            for idx in props.series_states.len() - 1..0 {
+            for idx in props.series_states.len()..0 {
                 if props.series_states[idx] == Visibility::Showing {
                     props.series_states[idx] = Visibility::Shown;
                 } else if props.series_states[idx] == Visibility::Hiding {
@@ -773,31 +777,39 @@ where
     }
 
     fn update_series(&self, index: usize) {
-        // let entity_count = self.base.data_table.frames.len();
-        // for (let i = 0; i < series_list.len(); i++) {
-        //   let series = series_list[i];
-        //   let left = get_bar_left(i, 0);
-        //   let bar_width = 0.0;
-        //   if (series_states[i].index >= Visibility::showing.index) {
-        //     bar_width = bar_width;
-        //   }
-        //   let color = self.base.get_color(i);
-        //   let highlight_color = get_highlight_color(color);
-        //   series.color = color;
-        //   series.highlight_color = highlight_color;
-        //   for (let j = 0; j < entity_count; j++) {
-        //     let bar = series.entities[j] as Bar;
-        //     bar.index = j;
-        //     bar.color = color;
-        //     bar.highlight_color = highlight_color;
-        //     bar.left = left;
-        //     bar.bottom = x_axis_top;
-        //     bar.height = valueToBarHeight(bar.value);
-        //     bar.width = bar_width;
-        //     left += xlabel_hop;
-        //   }
-        // }
-        unimplemented!()
+        let entity_count = self.base.data_table.frames.len();
+        let mut series_list = self.base.series_list.borrow_mut();
+        let props = self.props.borrow();
+        let series_states = &self.base.props.borrow().series_states;
+
+        for idx in 0..series_list.len() {
+            let mut series = series_list.get_mut(idx).unwrap();
+            let mut left = self.get_bar_left(idx, 0);
+            let mut bar_width = 0.0;
+
+            let series_state = series_states[idx];
+
+            if series_state == Visibility::Showing || series_state == Visibility::Shown {
+                bar_width = bar_width;
+            }
+
+            let color = self.base.get_color(idx);
+            let highlight_color = self.base.get_highlight_color(color);
+            series.color = color;
+            series.highlight_color = highlight_color;
+
+            for jdx in 0..entity_count {
+                let mut entity = series.entities.get_mut(jdx).unwrap();
+                entity.index = jdx;
+                entity.color = color;
+                entity.highlight_color = highlight_color;
+                entity.left = left;
+                entity.bottom = props.x_axis_top;
+                entity.height = self.value_to_bar_height(entity.value);
+                entity.width = bar_width;
+                left += props.xlabel_hop;
+            }
+        }
     }
 
     fn create_entity(
