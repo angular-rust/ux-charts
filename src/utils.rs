@@ -177,32 +177,32 @@ pub fn get_decimal_places(value: f64) -> usize {
     unimplemented!()
 }
 
-/// Returns a CSS font string given a map that contains at least three keys:
-/// `fontStyle`, `font_size`, and `fontFamily`.
-pub fn get_font(opt: &StyleOption) -> String {
-    if let Some(style) = opt.font_style {
-        if let Some(size) = opt.font_size {
-            if let Some(family) = opt.font_family {
-                return format!("{} {}px {}", style, size, family);
-            }
-            return format!("{} {}px", style, size);
-        }
-        return format!("{}", style);
-    }
+// /// Returns a CSS font string given a map that contains at least three keys:
+// /// `fontStyle`, `font_size`, and `fontFamily`.
+// pub fn get_font(opt: &StyleOption) -> String {
+//     if let Some(style) = opt.font_style {
+//         if let Some(size) = opt.font_size {
+//             if let Some(family) = opt.font_family {
+//                 return format!("{} {}px {}", style, size, family);
+//             }
+//             return format!("{} {}px", style, size);
+//         }
+//         return format!("{}", style);
+//     }
 
-    if let Some(size) = opt.font_size {
-        if let Some(family) = opt.font_family {
-            return format!("{}px {}", size, family);
-        }
-        return format!("{}px", size);
-    }
+//     if let Some(size) = opt.font_size {
+//         if let Some(family) = opt.font_family {
+//             return format!("{}px {}", size, family);
+//         }
+//         return format!("{}px", size);
+//     }
 
-    if let Some(family) = opt.font_family {
-        return format!("{}", family);
-    }
+//     if let Some(family) = opt.font_family {
+//         return format!("{}", family);
+//     }
 
-    "".into()
-}
+//     "".into()
+// }
 
 // pub struct StreamSubscriptionTracker {
 //     subs: Vec<StreamSubscription>,

@@ -4,7 +4,12 @@
 
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use ux_dataflow::*;
-use ux_primitives::{canvas::CanvasContext, color::Color, geom::Point, text::TextAlign};
+use ux_primitives::{
+    canvas::CanvasContext,
+    color::Color,
+    geom::Point,
+    text::{TextAlign, TextStyle, TextWeight},
+};
 
 use crate::*;
 
@@ -128,23 +133,22 @@ where
 
         // Draw the percent.
         let fs1 = 0.75 * self.inner_radius;
-        let font1 = "${fs1}px $_fontFamily";
+        let family = "Roboto";
         let text1 = lerp(self.old_value, self.value, percent)
             .round()
             .to_string();
-        ctx.set_font(font1);
+        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);
         let w1 = ctx.measure_text(text1.as_str()).width;
 
         let fs2 = 0.6 * fs1;
-        let font2 = "${fs2}px $_fontFamily";
         let text2 = "%";
-        ctx.set_font(font2);
+        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs2);
         let w2 = ctx.measure_text(text2).width;
 
         let y = self.center.y + 0.3 * fs1;
-        ctx.set_font(font1);
+        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);
         ctx.fill_text(text1.as_str(), self.center.x - 0.5 * w2, y);
-        ctx.set_font(font2);
+        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs2);
         ctx.fill_text(text2, self.center.x + 0.5 * w1, y);
     }
 }

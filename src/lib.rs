@@ -43,7 +43,7 @@ pub const TAU: f64 = std::f64::consts::TAU;
 /// The pi/2 constant.
 pub const PI_2: f64 = std::f64::consts::FRAC_PI_2;
 
-pub const FONT_FAMILY: &str = r#""Segoe UI", "Open Sans", Verdana, Arial"#;
+pub const DEFAULT_FONT_FAMILY: &str = "Roboto";
 
 /// The padding of the chart itself.
 pub const CHART_PADDING: f64 = 12.0;

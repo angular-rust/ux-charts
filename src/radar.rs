@@ -8,7 +8,7 @@ use ux_primitives::{
     canvas::CanvasContext,
     color::Color,
     geom::{Point, Rect, Size},
-    text::{BaseLine, TextAlign},
+    text::{BaseLine, TextAlign, TextStyle, TextWeight},
 };
 
 use crate::*;
@@ -358,7 +358,14 @@ where
         let x = props.center.x - AXIS_LABEL_MARGIN as f64;
         let mut y = props.center.y - props.ylabel_hop;
         ctx.set_fill_style_color(style.color);
-        ctx.set_font(utils::get_font(&style).as_str());
+        
+        ctx.set_font(
+            &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+            style.font_style.unwrap_or(TextStyle::Normal),
+            TextWeight::Normal,
+            style.font_size.unwrap_or(12.),
+        );
+
         ctx.set_text_align(TextAlign::Right);
         ctx.set_text_baseline(BaseLine::Middle);
         for idx in 1..ylabel_count - 2 {
@@ -369,7 +376,14 @@ where
         // x-axis labels.
         let style = &self.base.options.x_axis.labels.style;
         ctx.set_fill_style_color(style.color);
-        ctx.set_font(utils::get_font(&style).as_str());
+
+        ctx.set_font(
+            &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+            style.font_style.unwrap_or(TextStyle::Normal),
+            TextWeight::Normal,
+            style.font_size.unwrap_or(12.),
+        );
+
         ctx.set_text_align(TextAlign::Center);
         ctx.set_text_baseline(BaseLine::Middle);
         let font_size = style.font_size.unwrap();

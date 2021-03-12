@@ -1,5 +1,5 @@
 use super::{LabelFormatter, ValueFormatter};
-use ux_primitives::color::{palette, Color};
+use ux_primitives::{color::{palette, Color}, text::TextStyle};
 pub trait BaseOption<'a> {
     fn animation(&self) -> &AnimationOptions;
     fn colors(&self) -> &Vec<Color>;
@@ -312,7 +312,7 @@ pub struct StyleOption<'a> {
     /// The title"s font size.
     pub font_size: Option<f64>,
     /// The title"s font style.
-    pub font_style: Option<&'a str>, // "normal"
+    pub font_style: Option<TextStyle>,
 }
 
 impl<'a> Default for StyleOption<'a> {
@@ -324,7 +324,7 @@ impl<'a> Default for StyleOption<'a> {
             color: palette::GRAY_9,
             font_family: Some("Roboto"),
             font_size: Some(12_f64),
-            font_style: Some("normal"),
+            font_style: Some(TextStyle::Normal),
         }
     }
 }

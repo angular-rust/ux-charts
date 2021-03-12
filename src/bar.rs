@@ -5,12 +5,7 @@
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use ux_animate::easing::{get_easing, Easing};
 use ux_dataflow::*;
-use ux_primitives::{
-    canvas::CanvasContext,
-    color::Color,
-    geom::{Point, Rect, Size},
-    text::{BaseLine, TextAlign},
-};
+use ux_primitives::{canvas::CanvasContext, color::Color, geom::{Point, Rect, Size}, text::{BaseLine, TextAlign, TextStyle, TextWeight}};
 
 use crate::*;
 
@@ -510,9 +505,17 @@ where
             let opt = &self.base.options.x_axis.title;
 
             if let Some(text) = opt.text {
+                let style = &opt.style;
                 ctx.save();
-                ctx.set_fill_style_color(opt.style.color);
-                ctx.set_font(utils::get_font(&opt.style).as_str());
+                ctx.set_fill_style_color(style.color);
+                
+                ctx.set_font(
+                    &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+                    style.font_style.unwrap_or(TextStyle::Normal),
+                    TextWeight::Normal,
+                    style.font_size.unwrap_or(12.),
+                );
+                
                 ctx.set_text_align(TextAlign::Center);
                 ctx.set_text_baseline(BaseLine::Middle);
                 ctx.fill_text(text, x_title_center.x, x_title_center.y);
@@ -524,9 +527,17 @@ where
         if let Some(y_title_center) = props.y_title_center {
             let opt = &self.base.options.y_axis.title;
             if let Some(text) = opt.text {
+                let style = &opt.style;
                 ctx.save();
-                ctx.set_fill_style_color(opt.style.color);
-                ctx.set_font(utils::get_font(&opt.style).as_str());
+                ctx.set_fill_style_color(style.color);
+
+                ctx.set_font(
+                    &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+                    style.font_style.unwrap_or(TextStyle::Normal),
+                    TextWeight::Normal,
+                    style.font_size.unwrap_or(12.),
+                );
+                
                 ctx.translate(y_title_center.x, y_title_center.y);
                 ctx.rotate(-std::f64::consts::FRAC_PI_2);
                 ctx.set_text_align(TextAlign::Center);
@@ -538,11 +549,19 @@ where
 
         // x-axis labels.
         let opt = &self.base.options.x_axis.labels;
-        ctx.set_fill_style_color(opt.style.color);
-        ctx.set_font(utils::get_font(&opt.style).as_str());
+        let style = &opt.style;
+        ctx.set_fill_style_color(style.color);
+
+        ctx.set_font(
+            &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+            style.font_style.unwrap_or(TextStyle::Normal),
+            TextWeight::Normal,
+            style.font_size.unwrap_or(12.),
+        );
+
         let mut x = self.xlabel_x(0);
         let mut y =
-            props.x_axis_top + AXIS_LABEL_MARGIN as f64 + opt.style.font_size.unwrap_or(12.);
+            props.x_axis_top + AXIS_LABEL_MARGIN as f64 + style.font_size.unwrap_or(12.);
         let scaled_label_hop = props.xlabel_step as f64 * props.xlabel_hop;
 
         if props.xlabel_rotation == 0. {
@@ -564,7 +583,7 @@ where
             ctx.set_text_baseline(BaseLine::Middle);
             if props.xlabel_rotation == 90. {
                 x += props.xlabel_rotation.signum()
-                    * ((opt.style.font_size.unwrap_or(12.) / 8.).trunc());
+                    * ((style.font_size.unwrap_or(12.) / 8.).trunc());
             }
             let angle = utils::deg2rad(props.xlabel_rotation);
 
@@ -582,12 +601,20 @@ where
 
         // y-axis labels.
         let opt = &self.base.options.y_axis.labels;
+        let style = &opt.style;
         ctx.set_fill_style_color(opt.style.color);
-        ctx.set_font(utils::get_font(&opt.style).as_str());
+        
+        ctx.set_font(
+            &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+            style.font_style.unwrap_or(TextStyle::Normal),
+            TextWeight::Normal,
+            style.font_size.unwrap_or(12.),
+        );
+
         ctx.set_text_align(TextAlign::Right);
         ctx.set_text_baseline(BaseLine::Middle);
         x = props.y_axis_left - AXIS_LABEL_MARGIN as f64;
-        y = props.x_axis_top - (opt.style.font_size.unwrap_or(12.) / 8.).trunc();
+        y = props.x_axis_top - (style.font_size.unwrap_or(12.) / 8.).trunc();
         for label in props.ylabels.iter() {
             ctx.fill_text(label.as_str(), x, y);
             y -= props.ylabel_hop;
