@@ -1,3 +1,4 @@
+#![allow(unused_assignments)]
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 #![allow(dead_code)]
@@ -270,6 +271,7 @@ where
     fn calculate_drawing_sizes(&self) {
         self.base.calculate_drawing_sizes();
         let mut props = self.props.borrow_mut();
+        let mut baseprops = self.base.props.borrow_mut();
         props.bar_group_width = 0.618 * props.xlabel_hop; // Golden ratio.
         props.tooltip_offset = 0.5 * props.xlabel_hop + 4.;
         self.update_bar_width();
@@ -338,7 +340,7 @@ where
         props.y_max_value = val.ceil() * props.y_interval;
         props.y_range = props.y_max_value - props.y_min_value;
 
-        // y-axis labels.
+        // y-axis labels
         props.ylabels = Vec::new(); //<String>[];
         props.ylabel_formatter = self.base.options.y_axis.labels.formatter;
 
@@ -352,145 +354,175 @@ where
             // ylabel_formatter = numberFormat.format;
         }
 
-        let value = props.y_min_value;
-        //     while (value <= y_max_value) {
-        //       ylabels.add(ylabel_formatter(value));
-        //       value += y_interval;
-        //     }
-        //     ylabel_max_width = calculateMaxTextWidth(
-        //             context, get_font(self.base.options.y_axis.labels.style), ylabels)
-        //         .round();
+        let mut value = props.y_min_value;
+        while value <= props.y_max_value {
+            let ylabel_formatter = props.ylabel_formatter.unwrap();
+            props.ylabels.push(ylabel_formatter(value));
+            value += props.y_interval;
+        }
 
-        //     entity_value_formatter = ylabel_formatter;
+        // TODO: fix me
+        // props.ylabel_max_width = utils::calculate_max_text_width(
+        //         context, get_font(self.base.options.y_axis.labels.style), ylabels)
+        //     .round();
 
-        //     // Tooltip.
+        baseprops.entity_value_formatter = props.ylabel_formatter;
 
-        //     tooltip_value_formatter =
-        //         self.base.options.tooltip.value_formatter ?? ylabel_formatter;
+        // Tooltip
+        let options = &self.base.options;
+        baseprops.tooltip_value_formatter = if let Some(formater) = options.tooltip.value_formatter
+        {
+            Some(formater)
+        } else {
+            props.ylabel_formatter
+        };
 
-        //     // x-axis title.
+        let series_and_axes_box = &baseprops.series_and_axes_box;
 
-        //     let xTitleLeft = 0;
-        //     let xTitleTop = 0;
-        //     let xTitleWidth = 0;
-        //     let xTitleHeight = 0;
-        //     let xTitle = self.base.options.x_axis.title;
-        //     if (xTitle["text"] != null) {
-        //       context.font = get_font(xTitle["style"]);
-        //       xTitleWidth = context.measure_text(xTitle["text"]).width.round() +
-        //           2 * TITLE_PADDING;
-        //       xTitleHeight = xTitle["style"]["font_size"] + 2 * TITLE_PADDING;
-        //       xTitleTop = self.base.series_and_axes_box.bottom - xTitleHeight;
-        //     }
+        // x-axis title
+        let mut xtitle_left = 0.;
+        let xtitle_top = 0.;
+        let xtitle_width = 0.;
+        let xtitle_height = 0.;
+        let xtitle = &self.base.options.x_axis.title;
 
-        //     // y-axis title.
+        // if xtitle.text != null {
+        //     context.font = get_font(xtitle.style);
+        //     xtitle_width = context.measure_text(xtitle.text).width.round() +
+        //         2 * TITLE_PADDING;
+        //     xtitle_height = xtitle.style.font_size + 2 * TITLE_PADDING;
+        //     xtitle_top = baseprops.series_and_axes_box.bottom - xtitle_height;
+        // }
 
-        //     let yTitleLeft = 0;
-        //     let yTitleTop = 0;
-        //     let yTitleWidth = 0;
-        //     let yTitleHeight = 0;
-        //     let yTitle = self.base.options.y_axis.title;
-        //     if (yTitle["text"] != null) {
-        //       context.font = get_font(yTitle["style"]);
-        //       yTitleHeight = context.measure_text(yTitle["text"]).width.round() +
-        //           2 * TITLE_PADDING;
-        //       yTitleWidth = yTitle["style"]["font_size"] + 2 * TITLE_PADDING;
-        //       yTitleLeft = self.base.series_and_axes_box.left;
-        //     }
+        // y-axis title
+        let ytitle_left = 0.;
+        let ytitle_top = 0.;
+        let ytitle_width = 0.;
+        let ytitle_height = 0.;
+        let ytitle = &self.base.options.y_axis.title;
 
-        //     // Axes" size and position.
+        // if ytitle.text != null {
+        //     context.font = get_font(ytitle.style);
+        //     ytitle_height = context.measure_text(ytitle.text).width.round() +
+        //         2 * TITLE_PADDING;
+        //     ytitle_width = ytitle.style.font_size + 2 * TITLE_PADDING;
+        //     ytitle_left = series_and_axes_box.left;
+        // }
 
-        //     y_axis_left = self.base.series_and_axes_box.left + ylabel_max_width + AXIS_LABEL_MARGIN;
-        //     if (yTitleWidth > 0) {
-        //       y_axis_left += yTitleWidth + CHART_TITLE_MARGIN;
-        //     } else {
-        //       y_axis_left += AXIS_LABEL_MARGIN;
-        //     }
+        // Axes" size and position
+        props.y_axis_left =
+            series_and_axes_box.origin.x + props.ylabel_max_width + AXIS_LABEL_MARGIN as f64;
+        if ytitle_width > 0. {
+            props.y_axis_left += ytitle_width + CHART_TITLE_MARGIN;
+        } else {
+            props.y_axis_left += AXIS_LABEL_MARGIN as f64;
+        }
 
-        //     x_axis_length = self.base.series_and_axes_box.right - y_axis_left;
+        props.x_axis_length = (series_and_axes_box.origin.x + series_and_axes_box.size.width) - props.y_axis_left;
 
-        //     x_axis_top = self.base.series_and_axes_box.bottom;
-        //     if (xTitleHeight > 0) {
-        //       x_axis_top -= xTitleHeight + CHART_TITLE_MARGIN;
-        //     } else {
-        //       x_axis_top -= AXIS_LABEL_MARGIN;
-        //     }
-        //     x_axis_top -= AXIS_LABEL_MARGIN;
+        props.x_axis_top = series_and_axes_box.origin.y + series_and_axes_box.size.height;
+        if xtitle_height > 0. {
+            props.x_axis_top -= xtitle_height + CHART_TITLE_MARGIN;
+        } else {
+            props.x_axis_top -= AXIS_LABEL_MARGIN as f64;
+        }
+        props.x_axis_top -= AXIS_LABEL_MARGIN as f64;
 
-        //     // x-axis labels and x-axis"s position.
+        // x-axis labels and x-axis"s position.
+        let row_count = self.base.data_table.meta.len();
+        props.xlabels = Vec::new();
+        for idx in 0..row_count {
+            let row = self.base.data_table.meta.get(idx).unwrap();
+            props
+                .xlabels
+                .push(row.name.to_string());
+        }
 
-        //     let rowCount = self.base.data_table.rows.len();
-        //     xlabels = <String>[];
-        //     for (let i = 0; i < rowCount; i++) {
-        //       xlabels.add(self.base.data_table.rows[i][0].to_string());
-        //     }
-        //     xlabel_max_width = calculateMaxTextWidth(
-        //         context, get_font(self.base.options.x_axis.labels.style), xlabels);
-        //     if (xlabel_offset_factor > 0 && rowCount > 1) {
-        //       xlabel_hop = x_axis_length / rowCount;
-        //     } else if (rowCount > 1) {
-        //       xlabel_hop = x_axis_length / (rowCount - 1);
-        //     } else {
-        //       xlabel_hop = x_axis_length;
-        //     }
-        //     xlabel_rotation = 0;
+        // TODO: fix me
+        // props.xlabel_max_width = utils::calculate_max_text_width(
+        //     context,
+        //     get_font(self.base.options.x_axis.labels.style),
+        //     props.xlabels,
+        // );
+        if props.xlabel_offset_factor > 0. && row_count > 1 {
+            props.xlabel_hop = props.x_axis_length / row_count as f64;
+        } else if row_count > 1 {
+            props.xlabel_hop = props.x_axis_length / (row_count - 1) as f64;
+        } else {
+            props.xlabel_hop = props.x_axis_length;
+        }
 
-        //     let font_size = self.base.options.x_axis.labels.style.font_size;
-        //     let maxRotation = self.base.options.x_axis.labels.max_rotation;
-        //     let minRotation = self.base.options.x_axis.labels.min_rotation;
-        //     const angles = [0, -45, 45, -90, 90];
+        props.xlabel_rotation = 0.;
 
-        //     outer:
-        //     for (let step = 1; step <= rowCount; step++) {
-        //       let scaledLabelHop = step * xlabel_hop;
-        //       let minSpacing = max(.1 * scaledLabelHop, 10);
-        //       for (let angle in angles) {
-        //         if (angle > maxRotation) continue;
-        //         if (angle < minRotation) continue;
+        let font_size = self.base.options.x_axis.labels.style.font_size.unwrap();
+        let max_rotation = self.base.options.x_axis.labels.max_rotation;
+        let min_rotation = self.base.options.x_axis.labels.min_rotation;
+        let angles = vec![0, -45, 45, -90, 90];
 
-        //         let absAngleRad = deg2rad(angle).abs();
-        //         let labelSpacing = angle == 0
-        //             ? scaledLabelHop - xlabel_max_width
-        //             : scaledLabelHop * sin(absAngleRad) - font_size;
-        //         if (labelSpacing < minSpacing) continue;
+        // outer:
+        for step in 1..row_count {
+            let scaled_label_hop = step as f64 * props.xlabel_hop;
+            let min_spacing = (0.1 * scaled_label_hop as f64).max(10.);
+            for angle in angles.iter() {
+                let angle = *angle;
+                if angle > max_rotation || angle < min_rotation {
+                    continue;
+                }
 
-        //         xlabel_rotation = angle;
-        //         xlabel_step = step;
-        //         x_axis_top -=
-        //             xlabel_max_width * sin(absAngleRad) + font_size * cos(absAngleRad);
-        //         break outer;
-        //       }
-        //     }
+                let abs_angle_rad = deg2rad(angle as f64).abs();
+                let label_spacing = if angle == 0 {
+                    scaled_label_hop - props.xlabel_max_width
+                } else {
+                    scaled_label_hop * abs_angle_rad.sin() - font_size
+                };
 
-        //     // Wrap up.
+                if label_spacing < min_spacing {
+                    continue;
+                }
 
-        //     y_axis_length = x_axis_top -
-        //         self.base.series_and_axes_box.top -
-        //         (self.base.options.y_axis.labels.style.font_size / 2.).trunc();
-        //     ylabel_hop = y_axis_length / (ylabels.len() - 1);
+                props.xlabel_rotation = angle as f64;
+                props.xlabel_step = step as i64;
+                props.x_axis_top -=
+                    props.xlabel_max_width * abs_angle_rad.sin() + font_size * abs_angle_rad.cos();
+                // TODO: fixme
+                // break outer;
+            }
+        }
 
-        //     xTitleLeft = y_axis_left + ((x_axis_length - xTitleWidth) / 2).trunc();
-        //     yTitleTop = self.base.series_and_axes_box.top + ((y_axis_length - yTitleHeight) / 2).trunc();
+        // Wrap up.
+        props.y_axis_length = props.x_axis_top
+            - series_and_axes_box.origin.y
+            - (self.base.options.y_axis.labels.style.font_size.unwrap() / 2.).trunc();
+        props.ylabel_hop = props.y_axis_length / (props.ylabels.len() - 1) as f64;
 
-        //     if (xTitleHeight > 0) {
-        // //      x_title_box =
-        // //          Rectangle(xTitleLeft, xTitleTop, xTitleWidth, xTitleHeight);
-        //       x_title_center =
-        //           Point(xTitleLeft + (xTitleWidth / 2).trunc(), xTitleTop + (xTitleHeight / 2).trunc());
-        //     } else {
-        // //      x_title_box = null;
-        //       x_title_center = null;
-        //     }
+        xtitle_left = props.y_axis_left + ((props.x_axis_length - xtitle_width) / 2.).trunc();
 
-        //     if (yTitleHeight > 0) {
-        // //      y_title_box =
-        // //          Rectangle(yTitleLeft, yTitleTop, yTitleWidth, yTitleHeight);
-        //       y_title_center =
-        //           Point(yTitleLeft + (yTitleWidth / 2).trunc(), yTitleTop + (yTitleHeight / 2).trunc());
-        //     } else {
-        // //      y_title_box = null;
-        //       y_title_center = null;
-        //     }
+        let ytitle_top =
+            series_and_axes_box.origin.y + ((props.y_axis_length - ytitle_height) / 2.).trunc();
+
+        if xtitle_height > 0. {
+            //      x_title_box =
+            //          Rectangle(xTitleLeft, xTitleTop, xTitleWidth, xTitleHeight);
+            props.x_title_center = Some(Point::new(
+                xtitle_left + (xtitle_width / 2.).trunc(),
+                xtitle_top + (xtitle_height / 2.).trunc(),
+            ));
+        } else {
+            //      x_title_box = null;
+            props.x_title_center = None;
+        }
+
+        if ytitle_height > 0. {
+            //      y_title_box =
+            //          Rectangle(yTitleLeft, yTitleTop, yTitleWidth, yTitleHeight);
+            props.y_title_center = Some(Point::new(
+                ytitle_left + (ytitle_width / 2.).trunc(),
+                ytitle_top + (ytitle_height / 2.).trunc(),
+            ));
+        } else {
+            //      y_title_box = null;
+            props.y_title_center = None;
+        }
     }
 
     fn set_stream(&self, stream: DataStream<'a, M, D>) {}

@@ -318,7 +318,7 @@ where
         //       ylabels.add(ylabel_formatter(value));
         //       value += y_interval;
         //     }
-        //     ylabel_max_width = calculateMaxTextWidth(
+        //     ylabel_max_width = calculate_max_text_width(
         //             context, get_font(self.base.options.y_axis.labels.style), ylabels)
         //         .round();
 
@@ -385,7 +385,7 @@ where
         //     for (let i = 0; i < rowCount; i++) {
         //       xlabels.add(self.base.data_table.rows[i][0].to_string());
         //     }
-        //     xlabel_max_width = calculateMaxTextWidth(
+        //     xlabel_max_width = calculate_max_text_width(
         //         context, get_font(self.base.options.x_axis.labels.style), xlabels);
         //     if (xlabel_offset_factor > 0 && rowCount > 1) {
         //       xlabel_hop = x_axis_length / rowCount;
