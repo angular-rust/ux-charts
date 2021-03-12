@@ -323,9 +323,11 @@ where
         ctx.set_stroke_style_color(palette::WHITE);
         ctx.set_text_align(TextAlign::Center);
         ctx.set_text_baseline(BaseLine::Middle);
+
         let series_list = self.base.series_list.borrow();
         let series = series_list.first().unwrap();
         let labels = &self.base.options.series.labels.style;
+        
         ctx.set_font(
             labels.font_family.unwrap_or("Roboto"),
             labels.font_style.unwrap_or(TextStyle::Normal),
@@ -333,8 +335,9 @@ where
             labels.font_size.unwrap_or(12.),
         );
 
-        let focused_series_index = self.base.props.borrow().focused_series_index as usize;
-        let focused_entity_index = self.base.props.borrow().focused_entity_index as usize;
+        let baseprops = self.base.props.borrow();
+        let focused_series_index = baseprops.focused_series_index as usize;
+        let focused_entity_index = baseprops.focused_entity_index as usize;
 
         for entity in series.entities.iter() {
             if entity.is_empty() && percent == 1.0 {

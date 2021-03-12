@@ -738,40 +738,64 @@ where
 
     fn draw_series(&self, ctx: &C, percent: f64) -> bool {
         println!("BarChart draw_series");
-        // for (let i = 0, n = series_list.len(); i < n; i++) {
-        //   if (series_states[i] == Visibility::hidden) continue;
+        let series_list = self.base.series_list.borrow();
+        let series_states = &self.base.props.borrow().series_states;
+        let focused_entity_index = self.base.props.borrow().focused_entity_index;
 
-        //   let series = series_list[i];
+        let crosshair = &self.base.options.x_axis.crosshair;
+        let labels = &self.base.options.series.labels;
+        let props = self.props.borrow();
 
-        //   // Draw the bars.
-        //   for (Bar bar in series.entities) {
-        //     if (bar.value == null) continue;
-        //     bar.draw(ctx, percent, false);
-        //   }
+        for idx in 0..series_list.len() {
+            if series_states[idx] == Visibility::Hidden {
+                continue;
+            }
 
-        //   let opt = self.base.options.x_axis.crosshair;
-        //   if (focused_entity_index >= 0 && opt["enabled"]) {
-        //     ctx.set_fill_style_color(opt.color);
-        //     ctx.fill_rect(y_axis_left + xlabel_hop * focused_entity_index,
-        //           x_axis_top - y_axis_length, xlabel_hop, y_axis_length);
-        //   }
+            let series = series_list.get(idx).unwrap();
 
-        //   // Draw the labels.
-        //   if (percent == 1.0) {
-        //     opt = self.base.options.series.labels;
-        //     if (!opt["enabled"]) continue;
-        //       ctx.set_fill_style_color(opt.style.color);
-        //       ctx.set_font(utils::get_font(opt.style));
-        //       ctx.set_text_align(TextAlign::Center)
-        //       ctx.set_text_baseline("alphabetic");
-        //     for (Bar bar in series.entities) {
-        //       if (bar.value == null) continue;
-        //       let x = bar.left + .5 * bar.width;
-        //       let y = x_axis_top - bar.height - 5;
-        //       ctx.fill_text(bar.formatted_value, x, y);
-        //     }
-        //   }
-        // }
+            // Draw the bars.
+            for entity in series.entities.iter() {
+                if entity.value == 0. {
+                    continue;
+                }
+                entity.draw(ctx, percent, false);
+            }
+
+            if let Some(crosshair) = crosshair {
+                if focused_entity_index >= 0 {
+                    ctx.set_fill_style_color(crosshair.color);
+                    ctx.fill_rect(
+                        props.y_axis_left + props.xlabel_hop * focused_entity_index as f64,
+                        props.x_axis_top - props.y_axis_length,
+                        props.xlabel_hop,
+                        props.y_axis_length,
+                    );
+                }
+
+                // Draw the labels.
+                if percent == 1.0 {
+                    if let Some(labels) = labels {
+                        ctx.set_fill_style_color(labels.color);
+                        ctx.set_font(labels.font_family.unwrap_or("Roboto"), labels.font_style.unwrap_or(TextStyle::Normal), 
+                        TextWeight::Normal,
+                        labels.font_size.unwrap_or(12.));
+                        ctx.set_text_align(TextAlign::Center);
+                        ctx.set_text_baseline(BaseLine::Alphabetic);
+
+                        for entity in series.entities.iter() {
+                          if entity.value == 0. {
+                              continue;
+                          }
+                          let x = entity.left + 0.5 * entity.width;
+                          let y = props.x_axis_top - entity.height - 5.;
+                          // TODO: bar.formatted_value
+                          let formatted_value = format!("{}", entity.value);
+                          ctx.fill_text(formatted_value.as_str(), x, y);
+                        }
+                    }
+                }
+            }
+        }
 
         return false;
     }
