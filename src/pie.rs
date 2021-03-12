@@ -66,10 +66,10 @@ impl PieEntity {
 
         if self.start_angle <= self.end_angle {
             // Clockwise.
-            is_in_range(angle, self.start_angle, self.end_angle)
+            utils::is_in_range(angle, self.start_angle, self.end_angle)
         } else {
             // Counterclockwise.
-            is_in_range(angle, self.end_angle, self.start_angle)
+            utils::is_in_range(angle, self.end_angle, self.start_angle)
         }
     }
 }
@@ -91,8 +91,8 @@ where
     C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
-        let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
-        let mut a2 = lerp(self.old_end_angle, self.end_angle, percent);
+        let mut a1 = utils::lerp(self.old_start_angle, self.start_angle, percent);
+        let mut a2 = utils::lerp(self.old_end_angle, self.end_angle, percent);
         if a1 > a2 {
             let tmp = a1;
             a1 = a2;
@@ -212,14 +212,14 @@ where
 {
     fn calculate_drawing_sizes(&self) {
         self.base.calculate_drawing_sizes();
+        let mut props = self.props.borrow_mut();
         let rect = &self.base.props.borrow().series_and_axes_box;
         let half_w = rect.size.width as i64 >> 1;
         let half_h = rect.size.height as i64 >> 1;
 
-        // self.center = Point {
-        //     x: (rect.left + half_w) as f64,
-        //     y: (rect.top + half_h) as f64,
-        // };
+        let x = rect.origin.x + half_w as f64;
+        let y = rect.origin.y + half_h as f64;
+        props.center = Point::new(x, y);
 
         // self.outer_radius = (half_w.min(half_h) as f64) / HIGHLIGHT_OUTER_RADIUS_FACTOR;
         let mut pie_hole = self.base.options.pie_hole;
@@ -232,21 +232,23 @@ where
             pie_hole = 0.0;
         }
 
-        // self.inner_radius = pie_hole * self.outer_radius;
+        props.inner_radius = pie_hole * props.outer_radius;
 
         let opt = &self.base.options.series;
+        let mut baseprops = self.base.props.borrow_mut();
+        baseprops.entity_value_formatter = if let Some(formatter) = opt.labels.formatter {
+            Some(formatter)
+        } else {
+            Some(default_value_formatter)
+        };
 
-        // FIXME: complete
-        // self.base.entity_value_formatter =
-        //     opt.labels.formatter ?? default_value_formatter;
+        props.direction = if opt.counterclockwise {
+            COUNTERCLOCKWISE
+        } else {
+            CLOCKWISE
+        };
 
-        // self.direction = if opt.counterclockwise {
-        //     COUNTERCLOCKWISE
-        // } else {
-        //     CLOCKWISE
-        // };
-
-        // self.start_angle = deg2rad(opt.start_angle);
+        props.start_angle = utils::deg2rad(opt.start_angle);
     }
 
     fn set_stream(&self, stream: DataStream<'a, M, D>) {}
@@ -327,7 +329,7 @@ where
         let series_list = self.base.series_list.borrow();
         let series = series_list.first().unwrap();
         let labels = &self.base.options.series.labels.style;
-        
+
         ctx.set_font(
             labels.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
             labels.font_style.unwrap_or(TextStyle::Normal),
@@ -343,7 +345,8 @@ where
             if entity.is_empty() && percent == 1.0 {
                 continue;
             }
-            let highlight = entity.index == focused_series_index || entity.index == focused_entity_index;
+            let highlight =
+                entity.index == focused_series_index || entity.index == focused_entity_index;
             entity.draw(ctx, percent, highlight);
         }
 

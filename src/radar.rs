@@ -38,10 +38,10 @@ where
     C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
-        let r = lerp(self.old_radius, self.radius, percent);
-        let a = lerp(self.old_angle, self.angle, percent);
-        let pr = lerp(self.old_point_radius, self.point_radius, percent);
-        let p = polar2cartesian(&self.center, r, a);
+        let r = utils::lerp(self.old_radius, self.radius, percent);
+        let a = utils::lerp(self.old_angle, self.angle, percent);
+        let pr = utils::lerp(self.old_point_radius, self.point_radius, percent);
+        let p = utils::polar2cartesian(&self.center, r, a);
         if highlight {
             ctx.set_fill_style_color(self.highlight_color);
             ctx.begin_path();
@@ -486,8 +486,8 @@ where
             for jdx in 0..point_count {
                 let entity = series.entities.get(jdx).unwrap();
                 // TODO: Optimize.
-                let radius = lerp(entity.old_radius, entity.radius, percent);
-                let angle = lerp(entity.old_angle, entity.angle, percent);
+                let radius = utils::lerp(entity.old_radius, entity.radius, percent);
+                let angle = utils::lerp(entity.old_angle, entity.angle, percent);
                 let p = utils::polar2cartesian(&props.center, radius, angle);
                 if jdx > 0 {
                     ctx.line_to(p.x, p.y);

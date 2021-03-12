@@ -73,8 +73,8 @@ impl GaugeEntity {
     }
 
     fn draw_entity<C: CanvasContext>(&self, ctx: &C, percent: f64, highlight: bool) {
-        let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
-        let mut a2 = lerp(self.old_end_angle, self.end_angle, percent);
+        let mut a1 = utils::lerp(self.old_start_angle, self.start_angle, percent);
+        let mut a2 = utils::lerp(self.old_end_angle, self.end_angle, percent);
         if a1 > a2 {
             let tmp = a1;
             a1 = a2;
@@ -134,7 +134,7 @@ where
         // Draw the percent.
         let fs1 = 0.75 * self.inner_radius;
         let family = DEFAULT_FONT_FAMILY;
-        let text1 = lerp(self.old_value, self.value, percent)
+        let text1 = utils::lerp(self.old_value, self.value, percent)
             .round()
             .to_string();
         ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);

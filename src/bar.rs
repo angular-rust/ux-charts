@@ -44,9 +44,9 @@ where
     C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
-        let x = lerp(self.old_left, self.left, percent);
-        let h = lerp(self.old_height, self.height, percent);
-        let w = lerp(self.old_width, self.width, percent);
+        let x = utils::lerp(self.old_left, self.left, percent);
+        let h = utils::lerp(self.old_height, self.height, percent);
+        let w = utils::lerp(self.old_width, self.width, percent);
         ctx.set_fill_style_color(self.color);
         ctx.fill_rect(x, self.bottom - h, w, h);
         if highlight {
@@ -469,7 +469,7 @@ where
                     continue;
                 }
 
-                let abs_angle_rad = deg2rad(angle as f64).abs();
+                let abs_angle_rad = utils::deg2rad(angle as f64).abs();
                 let label_spacing = if angle == 0 {
                     scaled_label_hop - props.xlabel_max_width
                 } else {

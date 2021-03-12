@@ -29,11 +29,10 @@ pub use pie::*;
 mod radar;
 pub use radar::*;
 
-mod utils;
-pub use utils::*;
+pub mod utils;
 
-// pub(crate) const CLOCKWISE: i64 = 1;
-// pub(crate) const COUNTERCLOCKWISE: i64 = -1;
+pub(crate) const CLOCKWISE: i64 = 1;
+pub(crate) const COUNTERCLOCKWISE: i64 = -1;
 pub(crate) const HIGHLIGHT_OUTER_RADIUS_FACTOR: f64 = 1.05;
 
 pub const PI: f64 = std::f64::consts::PI;

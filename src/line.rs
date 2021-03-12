@@ -51,9 +51,9 @@ where
     C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
-        let cx = lerp(self.old_x, self.x, percent);
-        let cy = lerp(self.old_y, self.y, percent);
-        let pr = lerp(self.old_point_radius, self.point_radius, percent);
+        let cx = utils::lerp(self.old_x, self.x, percent);
+        let cy = utils::lerp(self.old_y, self.y, percent);
+        let pr = utils::lerp(self.old_point_radius, self.point_radius, percent);
         if highlight {
             ctx.set_fill_style_color(self.highlight_color);
             ctx.begin_path();
