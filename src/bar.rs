@@ -208,29 +208,49 @@ where
             return;
         }
 
-        // let entity_count = self.base.series_list.first.entities.len();
-        // let start = index ?? 0;
-        // let end = index == null ? entity_count : index + 1;
+        let mut props = self.props.borrow_mut();
+        let entity_count = self
+            .base
+            .series_list
+            .borrow()
+            .first()
+            .unwrap()
+            .entities
+            .len();
+        let start = if index == 0 { index } else { 0 };
+        let end = if index == 0 { entity_count } else { index + 1 };
 
-        // average_y_values ??= <num>[];
-        // average_y_values.len() = entity_count;
+        props
+            .average_y_values
+            .resize(entity_count, Default::default());
 
-        // for (let i = start; i < end; i++) {
-        //   let sum = 0.0;
-        //   let count = 0;
-        //   for (let j = series_list.len() - 1; j >= 0; j--) {
-        //     let state = seriesStates[j];
-        //     if (state == Visibility::hidden) continue;
-        //     if (state == Visibility::hiding) continue;
+        let series_list = self.base.series_list.borrow();
+        let series_states = &self.base.props.borrow().series_states;
 
-        //     let bar = series_list[j].entities[i] as Bar;
-        //     if (bar.value != null) {
-        //       sum += bar.height;
-        //       count++;
-        //     }
-        //   }
-        //   average_y_values[i] = (count > 0) ? xAxisTop - sum / count : null;
-        // }
+        for idx in start..end {
+            let mut sum = 0.0;
+            let mut count = 0;
+            for jdx in series_list.len()..0 {
+                let series_state = series_states[idx];
+
+                if series_state == Visibility::Hidden || series_state == Visibility::Hiding {
+                    continue;
+                }
+
+                let series = series_list.get(jdx).unwrap();
+
+                let bar = series.entities.get(idx).unwrap();
+                if bar.value != 0. {
+                    sum += bar.height;
+                    count += 1;
+                }
+            }
+            props.average_y_values[idx] = if count > 0 {
+                props.x_axis_top - sum / count as f64
+            } else {
+                0.
+            };
+        }
     }
 
     fn series_visibility_changed(&self, index: usize) {
@@ -255,8 +275,6 @@ where
         self.update_bar_width();
 
         // y-axis min-max.
-        let mut props = self.props.borrow_mut();
-
         props.y_max_value = if let Some(value) = self.base.options.y_axis.max_value {
             value as f64
         } else {
@@ -776,21 +794,24 @@ where
                 if percent == 1.0 {
                     if let Some(labels) = labels {
                         ctx.set_fill_style_color(labels.color);
-                        ctx.set_font(labels.font_family.unwrap_or(DEFAULT_FONT_FAMILY), labels.font_style.unwrap_or(TextStyle::Normal), 
-                        TextWeight::Normal,
-                        labels.font_size.unwrap_or(12.));
+                        ctx.set_font(
+                            labels.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+                            labels.font_style.unwrap_or(TextStyle::Normal),
+                            TextWeight::Normal,
+                            labels.font_size.unwrap_or(12.),
+                        );
                         ctx.set_text_align(TextAlign::Center);
                         ctx.set_text_baseline(BaseLine::Alphabetic);
 
                         for entity in series.entities.iter() {
-                          if entity.value == 0. {
-                              continue;
-                          }
-                          let x = entity.left + 0.5 * entity.width;
-                          let y = props.x_axis_top - entity.height - 5.;
-                          // TODO: bar.formatted_value
-                          let formatted_value = format!("{}", entity.value);
-                          ctx.fill_text(formatted_value.as_str(), x, y);
+                            if entity.value == 0. {
+                                continue;
+                            }
+                            let x = entity.left + 0.5 * entity.width;
+                            let y = props.x_axis_top - entity.height - 5.;
+                            // TODO: bar.formatted_value
+                            let formatted_value = format!("{}", entity.value);
+                            ctx.fill_text(formatted_value.as_str(), x, y);
                         }
                     }
                 }
