@@ -224,20 +224,23 @@ where
     fn calculate_drawing_sizes(&self) {
         self.base.calculate_drawing_sizes();
 
-        // let gaugeCount = self.base.data_table.rows.len();
-        // let labelTotalHeight = 0;
-        // if (self.base.options.gauge_labels.enabled) {
-        //   labelTotalHeight =
-        //       AXIS_LABEL_MARGIN + self.base.options.gauge_labels.style.font_size;
-        // }
+        let mut props = self.props.borrow_mut();
 
-        // gauge_center_y = series_and_axes_box.top + .5 * series_and_axes_box.height;
-        // gauge_hop = self.base.series_and_axes_box.width / gaugeCount;
+        let gauge_count = self.base.data_table.frames.len();
+        let mut label_total_height = 0.;
 
-        // let availW = .618 * gauge_hop; // Golden ratio.
-        // let availH = self.base.series_and_axes_box.height - 2 * labelTotalHeight;
-        // gaugeOuterRadius = .5 * min(availW, availH) / HIGHLIGHT_OUTER_RADIUS_FACTOR;
-        // gaugeInnerRadius = .5 * gaugeOuterRadius;
+        if let Some(style) = &self.base.options.labels {
+            label_total_height = AXIS_LABEL_MARGIN as f64 + style.font_size.unwrap_or(12.);
+        }
+
+        let series_and_axes_box = &self.base.props.borrow().series_and_axes_box;
+        props.gauge_center_y = series_and_axes_box.origin.y + 0.5 * series_and_axes_box.size.height;
+        props.gauge_hop = series_and_axes_box.size.width / gauge_count as f64;
+
+        let avail_w = 0.618 * props.gauge_hop; // Golden ratio.
+        let avail_h = series_and_axes_box.size.height - 2. * label_total_height as f64;
+        props.gauge_outer_radius = 0.5 * avail_w.min(avail_h) / HIGHLIGHT_OUTER_RADIUS_FACTOR;
+        props.gauge_inner_radius = 0.5 * props.gauge_outer_radius;
     }
 
     fn set_stream(&self, stream: DataStream<'a, M, D>) {}
@@ -283,13 +286,13 @@ where
             percent = 1.0;
 
             // Update the visibility states of all series before the last frame.
-            let mut props = self.base.props.borrow_mut();
+            let mut baseprops = self.base.props.borrow_mut();
 
-            for idx in props.series_states.len()..0 {
-                if props.series_states[idx] == Visibility::Showing {
-                    props.series_states[idx] = Visibility::Shown;
-                } else if props.series_states[idx] == Visibility::Hiding {
-                    props.series_states[idx] = Visibility::Hidden;
+            for idx in baseprops.series_states.len()..0 {
+                if baseprops.series_states[idx] == Visibility::Showing {
+                    baseprops.series_states[idx] = Visibility::Shown;
+                } else if baseprops.series_states[idx] == Visibility::Hiding {
+                    baseprops.series_states[idx] = Visibility::Hidden;
                 }
             }
         }
