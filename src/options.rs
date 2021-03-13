@@ -518,7 +518,7 @@ pub struct LineChartYAxisOptions<'a> {
 
     /// The interval of the tick marks in axis unit. If `null`, this value
     /// is automatically calculated.
-    pub interval: Option<usize>,
+    pub interval: Option<f64>,
 
     /// An object that controls the axis labels.
     pub labels: LineChartYAxisLabelsOptions<'a>,
