@@ -477,13 +477,13 @@ pub struct LineChartXAxisOptions<'a> {
     pub grid_line_color: Color,
 
     /// The width of the horizontal grid lines.
-    pub grid_line_width: usize,
+    pub grid_line_width: f64,
 
     /// The color of the axis itself.
     pub line_color: Color,
 
     /// The width of the axis itself.
-    pub line_width: usize,
+    pub line_width: f64,
 
     /// An object that controls the axis labels.
     pub labels: LineChartXAxisLabelsOptions<'a>,
@@ -508,13 +508,13 @@ pub struct LineChartYAxisOptions<'a> {
     pub grid_line_color: Color,
 
     /// The width of the vertical grid lines.
-    pub grid_line_width: usize,
+    pub grid_line_width: f64,
 
     /// The color of the axis itself.
     pub line_color: Color,
 
     /// The width of the axis itself.
-    pub line_width: usize,
+    pub line_width: f64,
 
     /// The interval of the tick marks in axis unit. If `null`, this value
     /// is automatically calculated.
@@ -617,9 +617,9 @@ impl<'a> Default for LineChartOptions<'a> {
             },
             x_axis: LineChartXAxisOptions {
                 grid_line_color: palette::GRAY_5,
-                grid_line_width: 1,
+                grid_line_width: 1.,
                 line_color: palette::GRAY_5,
-                line_width: 1,
+                line_width: 1.,
                 labels: LineChartXAxisLabelsOptions {
                     max_rotation: 0,
                     min_rotation: -90,
@@ -633,9 +633,9 @@ impl<'a> Default for LineChartOptions<'a> {
             },
             y_axis: LineChartYAxisOptions {
                 grid_line_color: palette::GRAY_5,
-                grid_line_width: 0,
+                grid_line_width: 0.,
                 line_color: palette::GRAY_5,
-                line_width: 0,
+                line_width: 0.,
                 interval: None,
                 labels: LineChartYAxisLabelsOptions {
                     formatter: None,

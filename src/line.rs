@@ -92,8 +92,8 @@ struct LineChartProperties {
     ylabel_hop: f64, // Distance between two consecutive x-axis labels.
     x_title_box: Rect<f64>,
     y_title_box: Rect<f64>,
-    x_title_center: Point<f64>,
-    y_title_center: Point<f64>,
+    x_title_center: Option<Point<f64>>,
+    y_title_center: Option<Point<f64>>,
     xlabels: Vec<String>,
     ylabels: Vec<String>,
     y_interval: f64,
@@ -222,44 +222,47 @@ where
     }
 
     fn lerp_points(&self, points: &Vec<LinePoint>, percent: f64) -> Vec<LinePoint> {
-        points.iter().map(|p|{
-            let x = utils::lerp(p.old_x, p.x, percent);
-            let y = utils::lerp(p.old_y, p.y, percent);
-            
-            let cp1 = if p.cp1 != Default::default() {
-                // FIXME: 
-                // utils::lerp(p.old_cp1, p.cp1, percent)
-                Default::default()
-            } else {
-                Default::default()
-            };
+        points
+            .iter()
+            .map(|p| {
+                let x = utils::lerp(p.old_x, p.x, percent);
+                let y = utils::lerp(p.old_y, p.y, percent);
 
-            let cp2 = if p.cp2 != Default::default() {
-                // FIXME: 
-                // utils::lerp(p.old_cp2, p.cp2, percent)
-                Default::default()
-            } else {
-                Default::default()
-            };
-            
-            LinePoint{
-                index: p.index,
-                old_value: 0.,
-                value: p.value,
-                color: p.color,
-                highlight_color: p.highlight_color,
-                old_point_radius: p.old_point_radius,
-                old_cp1: Default::default(),
-                old_cp2: Default::default(),
-                old_x: p.old_x,
-                old_y: p.old_y,
-                point_radius: p.point_radius,
-                x,
-                y,
-                cp1,
-                cp2,
-            }
-        }).collect()
+                let cp1 = if p.cp1 != Default::default() {
+                    // FIXME:
+                    // utils::lerp(p.old_cp1, p.cp1, percent)
+                    Default::default()
+                } else {
+                    Default::default()
+                };
+
+                let cp2 = if p.cp2 != Default::default() {
+                    // FIXME:
+                    // utils::lerp(p.old_cp2, p.cp2, percent)
+                    Default::default()
+                } else {
+                    Default::default()
+                };
+
+                LinePoint {
+                    index: p.index,
+                    old_value: 0.,
+                    value: p.value,
+                    color: p.color,
+                    highlight_color: p.highlight_color,
+                    old_point_radius: p.old_point_radius,
+                    old_cp1: Default::default(),
+                    old_cp2: Default::default(),
+                    old_x: p.old_x,
+                    old_y: p.old_y,
+                    point_radius: p.point_radius,
+                    x,
+                    y,
+                    cp1,
+                    cp2,
+                }
+            })
+            .collect()
     }
 
     fn series_visibility_changed(&self, index: usize) {
@@ -528,177 +531,187 @@ where
     /// Draws the axes and the grid.
     ///
     fn draw_axes_and_grid(&self, ctx: &C) {
-        self.base.draw_axes_and_grid(ctx);
-        // TODO: if ok then remove below commented code
-        // coz it implemented in basis
+        // x-axis title.
+        let props = self.props.borrow();
+        if let Some(x_title_center) = props.x_title_center {
+            let opt = &self.base.options.x_axis.title;
+            if let Some(text) = opt.text {
+                let style = &opt.style;
+                ctx.save();
+                ctx.set_fill_style_color(opt.style.color);
+                ctx.set_font(
+                    &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+                    style.font_style.unwrap_or(TextStyle::Normal),
+                    TextWeight::Normal,
+                    style.font_size.unwrap_or(12.),
+                );
+                ctx.set_text_align(TextAlign::Center);
+                ctx.set_text_baseline(BaseLine::Middle);
+                ctx.fill_text(opt.text.unwrap(), x_title_center.x, x_title_center.y);
+                ctx.restore();
+            }
+        }
 
-        // // x-axis title.
+        // y-axis title.
+        if let Some(y_title_center) = props.y_title_center {
+            let opt = &self.base.options.y_axis.title;
+            if let Some(text) = opt.text {
+                let style = &opt.style;
+                ctx.save();
+                ctx.set_fill_style_color(style.color);
+                ctx.set_font(
+                    &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+                    style.font_style.unwrap_or(TextStyle::Normal),
+                    TextWeight::Normal,
+                    style.font_size.unwrap_or(12.),
+                );
 
-        // if (x_title_center != null) {
-        //   let opt = self.base.options.x_axis.title;
-        //   ctx.set_fill_style_color(opt.style.color);
-        // ctx.set_font(
-        //     opt.style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-        //     opt.style.font_style.unwrap_or(TextStyle::Normal),
-        //     TextWeight::Normal,
-        //     opt.style.font_size.unwrap_or(12.),
-        // );
-        //   ctx.set_text_align(TextAlign::Center);
-        //   ctx.set_text_baseline(BaseLine::Middle);
-        //   ctx.fill_text(opt.text, x_title_center.x, x_title_center.y);
-        // }
+                ctx.translate(y_title_center.x, y_title_center.y);
+                ctx.rotate(-std::f64::consts::FRAC_PI_2);
+                ctx.set_text_align(TextAlign::Center);
+                ctx.set_text_baseline(BaseLine::Middle);
+                ctx.fill_text(text, 0., 0.);
+                ctx.restore();
+            }
+        }
 
-        // // y-axis title.
+        // x-axis labels.
+        let opt = &self.base.options.x_axis.labels;
+        let style = &opt.style;
+        ctx.set_fill_style_color(style.color);
 
-        // if (y_title_center != null) {
-        //   let opt = self.base.options.y_axis.title;
-        //   ctx
-        //     ..save()
-        //     ..fillStyle = opt.style.["color"]
-        //     ..font = get_font(opt.style.)
+        ctx.set_font(
+            &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+            style.font_style.unwrap_or(TextStyle::Normal),
+            TextWeight::Normal,
+            style.font_size.unwrap_or(12.),
+        );
 
-        // ctx.set_font(
-        //     opt.style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-        //     opt.style.font_style.unwrap_or(TextStyle::Normal),
-        //     TextWeight::Normal,
-        //     opt.style.font_size.unwrap_or(12.),
-        // );
+        let mut x = self.xlabel_x(0);
+        let mut y = props.x_axis_top + AXIS_LABEL_MARGIN as f64 + style.font_size.unwrap_or(12.);
+        let scaled_label_hop = props.xlabel_step as f64 * props.xlabel_hop;
 
-        //     ..translate(y_title_center.x, y_title_center.y)
-        //     ..rotate(-PI_2)
-        //     ..textAlign = TextAlign::Center
-        //     ..textBaseline = BaseLine::Middle
-        //     ..fill_text(opt["text"], 0, 0)
-        //     ..restore();
-        // }
+        if props.xlabel_rotation == 0. {
+            ctx.set_text_align(TextAlign::Center);
+            ctx.set_text_baseline(BaseLine::Alphabetic);
 
-        // // x-axis labels.
+            let mut idx = 0;
+            while idx < props.xlabels.len() {
+                ctx.fill_text(props.xlabels.get(idx).unwrap().as_str(), x, y);
+                x += scaled_label_hop;
+                idx += props.xlabel_step as usize;
+            }
+        } else {
+            ctx.set_text_align(if props.xlabel_rotation < 0. {
+                TextAlign::Right
+            } else {
+                TextAlign::Left
+            });
+            ctx.set_text_baseline(BaseLine::Middle);
+            if props.xlabel_rotation == 90. {
+                x += props.xlabel_rotation.signum()
+                    * ((style.font_size.unwrap_or(12.) / 8.).trunc());
+            }
+            let angle = utils::deg2rad(props.xlabel_rotation);
 
-        // let opt = self.base.options.x_axis.labels;
-        // ctx.fillStyle = opt.style.["color"];
-        // ctx.font = get_font(opt.style.);
+            let mut idx = 0;
+            while idx < props.xlabels.len() {
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.fill_text(props.xlabels.get(idx).unwrap().as_str(), 0., 0.);
+                ctx.restore();
+                x += scaled_label_hop;
+                idx += props.xlabel_step as usize;
+            }
+        }
 
-        // ctx.set_font(
-        //     opt.style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-        //     opt.style.font_style.unwrap_or(TextStyle::Normal),
-        //     TextWeight::Normal,
-        //     opt.style.font_size.unwrap_or(12.),
-        // );
+        // y-axis labels.
+        let opt = &self.base.options.y_axis.labels;
+        let style = &opt.style;
+        ctx.set_fill_style_color(opt.style.color);
 
-        // let x = xlabel_x(0);
-        // let y = x_axis_top + AXIS_LABEL_MARGIN + opt.style.["font_size"];
-        // let scaledLabelHop = xlabel_step * xlabel_hop;
+        ctx.set_font(
+            &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+            style.font_style.unwrap_or(TextStyle::Normal),
+            TextWeight::Normal,
+            style.font_size.unwrap_or(12.),
+        );
 
-        // if (xlabel_rotation == 0) {
-        //   ctx.textAlign = TextAlign::Center;
-        //   ctx.textBaseline = "alphabetic";
-        //   for (let i = 0; i < xlabels.len(); i += xlabel_step) {
-        //     ctx.fill_text(xlabels[i], x, y);
-        //     x += scaledLabelHop;
-        //   }
-        // } else {
-        //   ctx.textAlign = xlabel_rotation < 0 ? "right" : "left";
-        //   ctx.textBaseline = BaseLine::Middle;
-        //   if (xlabel_rotation == 90) {
-        //     x += xlabel_rotation.sign * (opt.style.["font_size"] / 8).trunc();
-        //   }
-        //   let angle = deg2rad(xlabel_rotation);
-        //   for (let i = 0; i < xlabels.len(); i += xlabel_step) {
-        //     ctx
-        //       ..save()
-        //       ..translate(x, y)
-        //       ..rotate(angle)
-        //       ..fill_text(xlabels[i], 0, 0)
-        //       ..restore();
-        //     x += scaledLabelHop;
-        //   }
-        // }
+        ctx.set_text_align(TextAlign::Right);
+        ctx.set_text_baseline(BaseLine::Middle);
+        x = props.y_axis_left - AXIS_LABEL_MARGIN as f64;
+        y = props.x_axis_top - (style.font_size.unwrap_or(12.) / 8.).trunc();
+        for label in props.ylabels.iter() {
+            ctx.fill_text(label.as_str(), x, y);
+            y -= props.ylabel_hop;
+        }
 
-        // // y-axis labels.
+        // x grid lines - draw bottom up.
+        let opt = &self.base.options.x_axis;
+        if opt.grid_line_width > 0. {
+            ctx.set_line_width(opt.grid_line_width);
+            ctx.set_stroke_style_color(opt.grid_line_color);
+            ctx.begin_path();
+            y = props.x_axis_top - props.ylabel_hop;
+            // TODO: should draw 2 and len - 1 lines
+            for idx in 0..props.ylabels.len() {
+                ctx.move_to(props.y_axis_left, y);
+                ctx.line_to(props.y_axis_left + props.x_axis_length, y);
+                y -= props.ylabel_hop;
+            }
+            ctx.stroke();
+        }
 
-        // ctx
-        //   ..fillStyle = self.base.options.y_axis.labels.style.color
+        // y grid lines or x-axis ticks - draw from left to right.
+        let opt = &self.base.options.y_axis;
+        let mut line_width = opt.grid_line_width;
+        x = props.y_axis_left;
 
-        // ctx.set_font(
-        //     opt.style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-        //     opt.style.font_style.unwrap_or(TextStyle::Normal),
-        //     TextWeight::Normal,
-        //     opt.style.font_size.unwrap_or(12.),
-        // );
+        if props.xlabel_step > 1 {
+            x = self.xlabel_x(0);
+        }
 
-        //   ..font = get_font(self.base.options.y_axis.labels.style)
-        //   ..textAlign = "right"
-        //   ..textBaseline = BaseLine::Middle;
-        // x = y_axis_left - AXIS_LABEL_MARGIN;
-        // y = x_axis_top - (self.base.options.y_axis.labels.style.font_size / 8).trunc();
-        // for (let label in ylabels) {
-        //   ctx.fill_text(label, x, y);
-        //   y -= ylabel_hop;
-        // }
+        if line_width > 0. {
+            y = props.x_axis_top - props.y_axis_length;
+        } else {
+            line_width = 1.;
+            y = props.x_axis_top + AXIS_LABEL_MARGIN as f64;
+        }
 
-        // // x grid lines - draw bottom up.
+        ctx.set_line_width(line_width);
+        ctx.set_stroke_style_color(opt.grid_line_color);
+        ctx.begin_path();
+        let mut idx = 0;
+        while idx < props.xlabels.len() {
+            ctx.move_to(x, y);
+            ctx.line_to(x, props.x_axis_top);
+            x += scaled_label_hop;
+            idx += props.xlabel_step as usize;
+        }
+        ctx.stroke();
 
-        // if (self.base.options.x_axis.grid_line_width > 0) {
-        //   ctx
-        //     ..line_width = self.base.options.x_axis.grid_line_width
-        //     ..strokeStyle = self.base.options.x_axis.grid_line_color
-        //     ..begin_path();
-        //   y = x_axis_top - ylabel_hop;
-        //   for (let i = ylabels.len() - 1; i >= 1; i--) {
-        //     ctx.move_to(y_axis_left, y);
-        //     ctx.line_to(y_axis_left + x_axis_length, y);
-        //     y -= ylabel_hop;
-        //   }
-        //   ctx.stroke();
-        // }
+        // x-axis itself.
+        let opt = &self.base.options.x_axis;
+        if opt.line_width > 0. {
+            ctx.set_line_width(opt.line_width);
+            ctx.set_stroke_style_color(opt.line_color);
+            ctx.begin_path();
+            ctx.move_to(props.y_axis_left, props.x_axis_top);
+            ctx.line_to(props.y_axis_left + props.x_axis_length, props.x_axis_top);
+            ctx.stroke();
+        }
 
-        // // y grid lines or x-axis ticks - draw from left to right.
-
-        // let line_width = self.base.options.y_axis.grid_line_width;
-        // x = y_axis_left;
-        // if (xlabel_step > 1) {
-        //   x = xlabel_x(0);
-        // }
-        // if (line_width > 0) {
-        //   y = x_axis_top - y_axis_length;
-        // } else {
-        //   line_width = 1;
-        //   y = x_axis_top + AXIS_LABEL_MARGIN;
-        // }
-        // ctx
-        //   ..line_width = line_width
-        //   ..strokeStyle = self.base.options.y_axis.grid_line_color
-        //   ..begin_path();
-        // for (let i = 0; i < xlabels.len(); i += xlabel_step) {
-        //   ctx.move_to(x, y);
-        //   ctx.line_to(x, x_axis_top);
-        //   x += scaledLabelHop;
-        // }
-        // ctx.stroke();
-
-        // // x-axis itself.
-
-        // if (self.base.options.x_axis.line_width > 0) {
-        //   ctx
-        //     ..line_width = self.base.options.x_axis.line_width
-        //     ..strokeStyle = self.base.options.x_axis.line_color
-        //     ..begin_path()
-        //     ..move_to(y_axis_left, x_axis_top)
-        //     ..line_to(y_axis_left + x_axis_length, x_axis_top)
-        //     ..stroke();
-        // }
-
-        // // y-axis itself.
-
-        // if (self.base.options.y_axis.line_width > 0) {
-        //   ctx
-        //     ..line_width = self.base.options.y_axis.line_width
-        //     ..strokeStyle = self.base.options.y_axis.line_color
-        //     ..begin_path()
-        //     ..move_to(y_axis_left, x_axis_top - y_axis_length)
-        //     ..line_to(y_axis_left, x_axis_top)
-        //     ..stroke();
-        // }
+        // y-axis itself.
+        let opt = &self.base.options.y_axis;
+        if opt.line_width > 0. {
+            ctx.set_line_width(opt.line_width);
+            ctx.set_stroke_style_color(opt.line_color);
+            ctx.begin_path();
+            ctx.move_to(props.y_axis_left, props.x_axis_top - props.y_axis_length);
+            ctx.line_to(props.y_axis_left, props.x_axis_top);
+            ctx.stroke();
+        }
     }
 
     /// Draws the current animation frame.
