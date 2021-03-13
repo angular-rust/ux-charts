@@ -2,14 +2,11 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
-use ux_dataflow::*;
-use ux_primitives::{
-    canvas::{CanvasContext, LineJoin},
-    color::Color,
-    geom::{Point, Rect},
-    text::{BaseLine, TextAlign, TextStyle, TextWeight},
+use dataflow::*;
+use primitives::{
+    BaseLine, CanvasContext, Color, LineJoin, Point, Rect, TextAlign, TextStyle, TextWeight,
 };
+use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use crate::*;
 
@@ -337,7 +334,12 @@ where
         //     let xTitleHeight = 0;
         //     let xTitle = self.base.options.x_axis.title;
         //     if (xTitle["text"] != null) {
-        //       context.font = get_font(xTitle["style"]);
+        // ctx.set_font(
+        //     xTitle.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+        //     xTitle.font_style.unwrap_or(TextStyle::Normal),
+        //     TextWeight::Normal,
+        //     xTitle.font_size.unwrap_or(12.),
+        // );
         //       xTitleWidth = context.measure_text(xTitle["text"]).width.round() +
         //           2 * TITLE_PADDING;
         //       xTitleHeight = xTitle["style"]["font_size"] + 2 * TITLE_PADDING;
@@ -352,7 +354,12 @@ where
         //     let yTitleHeight = 0;
         //     let yTitle = self.base.options.y_axis.title;
         //     if (yTitle["text"] != null) {
-        //       context.font = get_font(yTitle["style"]);
+        // ctx.set_font(
+        //     yTitle.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+        //     yTitle.font_style.unwrap_or(TextStyle::Normal),
+        //     TextWeight::Normal,
+        //     yTitle.font_size.unwrap_or(12.),
+        // );
         //       yTitleHeight = context.measure_text(yTitle["text"]).width.round() +
         //           2 * TITLE_PADDING;
         //       yTitleWidth = yTitle["style"]["font_size"] + 2 * TITLE_PADDING;
@@ -493,7 +500,12 @@ where
         // if (x_title_center != null) {
         //   let opt = self.base.options.x_axis.title;
         //   ctx.set_fill_style_color(opt.style.color);
-        //   ctx.set_font(utils::get_font(opt.style))
+        // ctx.set_font(
+        //     opt.style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+        //     opt.style.font_style.unwrap_or(TextStyle::Normal),
+        //     TextWeight::Normal,
+        //     opt.style.font_size.unwrap_or(12.),
+        // );
         //   ctx.set_text_align(TextAlign::Center);
         //   ctx.set_text_baseline(BaseLine::Middle);
         //   ctx.fill_text(opt.text, x_title_center.x, x_title_center.y);
@@ -507,6 +519,14 @@ where
         //     ..save()
         //     ..fillStyle = opt.style.["color"]
         //     ..font = get_font(opt.style.)
+
+        // ctx.set_font(
+        //     opt.style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+        //     opt.style.font_style.unwrap_or(TextStyle::Normal),
+        //     TextWeight::Normal,
+        //     opt.style.font_size.unwrap_or(12.),
+        // );
+
         //     ..translate(y_title_center.x, y_title_center.y)
         //     ..rotate(-PI_2)
         //     ..textAlign = TextAlign::Center
@@ -520,6 +540,14 @@ where
         // let opt = self.base.options.x_axis.labels;
         // ctx.fillStyle = opt.style.["color"];
         // ctx.font = get_font(opt.style.);
+
+        // ctx.set_font(
+        //     opt.style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+        //     opt.style.font_style.unwrap_or(TextStyle::Normal),
+        //     TextWeight::Normal,
+        //     opt.style.font_size.unwrap_or(12.),
+        // );
+
         // let x = xlabel_x(0);
         // let y = x_axis_top + AXIS_LABEL_MARGIN + opt.style.["font_size"];
         // let scaledLabelHop = xlabel_step * xlabel_hop;
@@ -553,6 +581,14 @@ where
 
         // ctx
         //   ..fillStyle = self.base.options.y_axis.labels.style.color
+
+        // ctx.set_font(
+        //     opt.style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+        //     opt.style.font_style.unwrap_or(TextStyle::Normal),
+        //     TextWeight::Normal,
+        //     opt.style.font_size.unwrap_or(12.),
+        // );
+
         //   ..font = get_font(self.base.options.y_axis.labels.style)
         //   ..textAlign = "right"
         //   ..textBaseline = BaseLine::Middle;

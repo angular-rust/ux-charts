@@ -1,12 +1,9 @@
-use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
-use ux_animate::easing::{Easing, EasingFunction};
-use ux_dataflow::*;
-use ux_primitives::{
-    canvas::CanvasContext,
-    color::{palette, Color},
-    geom::{Point, Rect, Size},
-    text::TextAlign,
+use animate::easing::{Easing, EasingFunction};
+use dataflow::*;
+use primitives::{
+    palette, CanvasContext, Color, Point, Rect, Size, TextAlign, TextStyle, TextWeight,
 };
+use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use super::*;
 
@@ -249,6 +246,12 @@ where
             // FIXME: complete
             // let context = self.context.unwrap();
             //   context.set_font(get_font(title.style).as_str());
+            // ctx.set_font(
+            //     title.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+            //     title.font_style.unwrap_or(TextStyle::Normal),
+            //     TextWeight::Normal,
+            //     title.font_size.unwrap_or(12.),
+            // );
             //   title_w =
             //       context.measure_text(title["text"]).width.round() + 2 * TITLE_PADDING;
             //   title_x = ((width - titleW - 2 * TITLE_PADDING) / 2).trunc();
@@ -375,10 +378,16 @@ where
             let x = ((props.title_box.origin.x + props.title_box.size.width) / 2.).trunc();
             let y = (props.title_box.origin.y + props.title_box.size.height) - TITLE_PADDING;
             println!("Title [{}] {},{}", text, x, y);
-            // ctx.set_font(utils::get_font(title.style));
-            // ctx.set_fill_style_color(title.style.color));
-            // ctx.set_text_align(TextAlign::Center);
-            // ctx.fill_text(title.text, x, y);
+            let style = &title.style;
+            ctx.set_font(
+                style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+                style.font_style.unwrap_or(TextStyle::Normal),
+                TextWeight::Normal,
+                style.font_size.unwrap_or(12.),
+            );
+            ctx.set_fill_style_color(title.style.color);
+            ctx.set_text_align(TextAlign::Center);
+            ctx.fill_text(title.text.unwrap(), x, y);
         }
     }
 
@@ -410,7 +419,7 @@ where
         println!("BaseChart position_legend");
         let props = self.props.borrow();
         if let Some(legend) = props.legend {
-            // let s = self.legend.style;
+            // let s = legend.style;
             // switch (self.options.legend().position) {
             // case "right":
             //     s.right = "${CHART_PADDING}px";

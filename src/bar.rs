@@ -3,15 +3,12 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
-use ux_animate::easing::{get_easing, Easing};
-use ux_dataflow::*;
-use ux_primitives::{
-    canvas::CanvasContext,
-    color::Color,
-    geom::{Point, Rect, Size},
-    text::{BaseLine, TextAlign, TextStyle, TextWeight},
+use animate::easing::{get_easing, Easing};
+use dataflow::*;
+use primitives::{
+    BaseLine, CanvasContext, Color, Point, Rect, Size, TextAlign, TextStyle, TextWeight,
 };
+use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use crate::*;
 
@@ -387,7 +384,12 @@ where
         let xtitle = &self.base.options.x_axis.title;
 
         // if xtitle.text != null {
-        //     context.font = get_font(xtitle.style);
+        // ctx.set_font(
+        //     xtitle.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+        //     xtitle.font_style.unwrap_or(TextStyle::Normal),
+        //     TextWeight::Normal,
+        //     xtitle.font_size.unwrap_or(12.),
+        // );
         //     xtitle_width = context.measure_text(xtitle.text).width.round() +
         //         2 * TITLE_PADDING;
         //     xtitle_height = xtitle.style.font_size + 2 * TITLE_PADDING;
@@ -402,7 +404,12 @@ where
         let ytitle = &self.base.options.y_axis.title;
 
         // if ytitle.text != null {
-        //     context.font = get_font(ytitle.style);
+        // ctx.set_font(
+        //     ytitle.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+        //     ytitle.font_style.unwrap_or(TextStyle::Normal),
+        //     TextWeight::Normal,
+        //     ytitle.font_size.unwrap_or(12.),
+        // );
         //     ytitle_height = context.measure_text(ytitle.text).width.round() +
         //         2 * TITLE_PADDING;
         //     ytitle_width = ytitle.style.font_size + 2 * TITLE_PADDING;
@@ -418,7 +425,8 @@ where
             props.y_axis_left += AXIS_LABEL_MARGIN as f64;
         }
 
-        props.x_axis_length = (series_and_axes_box.origin.x + series_and_axes_box.size.width) - props.y_axis_left;
+        props.x_axis_length =
+            (series_and_axes_box.origin.x + series_and_axes_box.size.width) - props.y_axis_left;
 
         props.x_axis_top = series_and_axes_box.origin.y + series_and_axes_box.size.height;
         if xtitle_height > 0. {
@@ -433,9 +441,7 @@ where
         props.xlabels = Vec::new();
         for idx in 0..row_count {
             let row = self.base.data_table.meta.get(idx).unwrap();
-            props
-                .xlabels
-                .push(row.name.to_string());
+            props.xlabels.push(row.name.to_string());
         }
 
         // TODO: fix me

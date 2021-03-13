@@ -2,14 +2,9 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
+use dataflow::*;
+use primitives::{palette, CanvasContext, Color, Point, TextAlign, TextStyle, TextWeight};
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
-use ux_dataflow::*;
-use ux_primitives::{
-    canvas::CanvasContext,
-    color::{palette, Color},
-    geom::Point,
-    text::{TextAlign, TextStyle, TextWeight},
-};
 
 use crate::*;
 

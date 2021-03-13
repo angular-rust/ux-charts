@@ -1,5 +1,6 @@
 use super::{LabelFormatter, ValueFormatter};
-use ux_primitives::{color::{palette, Color}, text::TextStyle};
+use primitives::{palette, Color, TextStyle};
+
 pub trait BaseOption<'a> {
     fn animation(&self) -> &AnimationOptions;
     fn colors(&self) -> &Vec<Color>;

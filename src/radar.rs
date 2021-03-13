@@ -2,14 +2,11 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
-use ux_dataflow::*;
-use ux_primitives::{
-    canvas::CanvasContext,
-    color::Color,
-    geom::{Point, Rect, Size},
-    text::{BaseLine, TextAlign, TextStyle, TextWeight},
+use dataflow::*;
+use primitives::{
+    BaseLine, CanvasContext, Color, Point, Rect, Size, TextAlign, TextStyle, TextWeight,
 };
+use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use crate::*;
 
@@ -221,13 +218,13 @@ where
         let series = series_list.get_mut(index).unwrap();
 
         for entity in series.entities.iter_mut() {
-          if visible {
-            entity.radius = self.value2radius(entity.value);
-            entity.point_radius = marker_size;
-          } else {
-            entity.radius = 0.0;
-            entity.point_radius = 0.;
-          }
+            if visible {
+                entity.radius = self.value2radius(entity.value);
+                entity.point_radius = marker_size;
+            } else {
+                entity.radius = 0.0;
+                entity.point_radius = 0.;
+            }
         }
 
         self.calculate_bounding_boxes();
@@ -255,21 +252,23 @@ where
 
         // [_radius]*factor equals the height of the largest polygon.
         let factor = 1. + ((props.xlabels.len() >> 1) as f64 * props.angle_interval - PI_2).sin();
-        props.radius = rect.size.width.min(rect.size.height) / factor -
-            factor * (xlabel_font_size + AXIS_LABEL_MARGIN as f64);
-        props.center =
-            Point::new(rect.origin.x + rect.size.width / 2., rect.origin.y + rect.size.height / factor);
+        props.radius = rect.size.width.min(rect.size.height) / factor
+            - factor * (xlabel_font_size + AXIS_LABEL_MARGIN as f64);
+        props.center = Point::new(
+            rect.origin.x + rect.size.width / 2.,
+            rect.origin.y + rect.size.height / factor,
+        );
 
         // The minimum value on the y-axis is always zero
         let yinterval = self.base.options.y_axis.interval.unwrap();
         if let Some(yinterval) = self.base.options.y_axis.interval {
-          let ymin_interval = self.base.options.y_axis.min_interval.unwrap();
+            let ymin_interval = self.base.options.y_axis.min_interval.unwrap();
 
-          // TODO: complete it
-          // props.y_max_value = utils::find_max_value(&self.base.data_table);
+            // TODO: complete it
+            // props.y_max_value = utils::find_max_value(&self.base.data_table);
 
-          let yinterval = utils::calculate_interval(props.y_max_value, 3, ymin_interval);
-          props.y_max_value = (props.y_max_value / yinterval).ceil() * yinterval;
+            let yinterval = utils::calculate_interval(props.y_max_value, 3, ymin_interval);
+            props.y_max_value = (props.y_max_value / yinterval).ceil() * yinterval;
         }
 
         props.ylabel_formatter = self.base.options.y_axis.labels.formatter;
@@ -290,18 +289,19 @@ where
 
         let mut value = 0.0;
         while value <= props.y_max_value {
-          props.ylabels.push(ylabel_formatter(value));
-          value += yinterval;
+            props.ylabels.push(ylabel_formatter(value));
+            value += yinterval;
         }
 
         props.ylabel_hop = props.radius / (props.ylabels.len() as f64 - 1.);
 
         // Tooltip.
-        baseprops.tooltip_value_formatter = if let Some(value_formatter) = self.base.options.tooltip.value_formatter {
-            Some(value_formatter)
-        } else {
-            Some(ylabel_formatter)
-        }
+        baseprops.tooltip_value_formatter =
+            if let Some(value_formatter) = self.base.options.tooltip.value_formatter {
+                Some(value_formatter)
+            } else {
+                Some(ylabel_formatter)
+            }
     }
 
     fn set_stream(&self, stream: DataStream<'a, M, D>) {}

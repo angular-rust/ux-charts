@@ -3,14 +3,11 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
-use ux_dataflow::*;
-use ux_primitives::{
-    canvas::CanvasContext,
-    color::{palette, Color},
-    geom::Point,
-    text::{BaseLine, TextAlign, TextStyle, TextWeight},
+use dataflow::*;
+use primitives::{
+    palette, BaseLine, CanvasContext, Color, Point, TextAlign, TextStyle, TextWeight,
 };
+use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use crate::*;
 

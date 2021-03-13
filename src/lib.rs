@@ -1,9 +1,9 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 
+use dataflow::*;
+use primitives::{CanvasContext, Color, Point};
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
-use ux_dataflow::*;
-use ux_primitives::{canvas::CanvasContext, color::Color, geom::Point};
 
 #[macro_use]
 extern crate lazy_static;

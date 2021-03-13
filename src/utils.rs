@@ -4,12 +4,9 @@
 
 use std::{collections::HashMap, f64::consts::PI, fmt};
 
-use ux_primitives::{
-    canvas::CanvasContext,
-    geom::Point
-};
-use ux_dataflow::*;
 use super::StyleOption;
+use dataflow::*;
+use primitives::{CanvasContext, Point};
 
 /// Converts [angle] in radians to degrees.
 pub fn rad2deg(angle: f64) -> f64 {
@@ -78,8 +75,8 @@ pub fn hyphenate(s: &str) -> String {
 }
 
 /// Returns the maximum value in a [DataTable].
-pub fn find_max_value<'a, M, D>(table: &DataStream<'a, M, D>) -> D 
-where 
+pub fn find_max_value<'a, M, D>(table: &DataStream<'a, M, D>) -> D
+where
     M: fmt::Display,
     D: fmt::Display,
 {
