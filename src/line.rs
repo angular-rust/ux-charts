@@ -158,18 +158,22 @@ where
     }
 
     fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
-        // let dx = x - y_axis_left;
-        // // If (x, y) is inside the rectangle defined by the two axes.
-        // if (y > x_axis_top - y_axis_length &&
-        //     y < x_axis_top &&
-        //     dx > 0 &&
-        //     dx < x_axis_length) {
-        //   let index = (dx / xlabel_hop - xlabel_offset_factor).round();
-        //   // If there is at least one visible point in the current point group...
-        //   if (average_y_values[index] != null) return index;
-        // }
-        // return -1;
-        unimplemented!()
+        let props = self.props.borrow();
+
+        let dx = x - props.y_axis_left;
+        // If (x, y) is inside the rectangle defined by the two axes.
+        if y > props.x_axis_top - props.y_axis_length
+            && y < props.x_axis_top
+            && dx > 0.
+            && dx < props.x_axis_length
+        {
+            let index = (dx / props.xlabel_hop - props.xlabel_offset_factor).round() as usize;
+            // If there is at least one visible point in the current point group...
+            if props.average_y_values.get(index).is_some() {
+                return index as i64;
+            }
+        }
+        -1
     }
 
     /// Calculates average y values for the visible series to help position the
