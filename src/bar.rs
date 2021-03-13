@@ -44,10 +44,10 @@ where
         let x = utils::lerp(self.old_left, self.left, percent);
         let h = utils::lerp(self.old_height, self.height, percent);
         let w = utils::lerp(self.old_width, self.width, percent);
-        ctx.set_fill_style_color(self.color);
+        ctx.set_fill_color(self.color);
         ctx.fill_rect(x, self.bottom - h, w, h);
         if highlight {
-            ctx.set_fill_color_rgb(255, 255, 255, 0.25);
+            ctx.set_fill_color(Color::RGBA(255, 255, 255, 25));
             ctx.fill_rect(x, self.bottom - h, w, h);
         }
     }
@@ -568,7 +568,7 @@ where
             if let Some(text) = opt.text {
                 let style = &opt.style;
                 ctx.save();
-                ctx.set_fill_style_color(style.color);
+                ctx.set_fill_color(style.color);
 
                 ctx.set_font(
                     &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -590,7 +590,7 @@ where
             if let Some(text) = opt.text {
                 let style = &opt.style;
                 ctx.save();
-                ctx.set_fill_style_color(style.color);
+                ctx.set_fill_color(style.color);
 
                 ctx.set_font(
                     &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -611,7 +611,7 @@ where
         // x-axis labels.
         let opt = &self.base.options.x_axis.labels;
         let style = &opt.style;
-        ctx.set_fill_style_color(style.color);
+        ctx.set_fill_color(style.color);
 
         ctx.set_font(
             &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -662,7 +662,7 @@ where
         // y-axis labels.
         let opt = &self.base.options.y_axis.labels;
         let style = &opt.style;
-        ctx.set_fill_style_color(opt.style.color);
+        ctx.set_fill_color(opt.style.color);
 
         ctx.set_font(
             &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -684,7 +684,7 @@ where
         let opt = &self.base.options.x_axis;
         if opt.grid_line_width > 0. {
             ctx.set_line_width(opt.grid_line_width);
-            ctx.set_stroke_style_color(opt.grid_line_color);
+            ctx.set_stroke_color(opt.grid_line_color);
             ctx.begin_path();
             y = props.x_axis_top - props.ylabel_hop;
             // TODO: should draw 2 and len - 1 lines
@@ -713,7 +713,7 @@ where
         }
 
         ctx.set_line_width(line_width);
-        ctx.set_stroke_style_color(opt.grid_line_color);
+        ctx.set_stroke_color(opt.grid_line_color);
         ctx.begin_path();
         let mut idx = 0;
         while idx < props.xlabels.len() {
@@ -728,7 +728,7 @@ where
         let opt = &self.base.options.x_axis;
         if opt.line_width > 0. {
             ctx.set_line_width(opt.line_width);
-            ctx.set_stroke_style_color(opt.line_color);
+            ctx.set_stroke_color(opt.line_color);
             ctx.begin_path();
             ctx.move_to(props.y_axis_left, props.x_axis_top);
             ctx.line_to(props.y_axis_left + props.x_axis_length, props.x_axis_top);
@@ -739,7 +739,7 @@ where
         let opt = &self.base.options.y_axis;
         if opt.line_width > 0. {
             ctx.set_line_width(opt.line_width);
-            ctx.set_stroke_style_color(opt.line_color);
+            ctx.set_stroke_color(opt.line_color);
             ctx.begin_path();
             ctx.move_to(props.y_axis_left, props.x_axis_top - props.y_axis_length);
             ctx.line_to(props.y_axis_left, props.x_axis_top);
@@ -819,7 +819,7 @@ where
 
             if let Some(crosshair) = crosshair {
                 if focused_entity_index >= 0 {
-                    ctx.set_fill_style_color(crosshair.color);
+                    ctx.set_fill_color(crosshair.color);
                     ctx.fill_rect(
                         props.y_axis_left + props.xlabel_hop * focused_entity_index as f64,
                         props.x_axis_top - props.y_axis_length,
@@ -831,7 +831,7 @@ where
                 // Draw the labels.
                 if percent == 1.0 {
                     if let Some(labels) = labels {
-                        ctx.set_fill_style_color(labels.color);
+                        ctx.set_fill_color(labels.color);
                         ctx.set_font(
                             labels.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
                             labels.font_style.unwrap_or(TextStyle::Normal),

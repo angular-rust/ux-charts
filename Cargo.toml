@@ -8,7 +8,7 @@ repository = "https://github.com/angular-rust/ux-charts"
 documentation = "https://docs.rs/ux-charts"
 description = "Backend and runtime agnostic chart library"
 keywords = ["web", "webassembly", "graphics", "gtk", "cairo"]
-categories = ["multimedia", "wasm", "web-programming", "gui"]
+categories = ["multimedia", "wasm", "web-programming", "gui", "gtk"]
 edition = "2018"
 license = "MPL-2.0"
 
@@ -19,21 +19,15 @@ maintenance = { status = "actively-developed" }
 name = "charts"
 
 [features]
-# web = ["wasm-bindgen", "wasm-bindgen-futures", "wasm-logger", "gloo", "js-sys", "wasm-bindgen-test", "web-sys", "ux-animate", "ux-animate/web"]
-# cairo = ["cairo-rs", "png", "gio", "gtk", "ux-animate", "ux-animate/cairo"]
 web = ["wasm-bindgen", "wasm-bindgen-futures", "wasm-logger", "gloo", "js-sys", "wasm-bindgen-test", "web-sys", "ux-animate/web"]
-cairo = ["cairo-rs", "png", "gio", "gtk", "ux-animate/cairo"]
+cairo = ["cairo-rs", "ux-animate/cairo"]
 
 [dependencies]
 log = "0.4"
 lazy_static = "1.4"
 ux-dataflow = "0.1"
 ux-animate = { version = "0.1", default-features = false }
-
-png = { version = "0.16", optional = true }
-gio = { version = "0.9", features = ["v2_58"], optional = true }
-gtk = { version = "0.9", features = ["v3_22"], optional = true }
-cairo-rs = { version = "0.9", features = ["png"], optional = true }
+cairo-rs = { version = "0.9", optional = true }
 
 wasm-bindgen = { version = "0.2", optional = true }
 wasm-bindgen-futures = { version = "0.4", optional = true }
@@ -64,13 +58,3 @@ features = [
 [dev-dependencies]
 
 [build-dependencies]
-
-
-[[example]]
-name = "web-chart"
-# crate-type = ["staticlib"]
-required-features = ["web"]
-
-[[example]]
-name = "cairo-chart"
-required-features = ["cairo"]

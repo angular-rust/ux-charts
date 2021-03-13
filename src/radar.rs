@@ -40,12 +40,12 @@ where
         let pr = utils::lerp(self.old_point_radius, self.point_radius, percent);
         let p = utils::polar2cartesian(&self.center, r, a);
         if highlight {
-            ctx.set_fill_style_color(self.highlight_color);
+            ctx.set_fill_color(self.highlight_color);
             ctx.begin_path();
             ctx.arc(p.x, p.y, 2. * pr, 0., TAU, false);
             ctx.fill();
         }
-        ctx.set_fill_style_color(self.color);
+        ctx.set_fill_color(self.color);
         ctx.begin_path();
         ctx.arc(p.x, p.y, pr, 0., TAU, false);
         ctx.fill();
@@ -339,7 +339,7 @@ where
         let mut line_width = self.base.options.x_axis.grid_line_width;
         if line_width > 0. {
             ctx.set_line_width(line_width);
-            ctx.set_stroke_style_color(self.base.options.x_axis.grid_line_color);
+            ctx.set_stroke_color(self.base.options.x_axis.grid_line_color);
             ctx.begin_path();
             let mut radius = props.radius;
             for idx in ylabel_count - 1..1 {
@@ -359,7 +359,7 @@ where
         line_width = self.base.options.y_axis.grid_line_width;
         if line_width > 0. {
             ctx.set_line_width(line_width);
-            ctx.set_stroke_style_color(self.base.options.y_axis.grid_line_color);
+            ctx.set_stroke_color(self.base.options.y_axis.grid_line_color);
             ctx.begin_path();
             let mut angle = -PI_2;
             for idx in 0..xlabel_count {
@@ -375,7 +375,7 @@ where
         let style = &self.base.options.y_axis.labels.style;
         let x = props.center.x - AXIS_LABEL_MARGIN as f64;
         let mut y = props.center.y - props.ylabel_hop;
-        ctx.set_fill_style_color(style.color);
+        ctx.set_fill_color(style.color);
 
         ctx.set_font(
             &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -393,7 +393,7 @@ where
 
         // x-axis labels.
         let style = &self.base.options.x_axis.labels.style;
-        ctx.set_fill_style_color(style.color);
+        ctx.set_fill_color(style.color);
 
         ctx.set_font(
             &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -480,7 +480,7 @@ where
 
             // Draw the polygon.
             ctx.set_line_width(scale * series_line_width);
-            ctx.set_stroke_style_color(series.color);
+            ctx.set_stroke_color(series.color);
             ctx.begin_path();
 
             for jdx in 0..point_count {
@@ -500,7 +500,7 @@ where
 
             // Optionally fill the polygon.
             if fill_opacity > 0. {
-                ctx.set_fill_style_color(self.base.change_color_alpha(series.color, fill_opacity));
+                ctx.set_fill_color(self.base.change_color_alpha(series.color, fill_opacity));
                 ctx.fill();
             }
 
@@ -518,9 +518,9 @@ where
                     series.color
                 };
 
-                ctx.set_fill_style_color(fill_color);
+                ctx.set_fill_color(fill_color);
                 ctx.set_line_width(scale * marker_options.line_width);
-                ctx.set_stroke_style_color(stroke_color);
+                ctx.set_stroke_color(stroke_color);
                 for p in series.entities.iter() {
                     if marker_options.enabled {
                         p.draw(ctx, percent, p.index as i64 == focused_entity_index);

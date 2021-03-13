@@ -385,7 +385,7 @@ where
                 TextWeight::Normal,
                 style.font_size.unwrap_or(12.),
             );
-            ctx.set_fill_style_color(title.style.color);
+            ctx.set_fill_color(title.style.color);
             ctx.set_text_align(TextAlign::Center);
             ctx.fill_text(title.text.unwrap(), x, y);
         }
@@ -827,7 +827,7 @@ where
         let width = props.width;
         let height = props.height;
 
-        ctx.set_fill_style_color(palette::TEAL_9);
+        ctx.set_fill_color(palette::TEAL_9);
         // just fill instead clear
         ctx.fill_rect(0., 0., width, height);
     }

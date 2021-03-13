@@ -78,14 +78,14 @@ impl GaugeEntity {
         let center = &self.center;
         if highlight {
             let highlight_outer_radius = HIGHLIGHT_OUTER_RADIUS_FACTOR * self.outer_radius;
-            ctx.set_fill_style_color(self.highlight_color);
+            ctx.set_fill_color(self.highlight_color);
             ctx.begin_path();
             ctx.arc(center.x, center.y, highlight_outer_radius, a1, a2, false);
             ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
             ctx.fill();
         }
 
-        ctx.set_fill_style_color(self.color);
+        ctx.set_fill_color(self.color);
         ctx.begin_path();
         ctx.arc(center.x, center.y, self.outer_radius, a1, a2, false);
         ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
@@ -308,7 +308,7 @@ where
     }
 
     fn draw_series(&self, ctx: &C, percent: f64) -> bool {
-        ctx.set_stroke_style_color(palette::WHITE);
+        ctx.set_stroke_color(palette::WHITE);
         ctx.set_text_align(TextAlign::Center);
 
         let series_list = self.base.series_list.borrow();
@@ -327,7 +327,7 @@ where
                     + entity.outer_radius
                     + style.font_size.unwrap_or(12.)
                     + AXIS_LABEL_MARGIN as f64;
-                ctx.set_fill_style_color(style.color);
+                ctx.set_fill_color(style.color);
 
                 ctx.set_font(
                     &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),

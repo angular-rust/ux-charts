@@ -98,14 +98,14 @@ where
         let center = &self.center;
         if highlight {
             let highlight_outer_radius = HIGHLIGHT_OUTER_RADIUS_FACTOR * self.outer_radius;
-            ctx.set_fill_style_color(self.highlight_color);
+            ctx.set_fill_color(self.highlight_color);
             ctx.begin_path();
             ctx.arc(center.x, center.y, highlight_outer_radius, a1, a2, false);
             ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
             ctx.fill();
         }
 
-        ctx.set_fill_style_color(self.color);
+        ctx.set_fill_color(self.color);
         ctx.begin_path();
         ctx.arc(center.x, center.y, self.outer_radius, a1, a2, false);
         ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
@@ -119,7 +119,7 @@ where
         //     //     let r = 0.25 * self.inner_radius + 0.75 * self.outer_radius;
         //     //     let a = 0.5 * (a1 + a2);
         //     //     let p = utils::polar2cartesian(center, r, a);
-        //     //     ctx.set_fill_style_color(labels.style.color);
+        //     //     ctx.set_fill_color(labels.style.color);
         //     //     ctx.fill_text(self.formatted_value.as_str(), p.x, p.y);
         //     // }
         // }
@@ -319,7 +319,7 @@ where
 
     fn draw_series(&self, ctx: &C, percent: f64) -> bool {
         ctx.set_line_width(2.);
-        ctx.set_stroke_style_color(palette::WHITE);
+        ctx.set_stroke_color(palette::WHITE);
         ctx.set_text_align(TextAlign::Center);
         ctx.set_text_baseline(BaseLine::Middle);
 

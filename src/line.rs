@@ -52,7 +52,7 @@ where
         let cy = utils::lerp(self.old_y, self.y, percent);
         let pr = utils::lerp(self.old_point_radius, self.point_radius, percent);
         if highlight {
-            ctx.set_fill_style_color(self.highlight_color);
+            ctx.set_fill_color(self.highlight_color);
             ctx.begin_path();
             ctx.arc(cx, cy, 2. * pr, 0., TAU, false);
             ctx.fill();
@@ -588,7 +588,7 @@ where
             if let Some(text) = opt.text {
                 let style = &opt.style;
                 ctx.save();
-                ctx.set_fill_style_color(opt.style.color);
+                ctx.set_fill_color(opt.style.color);
                 ctx.set_font(
                     &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
                     style.font_style.unwrap_or(TextStyle::Normal),
@@ -608,7 +608,7 @@ where
             if let Some(text) = opt.text {
                 let style = &opt.style;
                 ctx.save();
-                ctx.set_fill_style_color(style.color);
+                ctx.set_fill_color(style.color);
                 ctx.set_font(
                     &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
                     style.font_style.unwrap_or(TextStyle::Normal),
@@ -628,7 +628,7 @@ where
         // x-axis labels.
         let opt = &self.base.options.x_axis.labels;
         let style = &opt.style;
-        ctx.set_fill_style_color(style.color);
+        ctx.set_fill_color(style.color);
 
         ctx.set_font(
             &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -679,7 +679,7 @@ where
         // y-axis labels.
         let opt = &self.base.options.y_axis.labels;
         let style = &opt.style;
-        ctx.set_fill_style_color(opt.style.color);
+        ctx.set_fill_color(opt.style.color);
 
         ctx.set_font(
             &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -701,7 +701,7 @@ where
         let opt = &self.base.options.x_axis;
         if opt.grid_line_width > 0. {
             ctx.set_line_width(opt.grid_line_width);
-            ctx.set_stroke_style_color(opt.grid_line_color);
+            ctx.set_stroke_color(opt.grid_line_color);
             ctx.begin_path();
             y = props.x_axis_top - props.ylabel_hop;
             // TODO: should draw 2 and len - 1 lines
@@ -730,7 +730,7 @@ where
         }
 
         ctx.set_line_width(line_width);
-        ctx.set_stroke_style_color(opt.grid_line_color);
+        ctx.set_stroke_color(opt.grid_line_color);
         ctx.begin_path();
         let mut idx = 0;
         while idx < props.xlabels.len() {
@@ -745,7 +745,7 @@ where
         let opt = &self.base.options.x_axis;
         if opt.line_width > 0. {
             ctx.set_line_width(opt.line_width);
-            ctx.set_stroke_style_color(opt.line_color);
+            ctx.set_stroke_color(opt.line_color);
             ctx.begin_path();
             ctx.move_to(props.y_axis_left, props.x_axis_top);
             ctx.line_to(props.y_axis_left + props.x_axis_length, props.x_axis_top);
@@ -756,7 +756,7 @@ where
         let opt = &self.base.options.y_axis;
         if opt.line_width > 0. {
             ctx.set_line_width(opt.line_width);
-            ctx.set_stroke_style_color(opt.line_color);
+            ctx.set_stroke_color(opt.line_color);
             ctx.begin_path();
             ctx.move_to(props.y_axis_left, props.x_axis_top - props.y_axis_length);
             ctx.line_to(props.y_axis_left, props.x_axis_top);
@@ -834,8 +834,8 @@ where
             // Draw series with filling.
             if fill_opacity > 0.0 {
                 let color = self.base.change_color_alpha(series.color, fill_opacity);
-                ctx.set_fill_style_color(color);
-                ctx.set_stroke_style_color(color);
+                ctx.set_fill_color(color);
+                ctx.set_stroke_color(color);
                 let mut jdx = 0;
                 loop {
                     // Skip points with a null value.
@@ -875,7 +875,7 @@ where
             if series_line_width > 0. {
                 let mut last_point: LinePoint = Default::default();
                 ctx.set_line_width(scale * series_line_width);
-                ctx.set_stroke_style_color(series.color);
+                ctx.set_stroke_color(series.color);
                 ctx.begin_path();
                 for entity in entities.iter() {
                     if entity.value != 0. {
@@ -903,9 +903,9 @@ where
                 } else {
                     series.color
                 };
-                ctx.set_fill_style_color(fill_color);
+                ctx.set_fill_color(fill_color);
                 ctx.set_line_width(scale * marker_options.line_width as f64);
-                ctx.set_stroke_style_color(stroke_color);
+                ctx.set_stroke_color(stroke_color);
                 for entity in entities.iter() {
                     if entity.value != 0. {
                         if marker_options.enabled {
@@ -922,7 +922,7 @@ where
         // Draw labels only on the last frame.
         if let Some(label_options) = label_options {
             if percent == 1.0 {
-                ctx.set_fill_style_color(label_options.color);
+                ctx.set_fill_color(label_options.color);
                 ctx.set_font(
                     label_options.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
                     label_options.font_style.unwrap_or(TextStyle::Normal),
