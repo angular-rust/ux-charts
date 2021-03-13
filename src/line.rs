@@ -222,26 +222,44 @@ where
     }
 
     fn lerp_points(&self, points: &Vec<LinePoint>, percent: f64) -> Vec<LinePoint> {
-        // return points.map((p) {
-        //   let x = lerp(p.oldX, p.x, percent);
-        //   let y = lerp(p.oldY, p.y, percent);
-        //   let cp1 = (p.cp1 != null) ? lerp(p.oldCp1, p.cp1, percent) : null;
-        //   let cp2 = (p.cp2 != null) ? lerp(p.oldCp2, p.cp2, percent) : null;
-        //   return Point()
-        //     ..index = p.index
-        //     ..value = p.value
-        //     ..color = p.color
-        //     ..highlight_color = p.highlight_color
-        //     ..oldPointRadius = p.oldPointRadius
-        //     ..oldX = p.oldX
-        //     ..oldY = p.oldY
-        //     ..pointRadius = p.pointRadius
-        //     ..x = x
-        //     ..y = y
-        //     ..cp1 = cp1
-        //     ..cp2 = cp2;
-        // }).toList();
-        unimplemented!()
+        points.iter().map(|p|{
+            let x = utils::lerp(p.old_x, p.x, percent);
+            let y = utils::lerp(p.old_y, p.y, percent);
+            
+            let cp1 = if p.cp1 != Default::default() {
+                // FIXME: 
+                // utils::lerp(p.old_cp1, p.cp1, percent)
+                Default::default()
+            } else {
+                Default::default()
+            };
+
+            let cp2 = if p.cp2 != Default::default() {
+                // FIXME: 
+                // utils::lerp(p.old_cp2, p.cp2, percent)
+                Default::default()
+            } else {
+                Default::default()
+            };
+            
+            LinePoint{
+                index: p.index,
+                old_value: 0.,
+                value: p.value,
+                color: p.color,
+                highlight_color: p.highlight_color,
+                old_point_radius: p.old_point_radius,
+                old_cp1: Default::default(),
+                old_cp2: Default::default(),
+                old_x: p.old_x,
+                old_y: p.old_y,
+                point_radius: p.point_radius,
+                x,
+                y,
+                cp1,
+                cp2,
+            }
+        }).collect()
     }
 
     fn series_visibility_changed(&self, index: usize) {
