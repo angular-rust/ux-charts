@@ -183,27 +183,42 @@ where
     /// at [index] only.
     ///
     fn calculate_average_y_values(&self, index: usize) {
-        // if !self.base.options.tooltip.enabled return;
+        if !self.base.options.tooltip.enabled {
+            return;
+        }
 
-        // let entity_count = self.base.data_table.rows.len();
-        // let start = index ?? 0;
-        // let end = index == null ? entity_count : index + 1;
+        let entity_count = self.base.data_table.frames.len();
+        let start = if index != 0 { index } else { 0 };
 
-        // average_y_values.len() = entity_count;
+        let end = if index == 0 { entity_count } else { index + 1 };
 
-        // for (let i = start; i < end; i++) {
-        //   let sum = 0.0;
-        //   let count = 0;
-        //   for (let j = series_list.len() - 1; j >= 0; j--) {
-        //     if (series_states[j].index <= Visibility::hiding.index) continue;
-        //     let point = series_list[j].entities[i] as Point;
-        //     if (point.value != null) {
-        //       sum += point.y;
-        //       count++;
-        //     }
-        //   }
-        //   average_y_values[i] = (count > 0) ? sum / count : null;
-        // }
+        let mut props = self.props.borrow_mut();
+        let series_list = self.base.series_list.borrow();
+        let series_states = &self.base.props.borrow().series_states;
+
+        props
+            .average_y_values
+            .resize(entity_count, Default::default());
+
+        for idx in start..end {
+            let mut sum = 0.0;
+            let mut count = 0;
+            // TODO: check it
+            for jdx in series_list.len()..0 {
+                let series_state = series_states.get(jdx).unwrap();
+                if *series_state == Visibility::Hidden || *series_state == Visibility::Hiding {
+                    continue;
+                }
+
+                let series = series_list.get(jdx).unwrap();
+                let point = series.entities.get(idx).unwrap();
+                if point.value != 0. {
+                    sum += point.y;
+                    count += 1;
+                }
+            }
+            props.average_y_values[idx] = if count > 0 { sum / count as f64 } else { 0. }
+        }
     }
 
     fn lerp_points(&self, points: &Vec<LinePoint>, percent: f64) -> Vec<LinePoint> {
