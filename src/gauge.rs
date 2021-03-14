@@ -9,14 +9,14 @@ use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use crate::*;
 
 #[derive(Default, Clone)]
-pub struct GaugeEntity {
+pub struct GaugeEntity<D> {
     // Chart chart,
     color: Color,
     highlight_color: Color,
     // formatted_value: String,
     index: usize,
-    old_value: Option<f64>,
-    value: Option<f64>,
+    old_value: Option<D>,
+    value: Option<D>,
 
     old_start_angle: f64,
     old_end_angle: f64,
@@ -33,7 +33,7 @@ pub struct GaugeEntity {
     background_color: Color,
 }
 
-impl GaugeEntity {
+impl<D> GaugeEntity<D> {
     pub fn is_empty(&self) -> bool {
         self.start_angle == self.end_angle
     }
@@ -94,7 +94,7 @@ impl GaugeEntity {
     }
 }
 
-impl Entity for GaugeEntity {
+impl<D> Entity for GaugeEntity<D> {
     fn free(&mut self) {
         // chart = null;
     }
@@ -106,7 +106,7 @@ impl Entity for GaugeEntity {
     }
 }
 
-impl<C> Drawable<C> for GaugeEntity
+impl<C, D> Drawable<C> for GaugeEntity<D>
 where
     C: CanvasContext,
 {
@@ -130,22 +130,22 @@ where
         let fs1 = 0.75 * self.inner_radius;
         let family = DEFAULT_FONT_FAMILY;
         // FIXME: empty entity
-        let text1 = utils::lerp(self.old_value.unwrap(), self.value.unwrap(), percent)
-            .round()
-            .to_string();
-        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);
-        let w1 = ctx.measure_text(text1.as_str()).width;
+        // let text1 = utils::lerp(self.old_value.unwrap(), self.value.unwrap(), percent)
+        //     .round()
+        //     .to_string();
+        // ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);
+        // let w1 = ctx.measure_text(text1.as_str()).width;
 
-        let fs2 = 0.6 * fs1;
-        let text2 = "%";
-        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs2);
-        let w2 = ctx.measure_text(text2).width;
+        // let fs2 = 0.6 * fs1;
+        // let text2 = "%";
+        // ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs2);
+        // let w2 = ctx.measure_text(text2).width;
 
-        let y = self.center.y + 0.3 * fs1;
-        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);
-        ctx.fill_text(text1.as_str(), self.center.x - 0.5 * w2, y);
-        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs2);
-        ctx.fill_text(text2, self.center.x + 0.5 * w1, y);
+        // let y = self.center.y + 0.3 * fs1;
+        // ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);
+        // ctx.fill_text(text1.as_str(), self.center.x - 0.5 * w2, y);
+        // ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs2);
+        // ctx.fill_text(text2, self.center.x + 0.5 * w1, y);
     }
 }
 
@@ -162,17 +162,17 @@ pub struct GaugeChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy,
 {
     props: RefCell<GaugeChartProperties>,
-    base: BaseChart<'a, C, GaugeEntity, M, D, GaugeChartOptions<'a>>,
+    base: BaseChart<'a, C, GaugeEntity<D>, M, D, GaugeChartOptions<'a>>,
 }
 
 impl<'a, C, M, D> GaugeChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy,
 {
     pub fn new(options: GaugeChartOptions<'a>) -> Self {
         Self {
@@ -186,7 +186,7 @@ where
         unimplemented!()
     }
 
-    fn value_to_angle(&self, value: f64) -> f64 {
+    fn value_to_angle(&self, value: D) -> f64 {
         // value * TAU / 100
         unimplemented!()
     }
@@ -214,16 +214,15 @@ where
     fn data_table_changed(&self) {
         info!("data_table_changed");
         // self.calculate_drawing_sizes(ctx);
-        let mut channels = self.base.channels.borrow_mut();
-        *channels = self.create_channels(0, self.base.data_table.meta.len());
+        self.create_channels(0, self.base.data_table.meta.len());
     }
 }
 
-impl<'a, C, M, D> Chart<'a, C, M, D, GaugeEntity> for GaugeChart<'a, C, M, D>
+impl<'a, C, M, D> Chart<'a, C, M, D, GaugeEntity<D>> for GaugeChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy,
 {
     fn calculate_drawing_sizes(&self, ctx: &C) {
         self.base.calculate_drawing_sizes(ctx);
@@ -315,7 +314,7 @@ where
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
-        self.draw_channel(ctx, ease(percent));
+        self.draw_channels(ctx, ease(percent));
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
@@ -327,7 +326,7 @@ where
         }
     }
 
-    fn draw_channel(&self, ctx: &C, percent: f64) -> bool {
+    fn draw_channels(&self, ctx: &C, percent: f64) -> bool {
         ctx.set_stroke_color(palette::WHITE);
         ctx.set_text_align(TextAlign::Center);
 
@@ -387,10 +386,10 @@ where
         &self,
         channel_index: usize,
         entity_index: usize,
-        value: Option<f64>,
+        value: Option<D>,
         color: Color,
         highlight_color: Color,
-    ) -> GaugeEntity {
+    ) -> GaugeEntity<D> {
         // Override the colors.
         let color = self.base.get_color(entity_index);
         let highlight_color = self.base.change_color_alpha(color, 0.5);
@@ -422,7 +421,7 @@ where
         }
     }
 
-    fn create_channels(&self, start: usize, end: usize) -> Vec<ChartChannel<GaugeEntity>> {
+    fn create_channels(&self, start: usize, end: usize) {
         println!("create_channels");
         let result = Vec::new();
         // let entity_count = self.data_table.frames.len();
@@ -435,7 +434,8 @@ where
         //   result.add(Series(name, color, highlight_color, entities));
         //   start++;
         // }
-        result
+        let mut channels = self.base.channels.borrow_mut();
+        *channels = result;
     }
 
     fn create_entities(
@@ -445,7 +445,7 @@ where
         end: usize,
         color: Color,
         highlight: Color,
-    ) -> Vec<GaugeEntity> {
+    ) -> Vec<GaugeEntity<D>> {
         info!("create_entities");
         let result = Vec::new();
         // while (start < end) {

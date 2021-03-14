@@ -11,13 +11,13 @@ use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use crate::*;
 
 #[derive(Default, Clone)]
-pub struct PolarPoint {
+pub struct PolarPoint<D> {
     color: Color,
     highlight_color: Color,
     // formatted_value: String,
     index: usize,
-    old_value: Option<f64>,
-    value: Option<f64>,
+    old_value: Option<D>,
+    value: Option<D>,
 
     old_radius: f64,
     old_angle: f64,
@@ -30,7 +30,7 @@ pub struct PolarPoint {
     center: Point<f64>,
 }
 
-impl<C> Drawable<C> for PolarPoint
+impl<C, D> Drawable<C> for PolarPoint<D>
 where
     C: CanvasContext,
 {
@@ -53,7 +53,7 @@ where
     }
 }
 
-impl Entity for PolarPoint {
+impl<D> Entity for PolarPoint<D> {
     fn free(&mut self) {}
 
     fn save(&self) {
@@ -83,17 +83,17 @@ pub struct RadarChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy,
 {
     props: RefCell<RadarChartProperties>,
-    base: BaseChart<'a, C, PolarPoint, M, D, RadarChartOptions<'a>>,
+    base: BaseChart<'a, C, PolarPoint<D>, M, D, RadarChartOptions<'a>>,
 }
 
 impl<'a, C, M, D> RadarChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     pub fn new(options: RadarChartOptions<'a>) -> Self {
         Self {
@@ -107,12 +107,13 @@ where
         (entity_index as f64) * props.angle_interval - PI_2
     }
 
-    pub fn value2radius(&self, value: f64) -> f64 {
-        if value != 0.0 {
-            let props = self.props.borrow();
-            return value * props.radius / props.y_max_value;
-        }
-        0.0
+    pub fn value2radius(&self, value: D) -> f64 {
+        // if value != 0.0 {
+        //     let props = self.props.borrow();
+        //     return value * props.radius / props.y_max_value;
+        // }
+        // 0.0
+        unimplemented!()
     }
 
     fn calculate_bounding_boxes(&self) {
@@ -234,16 +235,15 @@ where
     fn data_table_changed(&self) {
         info!("data_table_changed");
         // self.calculate_drawing_sizes(ctx);
-        let mut channels = self.base.channels.borrow_mut();
-        *channels = self.create_channels(0, self.base.data_table.meta.len());
+        self.create_channels(0, self.base.data_table.meta.len());
     }
 }
 
-impl<'a, C, M, D> Chart<'a, C, M, D, PolarPoint> for RadarChart<'a, C, M, D>
+impl<'a, C, M, D> Chart<'a, C, M, D, PolarPoint<D>> for RadarChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     fn calculate_drawing_sizes(&self, ctx: &C) {
         self.base.calculate_drawing_sizes(ctx);
@@ -271,9 +271,8 @@ where
         let yinterval = self.base.options.y_axis.interval.unwrap();
         if let Some(yinterval) = self.base.options.y_axis.interval {
             let ymin_interval = self.base.options.y_axis.min_interval.unwrap();
-
-            // TODO: complete it
-            // props.y_max_value = utils::find_max_value(&self.base.data_table);
+           
+            props.y_max_value = utils::find_max_value(&self.base.data_table).into();
 
             let yinterval = utils::calculate_interval(props.y_max_value, 3, Some(ymin_interval));
             props.y_max_value = (props.y_max_value / yinterval).ceil() * yinterval;
@@ -281,12 +280,14 @@ where
 
         props.ylabel_formatter = self.base.options.y_axis.labels.formatter;
         if props.ylabel_formatter.is_none() {
-            // TODO: Complete it
-            // let decimalPlaces = utils::get_decimal_places(yinterval);
+            // let max_decimal_places =
+            //     max(utils::get_decimal_places(props.y_interval), utils::get_decimal_places(props.y_min_value));
             // let numberFormat = NumberFormat.decimalPattern()
-            //     ..maximumFractionDigits = decimalPlaces
-            //     ..minimumFractionDigits = decimalPlaces;
-            // props.ylabel_formatter = numberFormat.format;
+            // ..maximumFractionDigits = max_decimal_places
+            // ..minimumFractionDigits = max_decimal_places;
+            // ylabel_formatter = numberFormat.format;
+            let a = |x: f64| -> String { x.to_string() };
+            props.ylabel_formatter = Some(a);
         }
 
         let mut baseprops = self.base.props.borrow_mut();
@@ -458,7 +459,7 @@ where
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
-        self.draw_channel(ctx, ease(percent));
+        self.draw_channels(ctx, ease(percent));
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
@@ -470,7 +471,7 @@ where
         }
     }
 
-    fn draw_channel(&self, ctx: &C, percent: f64) -> bool {
+    fn draw_channels(&self, ctx: &C, percent: f64) -> bool {
         let props = self.props.borrow();
 
         let focused_channel_index = self.base.props.borrow().focused_channel_index;
@@ -591,10 +592,10 @@ where
         &self,
         channel_index: usize,
         entity_index: usize,
-        value: Option<f64>,
+        value: Option<D>,
         color: Color,
         highlight_color: Color,
-    ) -> PolarPoint {
+    ) -> PolarPoint<D> {
         let props = self.props.borrow();
         let angle = self.get_angle(entity_index);
         let point_radius = self.base.options.channel.markers.size as f64;
@@ -615,7 +616,7 @@ where
         }
     }
 
-    fn create_channels(&self, start: usize, end: usize) -> Vec<ChartChannel<PolarPoint>> {
+    fn create_channels(&self, start: usize, end: usize) {
         info!("create_channels");
         let result = Vec::new();
         // let entity_count = self.data_table.frames.len();
@@ -628,7 +629,8 @@ where
         //   result.add(Series(name, color, highlight_color, entities));
         //   start++;
         // }
-        result
+        let mut channels = self.base.channels.borrow_mut();
+        *channels = result;
     }
 
     fn create_entities(
@@ -638,7 +640,7 @@ where
         end: usize,
         color: Color,
         highlight: Color,
-    ) -> Vec<PolarPoint> {
+    ) -> Vec<PolarPoint<D>> {
         info!("create_entities");
         let result = Vec::new();
         // while (start < end) {

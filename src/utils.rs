@@ -4,9 +4,11 @@
 
 use std::{collections::HashMap, f64::consts::PI, fmt};
 
+use crate::DEFAULT_FONT_FAMILY;
+
 use super::StyleOption;
 use dataflow::*;
-use primitives::{CanvasContext, Point};
+use primitives::{CanvasContext, Point, TextStyle, TextWeight};
 
 /// Converts [angle] in radians to degrees.
 pub fn rad2deg(angle: f64) -> f64 {
@@ -70,33 +72,66 @@ pub fn hyphenate(s: &str) -> String {
 }
 
 /// Returns the maximum value in a [DataTable].
-pub fn find_max_value<'a, M, D>(table: &DataStream<'a, M, D>) -> D
+pub fn find_max_value<'a, M, D>(stream: &DataStream<'a, M, D>) -> D
 where
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
-    // let maxValue = f64::NEG_INFINITY;
-    // for (let row in table.rows) {
-    //   for (let col in table.columns) {
-    //     let value = row[col.index];
-    //     if (value is num && value > maxValue) maxValue = value;
-    //   }
-    // }
-    // maxValue
-    unimplemented!();
+    let mut result: Option<D> = None;
+    for channel in stream.meta.iter() {
+        let channel_index = channel.tag as u64;
+        for frame in stream.frames.iter() {
+            match frame.data.get(channel_index) {
+                Some(value) => {
+                    match result {
+                        Some(max_value) => {
+                            if *value > max_value {
+                                result = Some(value.clone());
+                            }
+                        }
+                        None => {
+                            result = Some(value.clone())
+                        }
+                    }
+                }
+                None => {}
+            }
+        }
+    }
+
+    result.unwrap_or(Default::default())
 }
 
 /// Returns the minimum value in a [DataTable].
-pub fn find_min_value<'a, M: fmt::Display, D: fmt::Display>(table: DataStream<'a, M, D>) -> f64 {
-    // let minValue = f64::INFINITY;
-    // for (let row in table.rows) {
-    //   for (let col in table.columns) {
-    //     let value = row[col.index];
-    //     if (value is num && value < minValue) minValue = value;
-    //   }
-    // }
-    // minValue
-    unimplemented!();
+pub fn find_min_value<'a, M, D>(stream: &DataStream<'a, M, D>) -> D
+where
+    M: fmt::Display,
+    D: fmt::Display + Copy + Into<f64> + Ord + Default,
+{
+    let mut result: Option<D> = None;
+    for channel in stream.meta.iter() {
+        let channel_index = channel.tag as u64;
+        for frame in stream.frames.iter() {
+            match frame.data.get(channel_index) {
+                Some(value) => {
+                    match result {
+                        Some(min_value) => {
+                            if *value < min_value {
+                                error!("ASSIGN MIN VALUE {}", value);
+                                result = Some(value.clone());
+                            }
+                        }
+                        None => {
+                            result = Some(value.clone())
+                        }
+                    }
+                }
+                None => {}
+            }
+        }
+    }
+
+    result.unwrap_or(Default::default())
 }
 
 /// Calculates a nice axis interval given
@@ -122,18 +157,25 @@ pub fn calculate_interval(range: f64, target_steps: usize, min_interval: Option<
 }
 
 pub fn calculate_max_text_width<C: CanvasContext>(
-    ctx: C,
-    font: String,
-    texts: Vec<String>,
+    ctx: &C,
+    style: &StyleOption,
+    texts: &Vec<String>,
 ) -> f64 {
-    // let result = 0.0;
-    // ctx.font = font;
-    // for (let text in texts) {
-    //   let width = ctx.measure_text(text).width;
-    //   if (result < width) result = width;
-    // }
-    // result
-    unimplemented!();
+    let mut result = 0.0;
+    ctx.set_font(
+        style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+        style.font_style.unwrap_or(TextStyle::Normal),
+        TextWeight::Normal,
+        style.font_size.unwrap_or(12.),
+    );
+
+    for text in texts.iter() {
+        let width = ctx.measure_text(text).width;
+        if result < width {
+            result = width
+        }
+    }
+    result
 }
 
 /// Calculates the controls for [p2] given the previous point [p1], the next
@@ -163,9 +205,11 @@ pub fn get_decimal_places(value: f64) -> usize {
     if value.fract() == 0. {
         return 0;
     }
+
     // See https://code.google.com/p/dart/issues/detail?id=1533
-    // return "$value.0".split(".")[1].len();
-    unimplemented!()
+    let tmp = format!("{}", value);
+    let split: Vec<&str> = tmp.split(".").collect();
+    split.get(1).unwrap().len()
 }
 
 // /// Returns a CSS font string given a map that contains at least three keys:

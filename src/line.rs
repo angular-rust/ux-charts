@@ -11,13 +11,13 @@ use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use crate::*;
 
 #[derive(Default, Clone)]
-struct LinePoint {
+struct LinePoint<D> {
     color: Color,
     highlight_color: Color,
     // formatted_value: String,
     index: usize,
-    old_value: Option<f64>,
-    value: Option<f64>,
+    old_value: Option<D>,
+    value: Option<D>,
 
     old_x: f64,
     old_y: f64,
@@ -36,14 +36,14 @@ struct LinePoint {
     point_radius: f64,
 }
 
-impl LinePoint {
+impl<D> LinePoint<D> {
     fn as_point(&self) -> Point<f64> {
         Point::new(self.x, self.y)
     }
 }
 
 /// A point in a line chart.
-impl<C> Drawable<C> for LinePoint
+impl<C, D> Drawable<C> for LinePoint<D>
 where
     C: CanvasContext,
 {
@@ -65,7 +65,7 @@ where
     }
 }
 
-impl Entity for LinePoint {
+impl<D> Entity for LinePoint<D> {
     fn free(&mut self) {}
 
     fn save(&self) {
@@ -115,17 +115,17 @@ pub struct LineChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy,
 {
     props: RefCell<LineChartProperties>,
-    base: BaseChart<'a, C, LinePoint, M, D, LineChartOptions<'a>>,
+    base: BaseChart<'a, C, LinePoint<D>, M, D, LineChartOptions<'a>>,
 }
 
 impl<'a, C, M, D> LineChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     pub fn new(options: LineChartOptions<'a>) -> Self {
         Self {
@@ -142,7 +142,7 @@ where
 
     /// Returns the y-coordinate corresponding to the data point [value] and
     /// the animation percent [percent].
-    fn value_to_y(&self, value: f64) -> f64 {
+    fn value_to_y(&self, value: D) -> f64 {
         // value != null
         //   ? x_axis_top - (value - y_min_value) / y_range * y_axis_length
         //   : x_axis_top;
@@ -222,7 +222,7 @@ where
         // }
     }
 
-    fn lerp_points(&self, points: &Vec<LinePoint>, percent: f64) -> Vec<LinePoint> {
+    fn lerp_points(&self, points: &Vec<LinePoint<D>>, percent: f64) -> Vec<LinePoint<D>> {
         points
             .iter()
             .map(|p| {
@@ -271,7 +271,13 @@ where
         self.calculate_average_y_values(0);
     }
 
-    fn curve_to(&self, ctx: &C, cp1: Option<Point<f64>>, cp2: Option<Point<f64>>, p: &LinePoint) {
+    fn curve_to(
+        &self,
+        ctx: &C,
+        cp1: Option<Point<f64>>,
+        cp2: Option<Point<f64>>,
+        p: &LinePoint<D>,
+    ) {
         if cp2.is_none() && cp1.is_none() {
             ctx.line_to(p.x, p.y);
         } else if cp2.is_none() {
@@ -291,16 +297,15 @@ where
     fn data_table_changed(&self) {
         info!("data_table_changed");
         // self.calculate_drawing_sizes(ctx);
-        let mut channels = self.base.channels.borrow_mut();
-        *channels = self.create_channels(0, self.base.data_table.meta.len());
+        self.create_channels(0, self.base.data_table.meta.len());
     }
 }
 
-impl<'a, C, M, D> Chart<'a, C, M, D, LinePoint> for LineChart<'a, C, M, D>
+impl<'a, C, M, D> Chart<'a, C, M, D, LinePoint<D>> for LineChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     // let num xlabel_offset_factor = 0;
 
@@ -319,7 +324,9 @@ where
             f64::NEG_INFINITY
         };
 
-        // props.y_max_value = props.y_max_value.max(utils::find_max_value(&self.base.data_table));
+        props.y_max_value = props
+            .y_max_value
+            .max(utils::find_max_value(&self.base.data_table).into());
 
         if props.y_max_value == f64::NEG_INFINITY {
             props.y_max_value = 0.0;
@@ -331,7 +338,9 @@ where
             f64::INFINITY
         };
 
-        // props.y_min_value = props.y_min_value.min(utils::find_min_value(&self.base.data_table));
+        props.y_min_value = props
+            .y_min_value
+            .min(utils::find_min_value(&self.base.data_table).into());
 
         if props.y_min_value == f64::INFINITY {
             props.y_min_value = 0.0;
@@ -374,12 +383,14 @@ where
         // y-axis labels
         props.ylabel_formatter = self.base.options.y_axis.labels.formatter;
         if let None = props.ylabel_formatter {
-            // let maxDecimalPlaces =
+            // let max_decimal_places =
             //     max(utils::get_decimal_places(props.y_interval), utils::get_decimal_places(props.y_min_value));
             // let numberFormat = NumberFormat.decimalPattern()
-            // ..maximumFractionDigits = maxDecimalPlaces
-            // ..minimumFractionDigits = maxDecimalPlaces;
+            // ..maximumFractionDigits = max_decimal_places
+            // ..minimumFractionDigits = max_decimal_places;
             // ylabel_formatter = numberFormat.format;
+            let a = |x: f64| -> String { x.to_string() };
+            props.ylabel_formatter = Some(a);
         }
 
         let mut value = props.y_min_value;
@@ -389,14 +400,13 @@ where
             value += props.y_interval;
         }
 
-        // props.ylabel_max_width = calculate_max_text_width(
-        //         context, get_font(self.base.options.y_axis.labels.style), ylabels)
-        //     .round();
+        let options = &self.base.options;
+        props.ylabel_max_width =
+            utils::calculate_max_text_width(ctx, &options.y_axis.labels.style, &props.ylabels);
 
         baseprops.entity_value_formatter = props.ylabel_formatter;
 
         // Tooltip
-        let options = &self.base.options;
         baseprops.tooltip_value_formatter = if let Some(formater) = options.tooltip.value_formatter
         {
             Some(formater)
@@ -476,11 +486,8 @@ where
             props.xlabels.push(row.name.to_string());
         }
 
-        // props.xlabel_max_width = utils::calculate_max_text_width(
-        //     context,
-        //     get_font(self.base.options.x_axis.labels.style),
-        //     xlabels,
-        // );
+        props.xlabel_max_width =
+            utils::calculate_max_text_width(ctx, &options.x_axis.labels.style, &props.xlabels);
 
         if props.xlabel_offset_factor > 0. && row_count > 1 {
             props.xlabel_hop = props.x_axis_length / row_count as f64;
@@ -577,9 +584,9 @@ where
         // self.easing_function = get_easing(self.options.animation().easing);
         self.base.initialize_legend();
         self.base.initialize_tooltip();
-        
+
         self.base.draw(ctx);
-        
+
         // if force_redraw {
         //     println!("BaseChart force_redraw");
         //     self.stop_animation();
@@ -799,9 +806,9 @@ where
         if percent >= 1.0 {
             percent = 1.0;
 
-            // Update the visibility states of all channel before the last frame.            
+            // Update the visibility states of all channel before the last frame.
             let mut channels = self.base.channels.borrow_mut();
-            
+
             for channel in channels.iter_mut() {
                 if channel.state == Visibility::Showing {
                     channel.state = Visibility::Shown;
@@ -814,7 +821,7 @@ where
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
-        self.draw_channel(ctx, ease(percent));
+        self.draw_channels(ctx, ease(percent));
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
@@ -826,7 +833,7 @@ where
         }
     }
 
-    fn draw_channel(&self, ctx: &C, percent: f64) -> bool {
+    fn draw_channels(&self, ctx: &C, percent: f64) -> bool {
         // let channels = self.base.channels.borrow();
         // let channel_count = channels.len();
         // let entity_count = self.base.data_table.frames.len();
@@ -1059,10 +1066,10 @@ where
         &self,
         channel_index: usize,
         entity_index: usize,
-        value: Option<f64>,
+        value: Option<D>,
         color: Color,
         highlight_color: Color,
-    ) -> LinePoint {
+    ) -> LinePoint<D> {
         let x = self.xlabel_x(entity_index);
 
         let props = self.props.borrow();
@@ -1095,7 +1102,7 @@ where
         }
     }
 
-    fn create_channels(&self, start: usize, end: usize) -> Vec<ChartChannel<LinePoint>> {
+    fn create_channels(&self, start: usize, end: usize) {
         info!("create_channels");
         let result = Vec::new();
         // let entity_count = self.data_table.frames.len();
@@ -1108,7 +1115,8 @@ where
         //   result.add(Series(name, color, highlight_color, entities));
         //   start++;
         // }
-        result
+        let mut channels = self.base.channels.borrow_mut();
+        *channels = result;
     }
 
     fn create_entities(
@@ -1118,7 +1126,7 @@ where
         end: usize,
         color: Color,
         highlight: Color,
-    ) -> Vec<LinePoint> {
+    ) -> Vec<LinePoint<D>> {
         info!("create_entities");
         let result = Vec::new();
         // while (start < end) {

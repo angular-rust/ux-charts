@@ -97,7 +97,7 @@ impl Default for Visibility {
 pub struct MouseEvent;
 
 /// A chart entity such as a point, a bar, a pie...
-pub trait Entity: Default {
+pub trait Entity {
     fn free(&mut self);
     fn save(&self);
 }
@@ -155,7 +155,7 @@ where
     E: Entity,
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy,
 {
     /// Calculates various drawing sizes.
     ///
@@ -183,7 +183,7 @@ where
     /// In those cases, the overriding method will return `true` to stop the
     /// animation.
     ///
-    fn draw_channel(&self, ctx: &C, percent: f64) -> bool;
+    fn draw_channels(&self, ctx: &C, percent: f64) -> bool;
 
     /// Draws the current animation frame.
     ///
@@ -204,12 +204,12 @@ where
         &self,
         channel_index: usize,
         entity_index: usize,
-        value: Option<f64>,
+        value: Option<D>,
         color: Color,
         highlight_color: Color,
     ) -> E;
 
-    fn create_channels(&self, start: usize, end: usize) -> Vec<ChartChannel<E>>;
+    fn create_channels(&self, start: usize, end: usize);
 
     /// Returns the position of the tooltip based on
     /// [focused_entity_index].

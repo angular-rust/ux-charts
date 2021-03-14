@@ -64,7 +64,7 @@ where
     C: CanvasContext,
     E: Entity,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy,
     O: BaseOption<'a>,
 {
     pub props: RefCell<BaseChartProperties>,
@@ -96,7 +96,7 @@ where
     C: CanvasContext,
     E: Entity,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy,
     O: BaseOption<'a>,
 {
     // /// The element that contains this chart.
@@ -315,7 +315,7 @@ where
         }
 
         if record.added_count > 0 {
-            let list = self.create_channels(start, start + record.added_count);
+            // let list = self.create_channels(start, start + record.added_count);
             //   self.channels.insertAll(start, list);
         }
         self.update_legend_content();
@@ -696,7 +696,7 @@ where
     C: CanvasContext,
     E: Entity,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy,
     O: BaseOption<'a>,
 {
     fn calculate_drawing_sizes(&self, ctx: &C) {
@@ -784,8 +784,8 @@ where
     /// In those cases, the overriding method will return `true` to stop the
     /// animation.
     ///
-    fn draw_channel(&self, ctx: &C, percent: f64) -> bool {
-        error!("draw_channel");
+    fn draw_channels(&self, ctx: &C, percent: f64) -> bool {
+        error!("draw_channels");
         false
     }
 
@@ -793,7 +793,7 @@ where
         &self,
         channel_index: usize,
         entity_index: usize,
-        value: Option<f64>,
+        value: Option<D>,
         color: Color,
         highlight_color: Color,
     ) -> E {
@@ -812,9 +812,8 @@ where
         Vec::new()
     }
 
-    fn create_channels(&self, start: usize, end: usize) -> Vec<ChartChannel<E>> {
+    fn create_channels(&self, start: usize, end: usize) {
         error!("create_channels");
-        Vec::new()
     }
 
     fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {

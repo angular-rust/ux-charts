@@ -13,13 +13,13 @@ use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use crate::*;
 
 #[derive(Default, Clone)]
-pub struct BarEntity {
+pub struct BarEntity<D> {
     color: Color,
     highlight_color: Color,
     // formatted_value: String,
     index: usize,
-    old_value: Option<f64>,
-    value: Option<f64>,
+    old_value: Option<D>,
+    value: Option<D>,
 
     old_left: f64,
     old_width: f64,
@@ -30,30 +30,34 @@ pub struct BarEntity {
     height: f64,
 }
 
-impl BarEntity {
+impl<D> BarEntity<D> {
     pub fn get_right(&self) -> f64 {
         self.left + self.width
     }
 }
 
-impl<C> Drawable<C> for BarEntity
+impl<C, D> Drawable<C> for BarEntity<D>
 where
     C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let x = utils::lerp(self.old_left, self.left, percent);
         let h = utils::lerp(self.old_height, self.height, percent);
-        let w = utils::lerp(self.old_width, self.width, percent);
+        //FIXME:
+        let w = utils::lerp(self.old_width, 10. /*self.width*/, percent);
+        let y = self.bottom - h;
+        // info!("draw entity {}, {}, {}, {}", x.round(), y.round(), w.round(), h.round());
+
         ctx.set_fill_color(self.color);
-        ctx.fill_rect(x, self.bottom - h, w, h);
+        ctx.fill_rect(x, y, w, h);
         if highlight {
             ctx.set_fill_color(Color::RGBA(255, 255, 255, 25));
-            ctx.fill_rect(x, self.bottom - h, w, h);
+            ctx.fill_rect(x, y, w, h);
         }
     }
 }
 
-impl Entity for BarEntity {
+impl<D> Entity for BarEntity<D> {
     fn free(&mut self) {}
 
     fn save(&self) {
@@ -107,17 +111,17 @@ pub struct BarChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy,
 {
     props: RefCell<BarChartProperties>,
-    base: BaseChart<'a, C, BarEntity, M, D, BarChartOptions<'a>>,
+    base: BaseChart<'a, C, BarEntity<D>, M, D, BarChartOptions<'a>>,
 }
 
 impl<'a, C, M, D> BarChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     pub fn new(options: BarChartOptions<'a>) -> Self {
         Self {
@@ -134,13 +138,15 @@ where
 
     /// Returns the y-coordinate corresponding to the data point [value] and
     /// the animation percent [percent].
-    fn value_to_y(&self, value: f64) -> f64 {
+    fn value_to_y(&self, value: Option<D>) -> f64 {
         let props = self.props.borrow();
-        if value != 0.0 {
-            return props.x_axis_top
-                - (value - props.y_min_value) / props.y_range * props.y_axis_length;
+        match value {
+            Some(value) => {
+                props.x_axis_top
+                    - (value.into() - props.y_min_value) / props.y_range * props.y_axis_length
+            }
+            None => props.x_axis_top,
         }
-        props.x_axis_top
     }
 
     fn data_cell_changed(&self, record: DataCellChangeRecord<D>) {
@@ -207,12 +213,14 @@ where
             .count()
     }
 
-    fn value_to_bar_height(&self, value: f64) -> f64 {
-        if value == 0. {
-            return 0.;
+    fn value_to_bar_height(&self, value: Option<D>) -> f64 {
+        match value {
+            None => 0.0,
+            Some(_) => {
+                let props = self.props.borrow();
+                props.x_axis_top - self.value_to_y(value)
+            }
         }
-        let props = self.props.borrow();
-        props.x_axis_top - self.value_to_y(value)
     }
 
     /// Calculates average y values for the visible channel to help position the tooltip
@@ -273,8 +281,7 @@ where
     fn data_table_changed(&self) {
         info!("data_table_changed");
         // self.calculate_drawing_sizes(ctx);
-        let mut channels = self.base.channels.borrow_mut();
-        *channels = self.create_channels(0, self.base.data_table.meta.len());
+        self.create_channels(0, self.base.data_table.meta.len());
     }
 
     fn get_channel_lefts(&self) -> Vec<f64> {
@@ -289,11 +296,11 @@ where
     }
 }
 
-impl<'a, C, M, D> Chart<'a, C, M, D, BarEntity> for BarChart<'a, C, M, D>
+impl<'a, C, M, D> Chart<'a, C, M, D, BarEntity<D>> for BarChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display,
+    D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     // TODO: Separate y-axis stuff into a separate method.
     fn calculate_drawing_sizes(&self, ctx: &C) {
@@ -310,44 +317,41 @@ where
 
         let mut props = self.props.borrow_mut();
         let mut baseprops = self.base.props.borrow_mut();
+        let options = &self.base.options;
 
         // y-axis min-max.
-        props.y_max_value = if let Some(value) = self.base.options.y_axis.max_value {
+        props.y_max_value = if let Some(value) = options.y_axis.max_value {
             value as f64
         } else {
             f64::NEG_INFINITY
         };
 
-        // FIXME:
-        props.y_max_value = 12.;
-        // props.y_max_value = props
-        //     .y_max_value
-        //     .max(utils::find_max_value(&self.base.data_table));
+        props.y_max_value = props
+            .y_max_value
+            .max(utils::find_max_value(&self.base.data_table).into());
 
         if props.y_max_value == f64::NEG_INFINITY {
             props.y_max_value = 0.;
         }
 
-        props.y_min_value = if let Some(value) = self.base.options.y_axis.min_value {
+        props.y_min_value = if let Some(value) = options.y_axis.min_value {
             value as f64
         } else {
             f64::INFINITY
         };
-
-        // FIXME:
-        props.y_min_value = 3.;
-        // props.y_min_value = props
-        //     .y_min_value
-        //     .min(utils::find_min_value(&self.base.data_table));
+        
+        props.y_min_value = props
+            .y_min_value
+            .min(utils::find_min_value(&self.base.data_table).into());
 
         if props.y_min_value == f64::INFINITY {
             props.y_min_value = 0.;
         }
 
-        if let Some(value) = self.base.options.y_axis.interval {
+        if let Some(value) = options.y_axis.interval {
             props.y_interval = value
         } else {
-            let min_interval = self.base.options.y_axis.min_interval;
+            let min_interval = options.y_axis.min_interval;
             if props.y_min_value == props.y_max_value {
                 if props.y_min_value == 0. {
                     props.y_max_value = 1.;
@@ -373,22 +377,25 @@ where
         }
 
         let val = props.y_min_value / props.y_interval;
-        props.y_min_value = val.floor() * props.y_interval;
-        props.y_max_value = val.ceil() * props.y_interval;
+
+        props.y_min_value = (props.y_min_value / props.y_interval).floor() * props.y_interval;
+        props.y_max_value = (props.y_max_value / props.y_interval).ceil() * props.y_interval;
+
         props.y_range = props.y_max_value - props.y_min_value;
 
         // y-axis labels
-        props.ylabels = Vec::new(); //<String>[];
-        props.ylabel_formatter = self.base.options.y_axis.labels.formatter;
+        props.ylabels = Vec::new();
+        props.ylabel_formatter = options.y_axis.labels.formatter;
 
         if let None = props.ylabel_formatter {
-            // TODO:
             // let max_decimal_places =
             //     max(utils::get_decimal_places(props.y_interval), utils::get_decimal_places(props.y_min_value));
             // let numberFormat = NumberFormat.decimalPattern()
-            // ..maximumFractionDigits = maxDecimalPlaces
-            // ..minimumFractionDigits = maxDecimalPlaces;
+            // ..maximumFractionDigits = max_decimal_places
+            // ..minimumFractionDigits = max_decimal_places;
             // ylabel_formatter = numberFormat.format;
+            let a = |x: f64| -> String { x.to_string() };
+            props.ylabel_formatter = Some(a);
         }
 
         if let Some(ylabel_formatter) = props.ylabel_formatter {
@@ -399,19 +406,18 @@ where
                 value += props.y_interval;
             }
         } else {
-            // FIXME:
+            error!("NO Y LABEL FORMATTER");
         }
 
-        // TODO: fix me
-        // props.ylabel_max_width = 100.;
-        // props.ylabel_max_width = utils::calculate_max_text_width(
-        //         context, get_font(self.base.options.y_axis.labels.style), ylabels)
-        //     .round();
+        props.ylabel_max_width = utils::calculate_max_text_width(
+            ctx,
+            &options.y_axis.labels.style,
+            &props.ylabels,
+        );
 
         baseprops.entity_value_formatter = props.ylabel_formatter;
 
         // Tooltip
-        let options = &self.base.options;
         baseprops.tooltip_value_formatter = if let Some(formater) = options.tooltip.value_formatter
         {
             Some(formater)
@@ -426,7 +432,7 @@ where
         let mut xtitle_top = 0.;
         let mut xtitle_width = 0.;
         let mut xtitle_height = 0.;
-        let xtitle = &self.base.options.x_axis.title;
+        let xtitle = &options.x_axis.title;
 
         if let Some(text) = xtitle.text {
             let style = &xtitle.style;
@@ -447,7 +453,7 @@ where
         let ytitle_top = 0.;
         let mut ytitle_width = 0.;
         let mut ytitle_height = 0.;
-        let ytitle = &self.base.options.y_axis.title;
+        let ytitle = &options.y_axis.title;
 
         if let Some(text) = ytitle.text {
             let style = &ytitle.style;
@@ -485,21 +491,19 @@ where
         props.x_axis_top -= AXIS_LABEL_MARGIN as f64;
 
         // x-axis labels and x-axis"s position.
-        let row_count = self.base.data_table.frames.len();
         props.xlabels = Vec::new();
-        for idx in 0..row_count {
-            let row = self.base.data_table.frames.get(idx).unwrap();
-            props.xlabels.push(row.metric.to_string());
+
+        for frame in self.base.data_table.frames.iter() {
+            props.xlabels.push(frame.metric.to_string());
         }
 
-        // TODO: fix me
-        props.xlabel_max_width = 5.;
-        // props.xlabel_max_width = utils::calculate_max_text_width(
-        //     context,
-        //     get_font(self.base.options.x_axis.labels.style),
-        //     props.xlabels,
-        // );
+        props.xlabel_max_width = utils::calculate_max_text_width(
+            ctx,
+            &options.x_axis.labels.style,
+            &props.xlabels,
+        );
 
+        let row_count = self.base.data_table.frames.len() + 1;
         props.xlabel_hop = if props.xlabel_offset_factor > 0. && row_count > 1 {
             props.x_axis_length / row_count as f64
         } else if row_count > 1 {
@@ -510,15 +514,18 @@ where
 
         props.xlabel_rotation = 0.;
 
-        let font_size = self.base.options.x_axis.labels.style.font_size.unwrap();
-        let max_rotation = self.base.options.x_axis.labels.max_rotation;
-        let min_rotation = self.base.options.x_axis.labels.min_rotation;
-        let angles = vec![0, -45, 45, -90, 90];
+        let font_size = options.x_axis.labels.style.font_size.unwrap();
+        let max_rotation = options.x_axis.labels.max_rotation;
+        let min_rotation = options.x_axis.labels.min_rotation;
+        let angles = [0, -45, 45, -90, 90];
 
         // outer:
         for step in 1..row_count {
             let scaled_label_hop = step as f64 * props.xlabel_hop;
             let min_spacing = (0.1 * scaled_label_hop as f64).max(10.);
+            // props.xlabel_step = step as i64;
+            props.xlabel_step = 1;
+
             for angle in angles.iter() {
                 let angle = *angle;
                 if angle > max_rotation || angle < min_rotation {
@@ -537,18 +544,21 @@ where
                 }
 
                 props.xlabel_rotation = angle as f64;
-                props.xlabel_step = step as i64;
-                props.x_axis_top -=
-                    props.xlabel_max_width * abs_angle_rad.sin() + font_size * abs_angle_rad.cos();
+
+                // FIXME:
+                // props.x_axis_top -=
+                //     props.xlabel_max_width * abs_angle_rad.sin() + font_size * abs_angle_rad.cos();
                 // TODO: fixme
                 // break outer;
             }
         }
 
+        warn!("LAST-X AXIS {}", props.x_axis_top);
+
         // Wrap up.
         props.y_axis_length = props.x_axis_top
             - channel_and_axes_box.origin.y
-            - (self.base.options.y_axis.labels.style.font_size.unwrap() / 2.).trunc();
+            - (options.y_axis.labels.style.font_size.unwrap() / 2.).trunc();
         props.ylabel_hop = props.y_axis_length / props.ylabels.len() as f64;
 
         xtitle_left = props.y_axis_left + ((props.x_axis_length - xtitle_width) / 2.).trunc();
@@ -625,10 +635,12 @@ where
     ///
     fn draw_axes_and_grid(&self, ctx: &C) {
         info!("draw_axes_and_grid");
+        let options = &self.base.options;
         // x-axis title.
         let props = self.props.borrow();
         if let Some(x_title_center) = props.x_title_center {
-            let opt = &self.base.options.x_axis.title;
+            info!("== draw x title");
+            let opt = &options.x_axis.title;
 
             if let Some(text) = opt.text {
                 let style = &opt.style;
@@ -651,7 +663,8 @@ where
 
         // y-axis title.
         if let Some(y_title_center) = props.y_title_center {
-            let opt = &self.base.options.y_axis.title;
+            info!("== draw y title");
+            let opt = &options.y_axis.title;
             if let Some(text) = opt.text {
                 let style = &opt.style;
                 ctx.save();
@@ -674,8 +687,8 @@ where
         }
 
         // x-axis labels.
-        let opt = &self.base.options.x_axis.labels;
-        let style = &opt.style;
+        let x_axis = &options.x_axis;
+        let style = &x_axis.labels.style;
         ctx.set_fill_color(style.color);
 
         ctx.set_font(
@@ -690,9 +703,11 @@ where
         let scaled_label_hop = props.xlabel_step as f64 * props.xlabel_hop;
 
         debug!(
-            "xlabel rotation [{}] and labels is [{}]",
+            "xlabel rotation [{}] and labels is [{}] {} {}",
             props.xlabel_rotation,
-            props.xlabels.len()
+            props.xlabels.len(),
+            props.xlabel_step,
+            props.xlabel_hop
         );
 
         if props.xlabel_rotation == 0. {
@@ -721,7 +736,7 @@ where
             let mut idx = 0;
             while idx < props.xlabels.len() {
                 if let Some(text) = props.xlabels.get(idx) {
-                    info!("XLABEL: [{}] [{}:{}] {}", text, x, y, angle);
+                    // info!("XLABEL: [{}] [{}:{}]", text, x.round(), y.round());
                     ctx.save();
                     ctx.translate(x, y);
                     ctx.rotate(angle);
@@ -737,9 +752,9 @@ where
         }
 
         // y-axis labels.
-        let opt = &self.base.options.y_axis.labels;
-        let style = &opt.style;
-        ctx.set_fill_color(opt.style.color);
+        let y_axis = &options.y_axis;
+        let style = &y_axis.labels.style;
+        ctx.set_fill_color(y_axis.labels.style.color);
 
         ctx.set_font(
             &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -748,24 +763,28 @@ where
             style.font_size.unwrap_or(12.),
         );
 
-        ctx.set_text_align(TextAlign::Right);
-        ctx.set_text_baseline(BaseLine::Middle);
-        x = props.y_axis_left - AXIS_LABEL_MARGIN as f64;
-        y = props.x_axis_top - (style.font_size.unwrap_or(12.) / 8.).trunc();
-        for label in props.ylabels.iter() {
-            ctx.fill_text(label.as_str(), x, y);
-            y -= props.ylabel_hop;
+        {
+            // seems y-labels
+            ctx.set_text_align(TextAlign::Right);
+            ctx.set_text_baseline(BaseLine::Middle);
+            x = props.y_axis_left - AXIS_LABEL_MARGIN as f64;
+            y = props.x_axis_top - (style.font_size.unwrap_or(12.) / 8.).trunc();
+            for label in props.ylabels.iter() {
+                ctx.fill_text(label.as_str(), x, y);
+                y -= props.ylabel_hop;
+            }
         }
 
         // x grid lines - draw bottom up.
-        let opt = &self.base.options.x_axis;
-        if opt.grid_line_width > 0. {
-            ctx.set_line_width(opt.grid_line_width);
-            ctx.set_stroke_color(opt.grid_line_color);
+        let x_axis = &options.x_axis;
+        if x_axis.grid_line_width > 0. {
+            ctx.set_line_width(x_axis.grid_line_width);
+            ctx.set_stroke_color(x_axis.grid_line_color);
             ctx.begin_path();
+            
+            // skip zero line
             y = props.x_axis_top - props.ylabel_hop;
-            // TODO: should draw 2 and len - 1 lines
-            for idx in 0..props.ylabels.len() {
+            for idx in 1..props.ylabels.len() {
                 ctx.move_to(props.y_axis_left, y);
                 ctx.line_to(props.y_axis_left + props.x_axis_length, y);
                 y -= props.ylabel_hop;
@@ -774,8 +793,8 @@ where
         }
 
         // y grid lines or x-axis ticks - draw from left to right.
-        let opt = &self.base.options.y_axis;
-        let mut line_width = opt.grid_line_width;
+        let y_axis = &options.y_axis;
+        let mut line_width = y_axis.grid_line_width;
         x = props.y_axis_left;
 
         if props.xlabel_step > 1 {
@@ -789,23 +808,26 @@ where
             y = props.x_axis_top + AXIS_LABEL_MARGIN as f64;
         }
 
-        ctx.set_line_width(line_width);
-        ctx.set_stroke_color(opt.grid_line_color);
-        ctx.begin_path();
-        let mut idx = 0;
-        while idx < props.xlabels.len() {
-            ctx.move_to(x, y);
-            ctx.line_to(x, props.x_axis_top);
-            x += scaled_label_hop;
-            idx += props.xlabel_step as usize;
+        {
+            // seems it ticks
+            ctx.set_line_width(line_width);
+            ctx.set_stroke_color(y_axis.grid_line_color);
+            ctx.begin_path();
+            let mut idx = 0;
+            while idx < props.xlabels.len() {
+                ctx.move_to(x, y);
+                ctx.line_to(x, props.x_axis_top);
+                x += scaled_label_hop;
+                idx += props.xlabel_step as usize;
+            }
+            ctx.stroke();
         }
-        ctx.stroke();
 
         // x-axis itself.
-        let opt = &self.base.options.x_axis;
-        if opt.line_width > 0. {
-            ctx.set_line_width(opt.line_width);
-            ctx.set_stroke_color(opt.line_color);
+        if x_axis.line_width > 0. {
+            // warn!("DRAW X-AXIS");
+            ctx.set_line_width(x_axis.line_width);
+            ctx.set_stroke_color(x_axis.line_color);
             ctx.begin_path();
             ctx.move_to(props.y_axis_left, props.x_axis_top);
             ctx.line_to(props.y_axis_left + props.x_axis_length, props.x_axis_top);
@@ -813,10 +835,10 @@ where
         }
 
         // y-axis itself.
-        let opt = &self.base.options.y_axis;
-        if opt.line_width > 0. {
-            ctx.set_line_width(opt.line_width);
-            ctx.set_stroke_color(opt.line_color);
+        if y_axis.line_width > 0. {
+            // warn!("DRAW Y-AXIS");
+            ctx.set_line_width(y_axis.line_width);
+            ctx.set_stroke_color(y_axis.line_color);
             ctx.begin_path();
             ctx.move_to(props.y_axis_left, props.x_axis_top - props.y_axis_length);
             ctx.line_to(props.y_axis_left, props.x_axis_top);
@@ -857,7 +879,7 @@ where
             None => get_easing(Easing::Linear),
         };
 
-        self.draw_channel(ctx, ease(percent));
+        self.draw_channels(ctx, ease(percent));
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
@@ -869,8 +891,8 @@ where
         }
     }
 
-    fn draw_channel(&self, ctx: &C, percent: f64) -> bool {
-        info!("draw_channel");
+    fn draw_channels(&self, ctx: &C, percent: f64) -> bool {
+        info!("draw_channels");
         let channels = self.base.channels.borrow();
         let focused_entity_index = self.base.props.borrow().focused_entity_index;
 
@@ -880,8 +902,11 @@ where
 
         for channel in channels.iter() {
             if channel.state == Visibility::Hidden {
+                info!("skip draw_channel: {}", channel.name);
                 continue;
             }
+
+            info!("draw channel: {} {}", channel.name, percent);
 
             // Draw the bars.
             for entity in channel.entities.iter() {
@@ -902,8 +927,9 @@ where
                     );
                 }
 
-                // Draw the labels.
+                // Draw the labels
                 if percent == 1.0 {
+                    info!("Draw the labels");
                     if let Some(labels) = labels {
                         ctx.set_fill_color(labels.color);
                         ctx.set_font(
@@ -961,7 +987,7 @@ where
                 entity.highlight_color = highlight_color;
                 entity.left = left;
                 entity.bottom = props.x_axis_top;
-                entity.height = self.value_to_bar_height(entity.value.unwrap());
+                entity.height = self.value_to_bar_height(entity.value);
                 entity.width = bar_width;
                 left += props.xlabel_hop;
             }
@@ -973,13 +999,13 @@ where
         &self,
         channel_index: usize,
         entity_index: usize,
-        value: Option<f64>,
+        value: Option<D>,
         color: Color,
         highlight_color: Color,
-    ) -> BarEntity {
+    ) -> BarEntity<D> {
         let left = self.get_bar_left(channel_index, entity_index);
         let old_left = left;
-        let height = self.value_to_bar_height(value.unwrap());
+        let height = self.value_to_bar_height(value);
 
         // Animate width.
         let mut old_height = height;
@@ -1010,7 +1036,7 @@ where
         }
     }
 
-    fn create_channels(&self, start: usize, end: usize) -> Vec<ChartChannel<BarEntity>> {
+    fn create_channels(&self, start: usize, end: usize) {
         info!("create_channels {} {}", start, end);
         let mut start = start;
         let mut result = Vec::new();
@@ -1028,7 +1054,9 @@ where
             result.push(ChartChannel::new(name, color, highlight, entities));
             start += 1;
         }
-        result
+
+        let mut channels = self.base.channels.borrow_mut();
+        *channels = result;
     }
 
     fn create_entities(
@@ -1038,29 +1066,29 @@ where
         end: usize,
         color: Color,
         highlight: Color,
-    ) -> Vec<BarEntity> {
-        info!(
-            "create_entities [{}] [{}] for channel [{}]",
-            start, end, channel_index
-        );
+    ) -> Vec<BarEntity<D>> {
         let mut start = start;
         let mut result = Vec::new();
         while start < end {
             let frame = self.base.data_table.frames.get(start).unwrap();
-            println!("METRIC IS: {}", frame.metric);
-            let value = frame.data.get(channel_index as u64).unwrap();
+            let value = frame.data.get(channel_index as u64);
+            let entity = match frame.data.get(channel_index as u64) {
+                Some(value) => {
+                    let value = value.clone();
+                    self.create_entity(channel_index, start, Some(value), color, highlight)
+                }
+                None => self.create_entity(channel_index, start, None, color, highlight),
+            };
 
-            let entity = self.create_entity(
-                channel_index,
-                start,
-                Some(5.), /*value*/
-                color,
-                highlight,
-            );
             //   e.chart = this;
             result.push(entity);
             start += 1;
         }
+
+        info!(
+            "create {} entities for channel [{}]",
+            result.len(), channel_index
+        );
         result
     }
 
