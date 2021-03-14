@@ -518,42 +518,44 @@ where
         let max_rotation = options.x_axis.labels.max_rotation;
         let min_rotation = options.x_axis.labels.min_rotation;
         let angles = [0, -45, 45, -90, 90];
+        
+        props.xlabel_step = 1;
 
-        // outer:
-        for step in 1..row_count {
-            let scaled_label_hop = step as f64 * props.xlabel_hop;
-            let min_spacing = (0.1 * scaled_label_hop as f64).max(10.);
-            // props.xlabel_step = step as i64;
-            props.xlabel_step = 1;
+        // // outer:
+        // for step in 1..row_count {
+        //     let scaled_label_hop = step as f64 * props.xlabel_hop;
+        //     let min_spacing = (0.1 * scaled_label_hop as f64).max(10.);
+        //     // props.xlabel_step = step as i64;
+        //     props.xlabel_step = 1;
 
-            for angle in angles.iter() {
-                let angle = *angle;
-                if angle > max_rotation || angle < min_rotation {
-                    continue;
-                }
+        //     for angle in angles.iter() {
+        //         let angle = *angle;
+        //         if angle > max_rotation || angle < min_rotation {
+        //             continue;
+        //         }
 
-                let abs_angle_rad = utils::deg2rad(angle as f64).abs();
-                let label_spacing = if angle == 0 {
-                    scaled_label_hop - props.xlabel_max_width
-                } else {
-                    scaled_label_hop * abs_angle_rad.sin() - font_size
-                };
+        //         let abs_angle_rad = utils::deg2rad(angle as f64).abs();
+        //         let label_spacing = if angle == 0 {
+        //             scaled_label_hop - props.xlabel_max_width
+        //         } else {
+        //             scaled_label_hop * abs_angle_rad.sin() - font_size
+        //         };
 
-                if label_spacing < min_spacing {
-                    continue;
-                }
+        //         if label_spacing < min_spacing {
+        //             continue;
+        //         }
 
-                props.xlabel_rotation = angle as f64;
+        //         // props.xlabel_rotation = angle as f64;
 
-                // FIXME:
-                // props.x_axis_top -=
-                //     props.xlabel_max_width * abs_angle_rad.sin() + font_size * abs_angle_rad.cos();
-                // TODO: fixme
-                // break outer;
-            }
-        }
+        //         // FIXME:
+        //         // props.x_axis_top -=
+        //         //     props.xlabel_max_width * abs_angle_rad.sin() + font_size * abs_angle_rad.cos();
+        //         // TODO: fixme
+        //         // break outer;
+        //     }
+        // }
 
-        warn!("LAST-X AXIS {}", props.x_axis_top);
+        // warn!("LAST-X AXIS {}", props.x_axis_top);
 
         // Wrap up.
         props.y_axis_length = props.x_axis_top
@@ -707,7 +709,7 @@ where
             props.xlabel_rotation,
             props.xlabels.len(),
             props.xlabel_step,
-            props.xlabel_hop
+            props.xlabel_hop.round()
         );
 
         if props.xlabel_rotation == 0. {
@@ -715,12 +717,16 @@ where
             ctx.set_text_baseline(BaseLine::Alphabetic);
 
             let mut idx = 0;
-            while idx < props.xlabels.len() {
-                ctx.fill_text(props.xlabels.get(idx).unwrap().as_str(), x, y);
+            for xlabel in props.xlabels.iter() {
+                let text = xlabel.as_str();
+                let w = ctx.measure_text(text).width;
+                let offset = (scaled_label_hop - w) / 2.;
+                ctx.fill_text(xlabel.as_str(), x + offset, y);
                 x += scaled_label_hop;
                 idx += props.xlabel_step as usize;
             }
         } else {
+            warn!("X for label {}", x);
             ctx.set_text_align(if props.xlabel_rotation < 0. {
                 TextAlign::Right
             } else {
@@ -732,6 +738,7 @@ where
                     * ((style.font_size.unwrap_or(12.) / 8.).trunc());
             }
             let angle = utils::deg2rad(props.xlabel_rotation);
+            warn!("1X for label {}", x);
 
             let mut idx = 0;
             while idx < props.xlabels.len() {
@@ -814,7 +821,8 @@ where
             ctx.set_stroke_color(y_axis.grid_line_color);
             ctx.begin_path();
             let mut idx = 0;
-            while idx < props.xlabels.len() {
+            // draw ticks with final tick
+            while idx < props.xlabels.len() + 1 {
                 ctx.move_to(x, y);
                 ctx.line_to(x, props.x_axis_top);
                 x += scaled_label_hop;

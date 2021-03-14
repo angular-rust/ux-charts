@@ -289,7 +289,7 @@ impl<'a> Default for BarChartOptions<'a> {
             title: TitleOptions {
                 position: "above",
                 style: Default::default(),
-                text: Some("Bar Chart"),
+                text: None,
             },
             tooltip: TooltipOptions {
                 enabled: true,
