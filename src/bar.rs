@@ -18,8 +18,8 @@ pub struct BarEntity {
     highlight_color: Color,
     // formatted_value: String,
     index: usize,
-    old_value: f64,
-    value: f64,
+    old_value: Option<f64>,
+    value: Option<f64>,
 
     old_left: f64,
     old_width: f64,
@@ -170,15 +170,8 @@ where
         return -1;
     }
 
-    fn get_bar_left(&self, series_index: usize, bar_index: usize) -> f64 {
-        let props = self.props.borrow();
-        self.xlabel_x(bar_index) - 0.5 * props.bar_group_width
-            + (self.base.count_visible_series(Some(series_index)) as f64)
-                * (props.bar_width + props.bar_spacing)
-    }
-
     fn update_bar_width(&self) {
-        let count = self.base.count_visible_series(None);
+        let count = self.count_visible_channel(None);
         let mut props = self.props.borrow_mut();
         if count > 0 {
             props.bar_width =
@@ -186,6 +179,32 @@ where
         } else {
             props.bar_width = 0.;
         }
+    }
+
+    fn get_bar_left(&self, channel_index: usize, bar_index: usize) -> f64 {
+        let props = self.props.borrow();
+        self.xlabel_x(bar_index) - 0.5 * props.bar_group_width
+            + (self.count_visible_channel(Some(channel_index)) as f64)
+                * (props.bar_width + props.bar_spacing)
+    }
+
+    /// Counts the number of visible channel up to (but not including) the [end]th
+    /// channel.
+    pub fn count_visible_channel(&self, end: Option<usize>) -> usize {
+        let channels = self.base.channels.borrow();
+
+        let end = match end {
+            Some(end) => end,
+            None => channels.len(),
+        };
+
+        channels
+            .iter()
+            .take(end)
+            .filter(|&channel| {
+                channel.state == Visibility::Showing || channel.state == Visibility::Shown
+            })
+            .count()
     }
 
     fn value_to_bar_height(&self, value: f64) -> f64 {
@@ -196,7 +215,7 @@ where
         props.x_axis_top - self.value_to_y(value)
     }
 
-    /// Calculates average y values for the visible series to help position the tooltip
+    /// Calculates average y values for the visible channel to help position the tooltip
     ///
     /// If [index] is given, calculates the average y value for the entity group
     /// at [index] only.
@@ -206,55 +225,67 @@ where
             return;
         }
 
-        let mut props = self.props.borrow_mut();
-        let entity_count = self
-            .base
-            .series_list
-            .borrow()
-            .first()
-            .unwrap()
-            .entities
-            .len();
-        let start = if index == 0 { index } else { 0 };
-        let end = if index == 0 { entity_count } else { index + 1 };
+        let channels = self.base.channels.borrow();
 
-        props
-            .average_y_values
-            .resize(entity_count, Default::default());
+        if !channels.is_empty() {
+            let mut props = self.props.borrow_mut();
+            let entity_count = channels.first().unwrap().entities.len();
+            let start = if index == 0 { index } else { 0 };
+            let end = if index == 0 { entity_count } else { index + 1 };
 
-        let series_list = self.base.series_list.borrow();
-        let series_states = &self.base.props.borrow().series_states;
+            props
+                .average_y_values
+                .resize(entity_count, Default::default());
 
-        for idx in start..end {
-            let mut sum = 0.0;
-            let mut count = 0;
-            for jdx in series_list.len()..0 {
-                let series_state = series_states[idx];
+            let channels = self.base.channels.borrow();
+            // let channel_states = &self.base.props.borrow().channel_states;
 
-                if series_state == Visibility::Hidden || series_state == Visibility::Hiding {
-                    continue;
+            for idx in start..end {
+                let mut sum = 0.0;
+                let mut count = 0;
+                for channel in channels.iter() {
+                    if channel.state == Visibility::Hidden || channel.state == Visibility::Hiding {
+                        continue;
+                    }
+
+                    let bar = channel.entities.get(idx).unwrap();
+                    if bar.value.is_none() {
+                        sum += bar.height;
+                        count += 1;
+                    }
                 }
-
-                let series = series_list.get(jdx).unwrap();
-
-                let bar = series.entities.get(idx).unwrap();
-                if bar.value != 0. {
-                    sum += bar.height;
-                    count += 1;
-                }
+                props.average_y_values[idx] = if count > 0 {
+                    props.x_axis_top - sum / count as f64
+                } else {
+                    0.
+                };
             }
-            props.average_y_values[idx] = if count > 0 {
-                props.x_axis_top - sum / count as f64
-            } else {
-                0.
-            };
         }
     }
 
-    fn series_visibility_changed(&self, index: usize) {
+    fn channel_visibility_changed(&self, index: usize) {
         self.update_bar_width();
-        self.update_series(0);
+        self.update_channel(0);
         self.calculate_average_y_values(0);
+    }
+
+    /// Called when [data_table] has been changed.
+    fn data_table_changed(&self) {
+        info!("data_table_changed");
+        // self.calculate_drawing_sizes(ctx);
+        let mut channels = self.base.channels.borrow_mut();
+        *channels = self.create_channels(0, self.base.data_table.meta.len());
+    }
+
+    fn get_channel_lefts(&self) -> Vec<f64> {
+        let mut result = Vec::new();
+        let channels = self.base.channels.borrow();
+        let mut idx = 0;
+        for channel in channels.iter() {
+            result.push(self.get_bar_left(idx, 0));
+            idx += 1;
+        }
+        result
     }
 }
 
@@ -265,13 +296,20 @@ where
     D: fmt::Display,
 {
     // TODO: Separate y-axis stuff into a separate method.
-    fn calculate_drawing_sizes(&self) {
-        self.base.calculate_drawing_sizes();
+    fn calculate_drawing_sizes(&self, ctx: &C) {
+        info!("calculate_drawing_sizes");
+        self.base.calculate_drawing_sizes(ctx);
+
+        {
+            let mut props = self.props.borrow_mut();
+            props.bar_group_width = 0.618 * props.xlabel_hop; // Golden ratio.
+            props.tooltip_offset = 0.5 * props.xlabel_hop + 4.;
+        }
+
+        self.update_bar_width();
+
         let mut props = self.props.borrow_mut();
         let mut baseprops = self.base.props.borrow_mut();
-        props.bar_group_width = 0.618 * props.xlabel_hop; // Golden ratio.
-        props.tooltip_offset = 0.5 * props.xlabel_hop + 4.;
-        self.update_bar_width();
 
         // y-axis min-max.
         props.y_max_value = if let Some(value) = self.base.options.y_axis.max_value {
@@ -281,6 +319,7 @@ where
         };
 
         // FIXME:
+        props.y_max_value = 12.;
         // props.y_max_value = props
         //     .y_max_value
         //     .max(utils::find_max_value(&self.base.data_table));
@@ -296,6 +335,7 @@ where
         };
 
         // FIXME:
+        props.y_min_value = 3.;
         // props.y_min_value = props
         //     .y_min_value
         //     .min(utils::find_min_value(&self.base.data_table));
@@ -304,10 +344,10 @@ where
             props.y_min_value = 0.;
         }
 
-        props.y_interval = self.base.options.y_axis.interval.unwrap();
-        let min_interval = self.base.options.y_axis.min_interval;
-
-        if props.y_interval == 0. {
+        if let Some(value) = self.base.options.y_axis.interval {
+            props.y_interval = value
+        } else {
+            let min_interval = self.base.options.y_axis.min_interval;
             if props.y_min_value == props.y_max_value {
                 if props.y_min_value == 0. {
                     props.y_max_value = 1.;
@@ -327,7 +367,7 @@ where
                 props.y_interval = utils::calculate_interval(
                     props.y_max_value - props.y_min_value,
                     5,
-                    min_interval.unwrap() as f64,
+                    min_interval,
                 );
             }
         }
@@ -351,14 +391,19 @@ where
             // ylabel_formatter = numberFormat.format;
         }
 
-        let mut value = props.y_min_value;
-        while value <= props.y_max_value {
-            let ylabel_formatter = props.ylabel_formatter.unwrap();
-            props.ylabels.push(ylabel_formatter(value));
-            value += props.y_interval;
+        if let Some(ylabel_formatter) = props.ylabel_formatter {
+            let mut value = props.y_min_value;
+            while value <= props.y_max_value {
+                let ylabel_formatter = ylabel_formatter;
+                props.ylabels.push(ylabel_formatter(value));
+                value += props.y_interval;
+            }
+        } else {
+            // FIXME:
         }
 
         // TODO: fix me
+        // props.ylabel_max_width = 100.;
         // props.ylabel_max_width = utils::calculate_max_text_width(
         //         context, get_font(self.base.options.y_axis.labels.style), ylabels)
         //     .round();
@@ -374,51 +419,52 @@ where
             props.ylabel_formatter
         };
 
-        let series_and_axes_box = &baseprops.series_and_axes_box;
+        let channel_and_axes_box = &baseprops.channel_and_axes_box;
 
         // x-axis title
         let mut xtitle_left = 0.;
-        let xtitle_top = 0.;
-        let xtitle_width = 0.;
-        let xtitle_height = 0.;
+        let mut xtitle_top = 0.;
+        let mut xtitle_width = 0.;
+        let mut xtitle_height = 0.;
         let xtitle = &self.base.options.x_axis.title;
 
-        // if xtitle.text != null {
-        // ctx.set_font(
-        //     xtitle.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-        //     xtitle.font_style.unwrap_or(TextStyle::Normal),
-        //     TextWeight::Normal,
-        //     xtitle.font_size.unwrap_or(12.),
-        // );
-        //     xtitle_width = context.measure_text(xtitle.text).width.round() +
-        //         2 * TITLE_PADDING;
-        //     xtitle_height = xtitle.style.font_size + 2 * TITLE_PADDING;
-        //     xtitle_top = baseprops.series_and_axes_box.bottom - xtitle_height;
-        // }
+        if let Some(text) = xtitle.text {
+            let style = &xtitle.style;
+            ctx.set_font(
+                style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+                style.font_style.unwrap_or(TextStyle::Normal),
+                TextWeight::Normal,
+                style.font_size.unwrap_or(12.),
+            );
+            xtitle_width = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
+            xtitle_height = xtitle.style.font_size.unwrap_or(12.) + 2. * TITLE_PADDING;
+            xtitle_top =
+                channel_and_axes_box.origin.y + channel_and_axes_box.size.height - xtitle_height;
+        }
 
         // y-axis title
-        let ytitle_left = 0.;
+        let mut ytitle_left = 0.;
         let ytitle_top = 0.;
-        let ytitle_width = 0.;
-        let ytitle_height = 0.;
+        let mut ytitle_width = 0.;
+        let mut ytitle_height = 0.;
         let ytitle = &self.base.options.y_axis.title;
 
-        // if ytitle.text != null {
-        // ctx.set_font(
-        //     ytitle.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-        //     ytitle.font_style.unwrap_or(TextStyle::Normal),
-        //     TextWeight::Normal,
-        //     ytitle.font_size.unwrap_or(12.),
-        // );
-        //     ytitle_height = context.measure_text(ytitle.text).width.round() +
-        //         2 * TITLE_PADDING;
-        //     ytitle_width = ytitle.style.font_size + 2 * TITLE_PADDING;
-        //     ytitle_left = series_and_axes_box.left;
-        // }
+        if let Some(text) = ytitle.text {
+            let style = &ytitle.style;
+            ctx.set_font(
+                style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+                style.font_style.unwrap_or(TextStyle::Normal),
+                TextWeight::Normal,
+                style.font_size.unwrap_or(12.),
+            );
+            ytitle_height = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
+            ytitle_width = ytitle.style.font_size.unwrap_or(12.) + 2. * TITLE_PADDING;
+            ytitle_left = channel_and_axes_box.origin.x;
+        }
 
         // Axes" size and position
         props.y_axis_left =
-            series_and_axes_box.origin.x + props.ylabel_max_width + AXIS_LABEL_MARGIN as f64;
+            channel_and_axes_box.origin.x + props.ylabel_max_width + AXIS_LABEL_MARGIN as f64;
         if ytitle_width > 0. {
             props.y_axis_left += ytitle_width + CHART_TITLE_MARGIN;
         } else {
@@ -426,37 +472,41 @@ where
         }
 
         props.x_axis_length =
-            (series_and_axes_box.origin.x + series_and_axes_box.size.width) - props.y_axis_left;
+            (channel_and_axes_box.origin.x + channel_and_axes_box.size.width) - props.y_axis_left;
 
-        props.x_axis_top = series_and_axes_box.origin.y + series_and_axes_box.size.height;
+        props.x_axis_top = channel_and_axes_box.origin.y + channel_and_axes_box.size.height;
+
         if xtitle_height > 0. {
             props.x_axis_top -= xtitle_height + CHART_TITLE_MARGIN;
         } else {
             props.x_axis_top -= AXIS_LABEL_MARGIN as f64;
         }
+
         props.x_axis_top -= AXIS_LABEL_MARGIN as f64;
 
         // x-axis labels and x-axis"s position.
-        let row_count = self.base.data_table.meta.len();
+        let row_count = self.base.data_table.frames.len();
         props.xlabels = Vec::new();
         for idx in 0..row_count {
-            let row = self.base.data_table.meta.get(idx).unwrap();
-            props.xlabels.push(row.name.to_string());
+            let row = self.base.data_table.frames.get(idx).unwrap();
+            props.xlabels.push(row.metric.to_string());
         }
 
         // TODO: fix me
+        props.xlabel_max_width = 5.;
         // props.xlabel_max_width = utils::calculate_max_text_width(
         //     context,
         //     get_font(self.base.options.x_axis.labels.style),
         //     props.xlabels,
         // );
-        if props.xlabel_offset_factor > 0. && row_count > 1 {
-            props.xlabel_hop = props.x_axis_length / row_count as f64;
+
+        props.xlabel_hop = if props.xlabel_offset_factor > 0. && row_count > 1 {
+            props.x_axis_length / row_count as f64
         } else if row_count > 1 {
-            props.xlabel_hop = props.x_axis_length / (row_count - 1) as f64;
+            props.x_axis_length / (row_count - 1) as f64
         } else {
-            props.xlabel_hop = props.x_axis_length;
-        }
+            props.x_axis_length
+        };
 
         props.xlabel_rotation = 0.;
 
@@ -497,43 +547,48 @@ where
 
         // Wrap up.
         props.y_axis_length = props.x_axis_top
-            - series_and_axes_box.origin.y
+            - channel_and_axes_box.origin.y
             - (self.base.options.y_axis.labels.style.font_size.unwrap() / 2.).trunc();
-        props.ylabel_hop = props.y_axis_length / (props.ylabels.len() - 1) as f64;
+        props.ylabel_hop = props.y_axis_length / props.ylabels.len() as f64;
 
         xtitle_left = props.y_axis_left + ((props.x_axis_length - xtitle_width) / 2.).trunc();
 
         let ytitle_top =
-            series_and_axes_box.origin.y + ((props.y_axis_length - ytitle_height) / 2.).trunc();
+            channel_and_axes_box.origin.y + ((props.y_axis_length - ytitle_height) / 2.).trunc();
 
         if xtitle_height > 0. {
-            //      x_title_box =
-            //          Rectangle(xTitleLeft, xTitleTop, xTitleWidth, xTitleHeight);
+            props.x_title_box = Rect::new(
+                Point::new(xtitle_left, xtitle_top),
+                Size::new(xtitle_width, xtitle_height),
+            );
             props.x_title_center = Some(Point::new(
                 xtitle_left + (xtitle_width / 2.).trunc(),
                 xtitle_top + (xtitle_height / 2.).trunc(),
             ));
         } else {
-            //      x_title_box = null;
             props.x_title_center = None;
         }
 
         if ytitle_height > 0. {
-            //      y_title_box =
-            //          Rectangle(yTitleLeft, yTitleTop, yTitleWidth, yTitleHeight);
+            props.y_title_box = Rect::new(
+                Point::new(ytitle_left, ytitle_top),
+                Size::new(ytitle_width, ytitle_height),
+            );
             props.y_title_center = Some(Point::new(
                 ytitle_left + (ytitle_width / 2.).trunc(),
                 ytitle_top + (ytitle_height / 2.).trunc(),
             ));
         } else {
-            //      y_title_box = null;
             props.y_title_center = None;
         }
     }
 
-    fn set_stream(&self, stream: DataStream<'a, M, D>) {}
+    fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
+        self.base.data_table = stream;
+    }
 
     fn draw(&self, ctx: &C) {
+        info!("draw");
         self.base.dispose();
         // data_tableSubscriptionTracker
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
@@ -543,13 +598,23 @@ where
         self.base.initialize_legend();
         self.base.initialize_tooltip();
 
+        self.base.draw(ctx);
+
+        // if force_redraw {
+        self.base.stop_animation();
+        self.data_table_changed();
+        self.base.position_legend();
+
+        // This call is redundant for row and column changes but necessary for
+        // cell changes.
+        self.calculate_drawing_sizes(ctx);
+        self.update_channel(0);
+        // }
+
+        self.calculate_average_y_values(0);
+
         // self.base.start_animation();
         self.draw_frame(ctx, None);
-    }
-
-    fn update(&self, ctx: &C) {
-        self.base.update(ctx);
-        self.calculate_average_y_values(0);
     }
 
     fn resize(&self, w: f64, h: f64) {
@@ -559,7 +624,7 @@ where
     /// Draws the axes and the grid.
     ///
     fn draw_axes_and_grid(&self, ctx: &C) {
-        println!("BarChart draw_axes_and_grid");
+        info!("draw_axes_and_grid");
         // x-axis title.
         let props = self.props.borrow();
         if let Some(x_title_center) = props.x_title_center {
@@ -624,6 +689,12 @@ where
         let mut y = props.x_axis_top + AXIS_LABEL_MARGIN as f64 + style.font_size.unwrap_or(12.);
         let scaled_label_hop = props.xlabel_step as f64 * props.xlabel_hop;
 
+        debug!(
+            "xlabel rotation [{}] and labels is [{}]",
+            props.xlabel_rotation,
+            props.xlabels.len()
+        );
+
         if props.xlabel_rotation == 0. {
             ctx.set_text_align(TextAlign::Center);
             ctx.set_text_baseline(BaseLine::Alphabetic);
@@ -649,11 +720,17 @@ where
 
             let mut idx = 0;
             while idx < props.xlabels.len() {
-                ctx.save();
-                ctx.translate(x, y);
-                ctx.rotate(angle);
-                ctx.fill_text(props.xlabels.get(idx).unwrap().as_str(), 0., 0.);
-                ctx.restore();
+                if let Some(text) = props.xlabels.get(idx) {
+                    info!("XLABEL: [{}] [{}:{}] {}", text, x, y, angle);
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(angle);
+                    ctx.fill_text(text.as_str(), 0., 0.);
+                    ctx.restore();
+                } else {
+                    error!("No xlabel at [{}]", idx)
+                }
+
                 x += scaled_label_hop;
                 idx += props.xlabel_step as usize;
             }
@@ -751,10 +828,9 @@ where
     ///
     /// If [time] is `null`, draws the last frame (i.e. no animation).
     fn draw_frame(&self, ctx: &C, time: Option<i64>) {
-        println!("BarChart draw_frame");
+        // clear surface
         self.base.draw_frame(ctx, time);
 
-        // self.ctx.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid(ctx);
 
         let mut percent = self.base.calculate_percent(time);
@@ -762,13 +838,14 @@ where
         if percent >= 1.0 {
             percent = 1.0;
 
-            // Update the visibility states of all series before the last frame.
-            let mut props = self.base.props.borrow_mut();
-            for idx in props.series_states.len()..0 {
-                if props.series_states[idx] == Visibility::Showing {
-                    props.series_states[idx] = Visibility::Shown;
-                } else if props.series_states[idx] == Visibility::Hiding {
-                    props.series_states[idx] = Visibility::Hidden;
+            // Update the visibility states of all channel before the last frame.
+            let mut channels = self.base.channels.borrow_mut();
+
+            for channel in channels.iter_mut() {
+                if channel.state == Visibility::Showing {
+                    channel.state = Visibility::Shown;
+                } else if channel.state == Visibility::Hiding {
+                    channel.state = Visibility::Hidden;
                 }
             }
         }
@@ -780,9 +857,9 @@ where
             None => get_easing(Easing::Linear),
         };
 
-        self.draw_series(ctx, ease(percent));
-        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
-        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
+        self.draw_channel(ctx, ease(percent));
+        // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
+        // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
 
         if percent < 1.0 {
@@ -792,26 +869,23 @@ where
         }
     }
 
-    fn draw_series(&self, ctx: &C, percent: f64) -> bool {
-        println!("BarChart draw_series");
-        let series_list = self.base.series_list.borrow();
-        let series_states = &self.base.props.borrow().series_states;
+    fn draw_channel(&self, ctx: &C, percent: f64) -> bool {
+        info!("draw_channel");
+        let channels = self.base.channels.borrow();
         let focused_entity_index = self.base.props.borrow().focused_entity_index;
 
         let crosshair = &self.base.options.x_axis.crosshair;
-        let labels = &self.base.options.series.labels;
+        let labels = &self.base.options.channel.labels;
         let props = self.props.borrow();
 
-        for idx in 0..series_list.len() {
-            if series_states[idx] == Visibility::Hidden {
+        for channel in channels.iter() {
+            if channel.state == Visibility::Hidden {
                 continue;
             }
 
-            let series = series_list.get(idx).unwrap();
-
             // Draw the bars.
-            for entity in series.entities.iter() {
-                if entity.value == 0. {
+            for entity in channel.entities.iter() {
+                if entity.value.is_none() {
                     continue;
                 }
                 entity.draw(ctx, percent, false);
@@ -841,14 +915,14 @@ where
                         ctx.set_text_align(TextAlign::Center);
                         ctx.set_text_baseline(BaseLine::Alphabetic);
 
-                        for entity in series.entities.iter() {
-                            if entity.value == 0. {
+                        for entity in channel.entities.iter() {
+                            if entity.value.is_none() {
                                 continue;
                             }
                             let x = entity.left + 0.5 * entity.width;
                             let y = props.x_axis_top - entity.height - 5.;
                             // TODO: bar.formatted_value
-                            let formatted_value = format!("{}", entity.value);
+                            let formatted_value = format!("{}", entity.value.unwrap());
                             ctx.fill_text(formatted_value.as_str(), x, y);
                         }
                     }
@@ -859,61 +933,61 @@ where
         return false;
     }
 
-    fn update_series(&self, index: usize) {
+    fn update_channel(&self, index: usize) {
         let entity_count = self.base.data_table.frames.len();
-        let mut series_list = self.base.series_list.borrow_mut();
-        let props = self.props.borrow();
-        let series_states = &self.base.props.borrow().series_states;
 
-        for idx in 0..series_list.len() {
-            let mut series = series_list.get_mut(idx).unwrap();
-            let mut left = self.get_bar_left(idx, 0);
+        let lefts = self.get_channel_lefts();
+        let props = self.props.borrow();
+
+        let mut channels = self.base.channels.borrow_mut();
+        let mut idx = 0;
+        for channel in channels.iter_mut() {
+            let mut left = *lefts.get(idx).unwrap();
             let mut bar_width = 0.0;
 
-            let series_state = series_states[idx];
-
-            if series_state == Visibility::Showing || series_state == Visibility::Shown {
+            if channel.state == Visibility::Showing || channel.state == Visibility::Shown {
                 bar_width = bar_width;
             }
 
             let color = self.base.get_color(idx);
             let highlight_color = self.base.get_highlight_color(color);
-            series.color = color;
-            series.highlight_color = highlight_color;
+            channel.color = color;
+            channel.highlight = highlight_color;
 
             for jdx in 0..entity_count {
-                let mut entity = series.entities.get_mut(jdx).unwrap();
+                let mut entity = channel.entities.get_mut(jdx).unwrap();
                 entity.index = jdx;
                 entity.color = color;
                 entity.highlight_color = highlight_color;
                 entity.left = left;
                 entity.bottom = props.x_axis_top;
-                entity.height = self.value_to_bar_height(entity.value);
+                entity.height = self.value_to_bar_height(entity.value.unwrap());
                 entity.width = bar_width;
                 left += props.xlabel_hop;
             }
+            idx += 1;
         }
     }
 
     fn create_entity(
         &self,
-        series_index: usize,
+        channel_index: usize,
         entity_index: usize,
-        value: f64,
+        value: Option<f64>,
         color: Color,
         highlight_color: Color,
     ) -> BarEntity {
-        let left = self.get_bar_left(series_index, entity_index);
+        let left = self.get_bar_left(channel_index, entity_index);
         let old_left = left;
-        let height = self.value_to_bar_height(value);
+        let height = self.value_to_bar_height(value.unwrap());
 
         // Animate width.
         let mut old_height = height;
         let mut old_width = 0.;
 
         let props = self.props.borrow();
-        let series_list = self.base.series_list.borrow();
-        if series_list.len() == 0 {
+        let channels = self.base.channels.borrow();
+        if channels.len() == 0 {
             // Data table changed. Animate height.
             old_height = 0.;
             old_width = props.bar_width;
@@ -921,7 +995,7 @@ where
 
         BarEntity {
             index: entity_index,
-            old_value: 0.,
+            old_value: None,
             value,
             //   formatted_value: value != null ? entity_value_formatter(value) : null
             color,
@@ -934,6 +1008,60 @@ where
             old_width,
             width: props.bar_width,
         }
+    }
+
+    fn create_channels(&self, start: usize, end: usize) -> Vec<ChartChannel<BarEntity>> {
+        info!("create_channels {} {}", start, end);
+        let mut start = start;
+        let mut result = Vec::new();
+        let count = self.base.data_table.frames.len();
+        let meta = &self.base.data_table.meta;
+        while start < end {
+            let channel = meta.get(start).unwrap();
+            let name = channel.name;
+            let color = self.base.get_color(start);
+            let highlight = self.base.get_highlight_color(color);
+
+            let entities = self.create_entities(start, 0, count, color, highlight);
+            // println!("GET #{}: {} {} {}", start, name, color, highlight);
+
+            result.push(ChartChannel::new(name, color, highlight, entities));
+            start += 1;
+        }
+        result
+    }
+
+    fn create_entities(
+        &self,
+        channel_index: usize,
+        start: usize,
+        end: usize,
+        color: Color,
+        highlight: Color,
+    ) -> Vec<BarEntity> {
+        info!(
+            "create_entities [{}] [{}] for channel [{}]",
+            start, end, channel_index
+        );
+        let mut start = start;
+        let mut result = Vec::new();
+        while start < end {
+            let frame = self.base.data_table.frames.get(start).unwrap();
+            println!("METRIC IS: {}", frame.metric);
+            let value = frame.data.get(channel_index as u64).unwrap();
+
+            let entity = self.create_entity(
+                channel_index,
+                start,
+                Some(5.), /*value*/
+                color,
+                highlight,
+            );
+            //   e.chart = this;
+            result.push(entity);
+            start += 1;
+        }
+        result
     }
 
     fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {

@@ -1,17 +1,15 @@
 use animate::easing::{Easing, EasingFunction};
 use dataflow::*;
 use primitives::{
-    palette, CanvasContext, Color, Point, Rect, Size, TextAlign, TextStyle, TextWeight,
+    palette, CanvasContext, Color, Point, Rect, RgbColor, RgbaColor, Size, TextAlign, TextStyle,
+    TextWeight,
 };
 use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use super::*;
 
-lazy_static! {
-    /// The color cache used by change_color_alpha. (should be doc)
-    // should be global static cache
-    static ref COLOR_CACHE: HashMap<String, String> = Default::default();
-}
+
+// channel_states moved to channels
 
 #[derive(Default, Clone)]
 pub struct BaseChartProperties {
@@ -33,7 +31,7 @@ pub struct BaseChartProperties {
     /// Index of the highlighted point group/bar group/pie/...
     pub focused_entity_index: i64, // = -1;
 
-    pub focused_series_index: i64, // = -1;
+    pub focused_channel_index: i64, // = -1;
 
     pub entity_value_formatter: Option<ValueFormatter>,
 
@@ -46,20 +44,17 @@ pub struct BaseChartProperties {
     // mouseMoveSub: StreamSubscription,
     /// The tooltip element. To position the tooltip, change its transform CSS.
     tooltip: Option<bool>, //Element,
-    /// The function used to format series names to display in the tooltip.
+    /// The function used to format channel names to display in the tooltip.
     pub tooltip_label_formatter: Option<LabelFormatter>,
 
-    /// The function used to format series data to display in the tooltip.
+    /// The function used to format channel data to display in the tooltip.
     pub tooltip_value_formatter: Option<ValueFormatter>,
 
-    /// Bounding box of the series and axes.
-    pub series_and_axes_box: Rect<f64>,
+    /// Bounding box of the channel and axes.
+    pub channel_and_axes_box: Rect<f64>,
 
     /// Bounding box of the chart title.
     pub title_box: Rect<f64>,
-
-    /// A list used to keep track of the visibility of the series.
-    pub series_states: Vec<Visibility>,
 }
 
 /// Base class for all charts.
@@ -76,7 +71,7 @@ where
     /// The data table that stores chart data
     /// Row 0 contains column names.
     /// Column 0 contains x-axis/pie labels.
-    /// Column 1..n - 1 contain series data.
+    /// Column 1..n - 1 contain channel data.
     pub data_table: DataStream<'a, M, D>,
 
     /// The drawing options initialized in the constructor.
@@ -88,11 +83,12 @@ where
     /// The rendering context for the axes.
     // pub ctx: Option<C>,
 
-    /// The rendering context for the series.
+    /// The rendering context for the channel.
     // pub ctx: Option<C>,
 
     /// The precalcuated datas
-    pub series_list: RefCell<Vec<Series<E>>>,
+    /// A ChartChannel keep track of the visibility of the channel.
+    pub channels: RefCell<Vec<ChartChannel<E>>>,
 }
 
 impl<'a, C, E, M, D, O> BaseChart<'a, C, E, M, D, O>
@@ -118,57 +114,28 @@ where
         // ctx = CanvasElement().getContext("2d");
         // ctx = CanvasElement().getContext("2d");
 
-        // container.append(context.canvas);
+        // container.append(ctx.canvas);
         Self {
             props: Default::default(),
             data_table: Default::default(),
             options,
             context: None,
-            series_list: RefCell::new(Vec::new()),
+            channels: RefCell::new(Vec::new()),
         }
     }
 
     /// Creates a new color by combining the R, G, B components of [color] with
-    /// [alpha].
+    /// [alpha] from 0 to 1.
+    /// TODO: There are question about set the alpha or change from existing alpha
+    ///
     pub fn change_color_alpha(&self, color: Color, alpha: f64) -> Color {
-        let key = format!("{}{}", color, alpha);
-        let result = COLOR_CACHE.get(&key);
-        // match result {
-        //     Some(color) => color.clone(),
-        //     None => {
-        //         // Convert [color] to HEX/RGBA format using [context].
+        if alpha > 1. || alpha < 0. {
+            panic!("Wrong alpha value {}", alpha);
+        }
 
-        //         // context.fillStyle = color;
-        //         // color = context.fillStyle;
-
-        //         // if (color[0] == "#") {
-        //         // result = hexToRgba(color, alpha);
-        //         // } else {
-        //         // let list = color.split(",");
-        //         // list[list.len() - 1] = "$alpha)";
-        //         // result = list.join(",");
-        //         // }
-        //         // COLOR_CACHE.insert(key, result);
-        //         "".into()
-        //     }
-        // }
-        unimplemented!()
-    }
-
-    /// Counts the number of visible series up to (but not including) the [end]th
-    /// series.
-    pub fn count_visible_series(&self, end: Option<usize>) -> usize {
-        let props = self.props.borrow();
-        let end = match end {
-            Some(end) => end,
-            None => props.series_states.len(),
-        };
-
-        // props.series_states
-        //     .take(end)
-        //     .where((e) => e.index >= Visibility::showing.index)
-        //     .len();
-        unimplemented!()
+        let alpha = (alpha * 0xFF as f64).round() as u8;
+        let color: RgbColor = color.into();
+        Color::RGBA(color.red, color.green, color.blue, alpha)
     }
 
     pub fn get_color(&self, index: usize) -> Color {
@@ -186,9 +153,9 @@ where
         let mut props = self.props.borrow_mut();
         props.animation_start_time = None;
 
-        let series_list = self.series_list.borrow();
-        for series in series_list.iter() {
-            for entity in &series.entities {
+        let channels = self.channels.borrow();
+        for channel in channels.iter() {
+            for entity in &channel.entities {
                 //         entity.save();
             }
         }
@@ -202,22 +169,24 @@ where
 
     /// Calculates various drawing sizes.
     ///
-    /// Overriding methods must call this method first to have [series_and_axes_box]
+    /// Overriding methods must call this method first to have [channel_and_axes_box]
     /// calculated.
     ///
-    pub fn calculate_drawing_sizes(&self) {
-        println!("BaseChart calculate_drawing_sizes");
+    pub fn calculate_drawing_sizes(&self, ctx: &C) {
+        info!("calculate_drawing_sizes");
         let title = self.options.title();
-        let title_x = 0.0;
+
+        let mut title_x = 0.0;
         let mut title_y = 0.0;
-        let title_w = 0.0;
+        let mut title_w = 0.0;
         let mut title_h = 0.0;
+
         if title.position != "none" && title.text.is_some() {
             title_h = title.style.font_size.unwrap_or(12.) + 2.0 * TITLE_PADDING;
         }
 
         let mut props = self.props.borrow_mut();
-        props.series_and_axes_box = Rect {
+        props.channel_and_axes_box = Rect {
             origin: Point::new(CHART_PADDING, CHART_PADDING),
             size: Size::new(
                 props.width - 2.0 * CHART_PADDING,
@@ -230,58 +199,56 @@ where
             match title.position {
                 "above" => {
                     title_y = CHART_PADDING;
-                    props.series_and_axes_box.origin.x += title_h + CHART_TITLE_MARGIN;
-                    props.series_and_axes_box.size.height -= title_h + CHART_TITLE_MARGIN;
+                    props.channel_and_axes_box.origin.x += title_h + CHART_TITLE_MARGIN;
+                    props.channel_and_axes_box.size.height -= title_h + CHART_TITLE_MARGIN;
                 }
                 "middle" => {
                     title_y = f64::floor((props.height - title_h) / 2.0);
                 }
                 "below" => {
                     title_y = props.height - title_h - CHART_PADDING;
-                    props.series_and_axes_box.size.height -= title_h + CHART_TITLE_MARGIN;
+                    props.channel_and_axes_box.size.height -= title_h + CHART_TITLE_MARGIN;
                 }
                 _ => {}
             }
 
-            // FIXME: complete
-            // let context = self.context.unwrap();
-            //   context.set_font(get_font(title.style).as_str());
-            // ctx.set_font(
-            //     title.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-            //     title.font_style.unwrap_or(TextStyle::Normal),
-            //     TextWeight::Normal,
-            //     title.font_size.unwrap_or(12.),
-            // );
-            //   title_w =
-            //       context.measure_text(title["text"]).width.round() + 2 * TITLE_PADDING;
-            //   title_x = ((width - titleW - 2 * TITLE_PADDING) / 2).trunc();
+            if let Some(text) = title.text {
+                let style = &title.style;
+                ctx.set_font(
+                    style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+                    style.font_style.unwrap_or(TextStyle::Normal),
+                    TextWeight::Normal,
+                    style.font_size.unwrap_or(12.),
+                );
+                title_w = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
+                title_x = ((props.width - title_w - 2. * TITLE_PADDING) / 2.).trunc();
+            }
         }
 
-        let title_box = Rect {
+        props.title_box = Rect {
             origin: Point::new(title_x, title_y),
             size: Size::new(title_w, title_h),
         };
 
         // Consider the legend.
-
         if let Some(legend) = props.legend {
             //   let lwm = self.legend.offset_width + legend_margin;
             //   let lhm = self.legend.offset_height + legend_margin;
             let position = self.options.legend().position;
             match position {
                 "right" => {
-                    // props.series_and_axes_box.size.width -= lwm;
+                    // props.channel_and_axes_box.size.width -= lwm;
                 }
                 "bottom" => {
-                    // props.series_and_axes_box.size.height -= lhm;
+                    // props.channel_and_axes_box.size.height -= lhm;
                 }
                 "left" => {
-                    // props.series_and_axes_box.origin.x += lwm;
-                    // props.series_and_axes_box.size.width -= lwm;
+                    // props.channel_and_axes_box.origin.x += lwm;
+                    // props.channel_and_axes_box.size.width -= lwm;
                 }
                 "top" => {
-                    // props.series_and_axes_box.origin.y += lhm;
-                    // props.series_and_axes_box.size.height -= lhm;
+                    // props.channel_and_axes_box.origin.y += lhm;
+                    // props.channel_and_axes_box.size.height -= lhm;
                 }
                 _ => {}
             }
@@ -296,7 +263,7 @@ where
             //   let f = entity_value_formatter != null && record.newValue != null
             //       ? entity_value_formatter(record.newValue)
             //       : null;
-            //   series_list[record.columnIndex - 1].entities[record.rowIndex]
+            //   channels[record.columnIndex - 1].entities[record.rowIndex]
             //     ..value = record.newValue
             //     ..formatted_value = f;
         }
@@ -304,27 +271,27 @@ where
 
     /// Event handler for [DataTable.onRowsChanged].
     pub fn data_rows_changed(&self, record: DataCollectionChangeRecord) {
-        self.calculate_drawing_sizes();
+        // self.calculate_drawing_sizes(ctx);
         let entity_count = self.data_table.frames.len();
         let removed_end = record.index + record.removed_count;
         let added_end = record.index + record.added_count;
-        let series_list = self.series_list.borrow();
-        for series in series_list.iter() {
+        let channels = self.channels.borrow();
+        for channel in channels.iter() {
             // Remove old entities.
             if record.removed_count > 0 {
-                // series.freeEntities(record.index, removedEnd);
-                // series.entities.remove_range(record.index, removedEnd);
+                // channel.freeEntities(record.index, removedEnd);
+                // channel.entities.remove_range(record.index, removedEnd);
             }
 
             // Insert new entities.
             if record.added_count > 0 {
                 // let newEntities = create_entities(
-                //     i, record.index, addedEnd, series.color, series.highlight_color);
-                // series.entities.insertAll(record.index, newEntities);
+                //     i, record.index, addedEnd, channel.color, channel.highlight_color);
+                // channel.entities.insertAll(record.index, newEntities);
 
                 // // Update entity indexes.
                 // for (let j = addedEnd; j < entity_count; j++) {
-                //     series.entities[j].index = j;
+                //     channel.entities[j].index = j;
                 // }
             }
         }
@@ -332,52 +299,46 @@ where
 
     /// Event handler for [DataTable.onColumnsChanged].
     pub fn data_columns_changed(&self, record: DataCollectionChangeRecord) {
-        self.calculate_drawing_sizes();
+        debug!(
+            "data_columns_changed remove[{}] add[{}]",
+            record.removed_count, record.added_count
+        );
+        // self.calculate_drawing_sizes(ctx);
         let start = record.index - 1;
-        self.update_series_visible(start, record.removed_count, record.added_count);
+        self.update_channel_visible(start, record.removed_count, record.added_count);
         if record.removed_count > 0 {
             let end = start + record.removed_count;
             for idx in start..end {
-                // self.series_list[idx].freeEntities(0);
+                // self.channels[idx].freeEntities(0);
             }
-            // self.series_list.remove_range(start, end);
+            // self.channels.remove_range(start, end);
         }
 
         if record.added_count > 0 {
-            let list = self.create_series_list(start, start + record.added_count);
-            //   self.series_list.insertAll(start, list);
+            let list = self.create_channels(start, start + record.added_count);
+            //   self.channels.insertAll(start, list);
         }
         self.update_legend_content();
     }
 
-    /// Called when [data_table] has been changed.
-    pub fn data_table_changed(&self) {
-        println!("BaseChart data_table_changed");
-        self.calculate_drawing_sizes();
-        let mut series_list = self.series_list.borrow_mut();
-        *series_list = self.create_series_list(0, self.data_table.meta.len());
-    }
-
-    pub fn update_series_visible(&self, index: usize, removed_count: usize, added_count: usize) {
+    pub fn update_channel_visible(&self, index: usize, removed_count: usize, added_count: usize) {
         if removed_count > 0 {
-            // self.series_states.remove_range(index, index + removed_count);
+            // self.channel_states.remove_range(index, index + removed_count);
         }
         if added_count > 0 {
             // let list = List.filled(added_count, Visibility::showing);
-            // self.series_states.insertAll(index, list);
+            // self.channel_states.insertAll(index, list);
         }
         unimplemented!()
     }
 
     /// Draws the chart title using the main rendering context.
     pub fn draw_title(&self, ctx: &C) {
-        println!("BarChart draw_title");
         let title = self.options.title();
         if let Some(text) = title.text {
             let props = self.props.borrow();
             let x = ((props.title_box.origin.x + props.title_box.size.width) / 2.).trunc();
             let y = (props.title_box.origin.y + props.title_box.size.height) - TITLE_PADDING;
-            println!("Title [{}] {},{}", text, x, y);
             let style = &title.style;
             ctx.set_font(
                 style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -387,17 +348,16 @@ where
             );
             ctx.set_fill_color(title.style.color);
             ctx.set_text_align(TextAlign::Center);
-            ctx.fill_text(title.text.unwrap(), x, y);
+            ctx.fill_text(text, x, y);
+        } else {
+            println!("No title")
         }
     }
 
     pub fn initialize_legend(&self) {
-        println!("BaseChart initialize_legend");
-        let n = self.get_legend_labels().len();
-        // series_states = Vec<VISIBILITY>.filled(n, Visibility::showing,
-        //     growable: true);
-
+        let new_len = self.get_legend_labels().len();
         let props = self.props.borrow_mut();
+        
         if let Some(legend) = props.legend {
             //   self.legend.remove();
             //   self.legend = null;
@@ -416,7 +376,7 @@ where
     /// This must be called after [calculate_drawing_sizes] as we need to know
     /// where the title is in order to position the legend correctly.
     pub fn position_legend(&self) {
-        println!("BaseChart position_legend");
+        // println!("BaseChart position_legend");
         let props = self.props.borrow();
         if let Some(legend) = props.legend {
             // let s = legend.style;
@@ -473,7 +433,7 @@ where
         //     ..add(e.onMouseOver.listen(legend_item_mouse_over))
         //     ..add(e.onMouseOut.listen(legend_item_mouse_out));
 
-        //   let state = series_states[i];
+        //   let state = channel_states[i];
         //   if (state == Visibility::hidden ||
         //       state == Visibility::hiding) {
         //     e.style.opacity = ".4";
@@ -505,15 +465,15 @@ where
         // let item = e.currentTarget as Element;
         // let index = item.parent.children.indexOf(item);
 
-        // if (series_states[index] == Visibility::shown) {
-        //   series_states[index] = Visibility::hiding;
+        // if (channel_states[index] == Visibility::shown) {
+        //   channel_states[index] = Visibility::hiding;
         //   item.style.opacity = ".4";
         // } else {
-        //   series_states[index] = Visibility::showing;
+        //   channel_states[index] = Visibility::showing;
         //   item.style.opacity = "";
         // }
 
-        // series_visibility_changed(index);
+        // channel_visibility_changed(index);
         self.start_animation();
     }
 
@@ -523,7 +483,7 @@ where
         }
 
         // let item = e.currentTarget as Element;
-        // focused_series_index = item.parent.children.indexOf(item);
+        // focused_channel_index = item.parent.children.indexOf(item);
         // draw_frame(null);
     }
 
@@ -532,15 +492,15 @@ where
             return;
         }
 
-        // focused_series_index = -1;
+        // focused_channel_index = -1;
         // draw_frame(null);
     }
 
-    /// Called when the visibility of a series is changed.
+    /// Called when the visibility of a channel is changed.
     ///
-    /// [index] is the index of the affected series.
+    /// [index] is the index of the affected channel.
     ///
-    pub fn series_visibility_changed(&self, index: usize) {}
+    pub fn channel_visibility_changed(&self, index: usize) {}
 
     /// Returns the index of the point group/bar group/pie/... near the position
     /// specified by [x] and [y].
@@ -556,7 +516,7 @@ where
         //     return;
         // }
 
-        // let rect = context.canvas.getBoundingClientRect();
+        // let rect = ctx.canvas.getBoundingClientRect();
         // let x = e.client.x - rect.left;
         // let y = e.client.y - rect.top;
         // let index = getEntityGroupIndex(x, y);
@@ -576,7 +536,7 @@ where
     }
 
     pub fn initialize_tooltip(&self) {
-        println!("BaseChart initialize_tooltip");
+        // println!("BaseChart initialize_tooltip");
         // if self.tooltip != null {
         //   tooltip.remove();
         //   tooltip = null;
@@ -608,7 +568,7 @@ where
             .get(props.focused_entity_index as usize);
         // tooltip.innerHtml = "";
 
-        // // Tooltip title.
+        // // Tooltip title
         // tooltip.append(DivElement()
         //   ..text = row[0]
         //   ..style.padding = "4px 12px"
@@ -616,19 +576,19 @@ where
 
         // Tooltip items.
         for idx in 1..column_count {
-            let state = props.series_states.get(idx - 1);
+            // let state = props.channel_states.get(idx - 1);
             //   if (state == Visibility::hidden) continue;
             //   if (state == Visibility::hiding) continue;
 
-            //   let series = series_list[i - 1];
+            //   let channel = channels[i - 1];
             //   let value = row[i];
             //   if (value == null) continue;
 
             //   value = tooltip_value_formatter(value);
-            //   let label = tooltip_label_formatter(series.name);
+            //   let label = tooltip_label_formatter(channel.name);
 
             //   let e = create_tooltip_or_legendItem(
-            //       series.color, "$label: <strong>$value</strong>");
+            //       channel.color, "$label: <strong>$value</strong>");
             //   tooltip.append(e);
         }
     }
@@ -665,12 +625,12 @@ where
 
     // real drawing
     pub fn start_animation(&self) {
-        println!("BaseChart start_animation");
+        // println!("BaseChart start_animation");
         // animation_frame_id = window.requestAnimationFrame(draw_frame);
     }
 
     pub fn stop_animation(&self) {
-        println!("BaseChart stop_animation");
+        // println!("BaseChart stop_animation");
         // animation_start_time = null;
         // if self.animation_frame_id != 0 {
         //     //   window.cancelAnimationFrame(animation_frame_id);
@@ -691,9 +651,9 @@ where
     /// Whether the chart is interactive.
     ///
     /// This property returns `false` if the chart is animating or there are no
-    /// series to draw.
+    /// channel to draw.
     pub fn is_interactive(&self) -> bool {
-        !self.is_animating() && self.series_list.borrow().len() != 0
+        !self.is_animating() && self.channels.borrow().len() != 0
     }
 
     /// Disposes of resources used by this chart. The chart will become unusable
@@ -704,9 +664,9 @@ where
     ///
     /// @mustCallSuper
     pub fn dispose(&self) {
-        println!("BaseChart dispose");
+        // println!("BaseChart dispose");
         // // This causes [canHandleInteraction] to be `false`.
-        // series_list = null;
+        // channels = null;
         // mouse_move_sub?.cancel();
         // mouse_move_sub = null;
         // data_tableSubscriptionTracker.clear();
@@ -739,16 +699,26 @@ where
     D: fmt::Display,
     O: BaseOption<'a>,
 {
-    fn calculate_drawing_sizes(&self) {
+    fn calculate_drawing_sizes(&self, ctx: &C) {
         todo!()
     }
 
-    fn set_stream(&self, stream: DataStream<'a, M, D>) {}
+    fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
+        error!("set stream");
+    }
 
     /// Draws the chart given a data table [dataTable] and an optional set of
     /// options [options].
+    // TODO: handle updates while animation is happening.
     fn draw(&self, ctx: &C) {
         println!("!!!!!!!! BaseChart draw !!!!!!!!");
+
+        // TODO: use this not_eq
+        // let props = self.props.borrow();
+        // if props.width == 0_f64 || props.height == 0_f64 {
+        //     return;
+        // }
+
         self.dispose();
         // data_tableSubscriptionTracker
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
@@ -763,37 +733,9 @@ where
         self.start_animation();
     }
 
-    /// Updates the chart.
-    ///
-    ///  This method should be called after [dataTable] has been modified.
-    // TODO: handle updates while animation is happening.
-    fn update(&self, ctx: &C) {
-        println!("BaseChart update");
-
-        {
-            let props = self.props.borrow();
-
-            if props.width == 0_f64 || props.height == 0_f64 {
-                return;
-            }
-        }
-
-        // if force_redraw {
-        //     println!("BaseChart force_redraw");
-        //     self.stop_animation();
-        //     self.data_table_changed();
-        //     self.position_legend();
-
-        //     // This call is redundant for row and column changes but necessary for
-        //     // cell changes.
-        //     self.calculate_drawing_sizes();
-        //     self.update_series(0);
-        // }
-    }
-
     /// Resizes just only change size state for chart and do not resize the container/canvas.
     fn resize(&self, w: f64, h: f64) {
-        println!("BaseChart resize {} {}", w, h);
+        // println!("BaseChart resize {} {}", w, h);
         if w == 0_f64 || h == 0_f64 {
             println!("BaseChart resize OOOPS");
             return;
@@ -811,10 +753,10 @@ where
     ///
     fn draw_axes_and_grid(&self, ctx: &C) {}
 
-    /// Updates the series at index [index]. If [index] is `null`, updates all
-    /// series.
+    /// Updates the channel at index [index]. If [index] is `null`, updates all
+    /// channel.
     ///
-    fn update_series(&self, index: usize) {}
+    fn update_channel(&self, index: usize) {}
 
     // println!("SIZE {} {}", width, height);
     // println!("BACKGROUND {}", self.options.background());
@@ -827,12 +769,12 @@ where
         let width = props.width;
         let height = props.height;
 
-        ctx.set_fill_color(palette::TEAL_9);
+        ctx.set_fill_color(*self.options.background());
         // just fill instead clear
         ctx.fill_rect(0., 0., width, height);
     }
 
-    /// Draws the series given the current animation percent [percent].
+    /// Draws the channel given the current animation percent [percent].
     ///
     /// If this method returns `false`, the animation is continued until [percent]
     /// reaches 1.0.
@@ -842,20 +784,37 @@ where
     /// In those cases, the overriding method will return `true` to stop the
     /// animation.
     ///
-    fn draw_series(&self, ctx: &C, percent: f64) -> bool {
-        // Should not be implemented atm
-        panic!("Implement concrete method draw_series");
+    fn draw_channel(&self, ctx: &C, percent: f64) -> bool {
+        error!("draw_channel");
+        false
     }
 
     fn create_entity(
         &self,
-        series_index: usize,
+        channel_index: usize,
         entity_index: usize,
-        value: f64,
+        value: Option<f64>,
         color: Color,
         highlight_color: Color,
     ) -> E {
         todo!()
+    }
+
+    fn create_entities(
+        &self,
+        channel_index: usize,
+        start: usize,
+        end: usize,
+        color: Color,
+        highlight: Color,
+    ) -> Vec<E> {
+        error!("create_entities");
+        Vec::new()
+    }
+
+    fn create_channels(&self, start: usize, end: usize) -> Vec<ChartChannel<E>> {
+        error!("create_channels");
+        Vec::new()
     }
 
     fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {

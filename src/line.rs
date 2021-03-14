@@ -4,7 +4,7 @@
 
 use dataflow::*;
 use primitives::{
-    BaseLine, CanvasContext, Color, LineJoin, Point, Rect, TextAlign, TextStyle, TextWeight,
+    BaseLine, CanvasContext, Color, LineJoin, Point, Rect, Size, TextAlign, TextStyle, TextWeight,
 };
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
@@ -16,8 +16,8 @@ struct LinePoint {
     highlight_color: Color,
     // formatted_value: String,
     index: usize,
-    old_value: f64,
-    value: f64,
+    old_value: Option<f64>,
+    value: Option<f64>,
 
     old_x: f64,
     old_y: f64,
@@ -176,49 +176,50 @@ where
         -1
     }
 
-    /// Calculates average y values for the visible series to help position the
+    /// Calculates average y values for the visible channel to help position the
     /// tooltip.
     ///
     /// If [index] is given, calculates the average y value for the entity group
     /// at [index] only.
     ///
     fn calculate_average_y_values(&self, index: usize) {
-        if !self.base.options.tooltip.enabled {
-            return;
-        }
+        // if !self.base.options.tooltip.enabled {
+        //     return;
+        // }
 
-        let entity_count = self.base.data_table.frames.len();
-        let start = if index != 0 { index } else { 0 };
+        // let entity_count = self.base.data_table.frames.len();
+        // let start = if index != 0 { index } else { 0 };
 
-        let end = if index == 0 { entity_count } else { index + 1 };
+        // let end = if index == 0 { entity_count } else { index + 1 };
 
-        let mut props = self.props.borrow_mut();
-        let series_list = self.base.series_list.borrow();
-        let series_states = &self.base.props.borrow().series_states;
+        // let mut props = self.props.borrow_mut();
+        // let channels = self.base.channels.borrow();
 
-        props
-            .average_y_values
-            .resize(entity_count, Default::default());
+        // let channel_states = &self.base.props.borrow().channel_states;
 
-        for idx in start..end {
-            let mut sum = 0.0;
-            let mut count = 0;
-            // TODO: check it
-            for jdx in series_list.len()..0 {
-                let series_state = series_states.get(jdx).unwrap();
-                if *series_state == Visibility::Hidden || *series_state == Visibility::Hiding {
-                    continue;
-                }
+        // props
+        //     .average_y_values
+        //     .resize(entity_count, Default::default());
 
-                let series = series_list.get(jdx).unwrap();
-                let point = series.entities.get(idx).unwrap();
-                if point.value != 0. {
-                    sum += point.y;
-                    count += 1;
-                }
-            }
-            props.average_y_values[idx] = if count > 0 { sum / count as f64 } else { 0. }
-        }
+        // for idx in start..end {
+        //     let mut sum = 0.0;
+        //     let mut count = 0;
+        //     // TODO: check it
+        //     for jdx in channels.len()..0 {
+        //         let channel_state = channel_states.get(jdx).unwrap();
+        //         if *channel_state == Visibility::Hidden || *channel_state == Visibility::Hiding {
+        //             continue;
+        //         }
+
+        //         let channel = channels.get(jdx).unwrap();
+        //         let point = channel.entities.get(idx).unwrap();
+        //         if point.value != 0. {
+        //             sum += point.y;
+        //             count += 1;
+        //         }
+        //     }
+        //     props.average_y_values[idx] = if count > 0 { sum / count as f64 } else { 0. }
+        // }
     }
 
     fn lerp_points(&self, points: &Vec<LinePoint>, percent: f64) -> Vec<LinePoint> {
@@ -246,7 +247,7 @@ where
 
                 LinePoint {
                     index: p.index,
-                    old_value: 0.,
+                    old_value: None,
                     value: p.value,
                     color: p.color,
                     highlight_color: p.highlight_color,
@@ -265,8 +266,8 @@ where
             .collect()
     }
 
-    fn series_visibility_changed(&self, index: usize) {
-        self.update_series(index);
+    fn channel_visibility_changed(&self, index: usize) {
+        self.update_channel(index);
         self.calculate_average_y_values(0);
     }
 
@@ -285,6 +286,14 @@ where
             ctx.bezier_curve_to(cp1.x, cp1.y, cp2.x, cp2.y, p.x, p.y);
         }
     }
+
+    /// Called when [data_table] has been changed.
+    fn data_table_changed(&self) {
+        info!("data_table_changed");
+        // self.calculate_drawing_sizes(ctx);
+        let mut channels = self.base.channels.borrow_mut();
+        *channels = self.create_channels(0, self.base.data_table.meta.len());
+    }
 }
 
 impl<'a, C, M, D> Chart<'a, C, M, D, LinePoint> for LineChart<'a, C, M, D>
@@ -296,12 +305,12 @@ where
     // let num xlabel_offset_factor = 0;
 
     // TODO: Separate y-axis stuff into a separate method.
-    fn calculate_drawing_sizes(&self) {
-        self.base.calculate_drawing_sizes();
+    fn calculate_drawing_sizes(&self, ctx: &C) {
+        self.base.calculate_drawing_sizes(ctx);
         let mut props = self.props.borrow_mut();
         let mut baseprops = self.base.props.borrow_mut();
 
-        props.tooltip_offset = self.base.options.series.markers.size * 2. + 5.;
+        props.tooltip_offset = self.base.options.channel.markers.size * 2. + 5.;
 
         // y-axis min-max
         props.y_max_value = if let Some(value) = self.base.options.y_axis.max_value {
@@ -352,7 +361,7 @@ where
                 props.y_interval = utils::calculate_interval(
                     props.y_max_value - props.y_min_value,
                     5,
-                    min_interval.unwrap() as f64,
+                    min_interval,
                 );
             }
         }
@@ -395,52 +404,53 @@ where
             props.ylabel_formatter
         };
 
-        let series_and_axes_box = &baseprops.series_and_axes_box;
+        let channel_and_axes_box = &baseprops.channel_and_axes_box;
 
         // x-axis title
         #[allow(unused_assignments)]
         let mut xtitle_left = 0.;
-        let xtitle_top = 0.;
-        let xtitle_width = 0.;
-        let xtitle_height = 0.;
+        let mut xtitle_top = 0.;
+        let mut xtitle_width = 0.;
+        let mut xtitle_height = 0.;
         let xtitle = &self.base.options.x_axis.title;
 
-        // if xtitle.text != null {
-        //     ctx.set_font(
-        //         xtitle.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-        //         xtitle.font_style.unwrap_or(TextStyle::Normal),
-        //         TextWeight::Normal,
-        //         xtitle.font_size.unwrap_or(12.),
-        //     );
-        //     xtitle_width = ctx.measure_text(xtitle.text).width.round() +
-        //         2 * TITLE_PADDING;
-        //     xtitle_height = xtitle.style.font_size + 2. * TITLE_PADDING;
-        //     xtitle_top = baseprops.series_and_axes_box.bottom - xtitle_height;
-        // }
+        if let Some(text) = xtitle.text {
+            let style = &xtitle.style;
+            ctx.set_font(
+                style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+                style.font_style.unwrap_or(TextStyle::Normal),
+                TextWeight::Normal,
+                style.font_size.unwrap_or(12.),
+            );
+            xtitle_width = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
+            xtitle_height = xtitle.style.font_size.unwrap_or(12.) + 2. * TITLE_PADDING;
+            xtitle_top =
+                channel_and_axes_box.origin.y + channel_and_axes_box.size.height - xtitle_height;
+        }
 
         // y-axis title.
-        let ytitle_left = 0.;
+        let mut ytitle_left = 0.;
         let ytitle_top = 0.;
-        let ytitle_width = 0.;
-        let ytitle_height = 0.;
+        let mut ytitle_width = 0.;
+        let mut ytitle_height = 0.;
         let ytitle = &self.base.options.y_axis.title;
 
-        // if ytitle.text != null {
-        //     ctx.set_font(
-        //         ytitle.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-        //         ytitle.font_style.unwrap_or(TextStyle::Normal),
-        //         TextWeight::Normal,
-        //         ytitle.font_size.unwrap_or(12.),
-        //     );
-        //     ytitle_height = ctx.measure_text(ytitle.text).width.round() +
-        //         2 * TITLE_PADDING;
-        //     ytitle_width = ytitle.style.font_size + 2 * TITLE_PADDING;
-        //     ytitle_left = baseprops.series_and_axes_box.left;
-        // }
+        if let Some(text) = ytitle.text {
+            let style = &ytitle.style;
+            ctx.set_font(
+                style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+                style.font_style.unwrap_or(TextStyle::Normal),
+                TextWeight::Normal,
+                style.font_size.unwrap_or(12.),
+            );
+            ytitle_height = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
+            ytitle_width = ytitle.style.font_size.unwrap_or(12.) + 2. * TITLE_PADDING;
+            ytitle_left = channel_and_axes_box.origin.x;
+        }
 
         // Axes" size and position.
         props.y_axis_left =
-            series_and_axes_box.origin.x + props.ylabel_max_width + AXIS_LABEL_MARGIN as f64;
+            channel_and_axes_box.origin.x + props.ylabel_max_width + AXIS_LABEL_MARGIN as f64;
         if ytitle_width > 0. {
             props.y_axis_left += ytitle_width + CHART_TITLE_MARGIN;
         } else {
@@ -448,9 +458,9 @@ where
         }
 
         props.x_axis_length =
-            (series_and_axes_box.origin.x + series_and_axes_box.size.width) - props.y_axis_left;
+            (channel_and_axes_box.origin.x + channel_and_axes_box.size.width) - props.y_axis_left;
 
-        props.x_axis_top = series_and_axes_box.origin.y + series_and_axes_box.size.height;
+        props.x_axis_top = channel_and_axes_box.origin.y + channel_and_axes_box.size.height;
         if xtitle_height > 0. {
             props.x_axis_top -= xtitle_height + CHART_TITLE_MARGIN;
         } else {
@@ -518,41 +528,45 @@ where
 
         // Wrap up.
         props.y_axis_length = props.x_axis_top
-            - series_and_axes_box.origin.y
+            - channel_and_axes_box.origin.y
             - (self.base.options.y_axis.labels.style.font_size.unwrap() / 2.).trunc();
-        props.ylabel_hop = props.y_axis_length / (props.ylabels.len() - 1) as f64;
+        props.ylabel_hop = props.y_axis_length / props.ylabels.len() as f64;
 
         xtitle_left = props.y_axis_left + ((props.x_axis_length - xtitle_width) / 2.).trunc();
 
         let ytitle_top =
-            series_and_axes_box.origin.y + ((props.y_axis_length - ytitle_height) / 2.).trunc();
+            channel_and_axes_box.origin.y + ((props.y_axis_length - ytitle_height) / 2.).trunc();
 
         if xtitle_height > 0. {
-            //      x_title_box =
-            //          Rectangle(xTitleLeft, xTitleTop, xTitleWidth, xTitleHeight);
+            props.x_title_box = Rect::new(
+                Point::new(xtitle_left, xtitle_top),
+                Size::new(xtitle_width, xtitle_height),
+            );
             props.x_title_center = Some(Point::new(
                 xtitle_left + (xtitle_width / 2.).trunc(),
                 xtitle_top + (xtitle_height / 2.).trunc(),
             ));
         } else {
-            //      x_title_box = null;
             props.x_title_center = None;
         }
 
         if ytitle_height > 0. {
-            //      y_title_box =
-            //          Rectangle(yTitleLeft, yTitleTop, yTitleWidth, yTitleHeight);
+            props.y_title_box = Rect::new(
+                Point::new(ytitle_left, ytitle_top),
+                Size::new(ytitle_width, ytitle_height),
+            );
             props.y_title_center = Some(Point::new(
                 ytitle_left + (ytitle_width / 2.).trunc(),
                 ytitle_top + (ytitle_height / 2.).trunc(),
             ));
         } else {
-            //      y_title_box = null;
             props.y_title_center = None;
         }
     }
 
-    fn set_stream(&self, stream: DataStream<'a, M, D>) {}
+    fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
+        self.base.data_table = stream;
+    }
 
     fn draw(&self, ctx: &C) {
         self.base.dispose();
@@ -563,15 +577,25 @@ where
         // self.easing_function = get_easing(self.options.animation().easing);
         self.base.initialize_legend();
         self.base.initialize_tooltip();
+        
+        self.base.draw(ctx);
+        
+        // if force_redraw {
+        //     println!("BaseChart force_redraw");
+        //     self.stop_animation();
+        //     self.data_table_changed();
+        //     self.position_legend();
+
+        //     // This call is redundant for row and column changes but necessary for
+        //     // cell changes.
+        //     self.calculate_drawing_sizes(ctx);
+        //     self.update_channel(0);
+        // }
+        self.calculate_average_y_values(0);
 
         // self.ctx.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid(ctx);
         self.base.start_animation();
-    }
-
-    fn update(&self, ctx: &C) {
-        self.base.update(ctx);
-        self.calculate_average_y_values(0);
     }
 
     fn resize(&self, w: f64, h: f64) {
@@ -775,14 +799,14 @@ where
         if percent >= 1.0 {
             percent = 1.0;
 
-            // Update the visibility states of all series before the last frame.
-            let mut props = self.base.props.borrow_mut();
-
-            for idx in props.series_states.len()..0 {
-                if props.series_states[idx] == Visibility::Showing {
-                    props.series_states[idx] = Visibility::Shown;
-                } else if props.series_states[idx] == Visibility::Hiding {
-                    props.series_states[idx] = Visibility::Hidden;
+            // Update the visibility states of all channel before the last frame.            
+            let mut channels = self.base.channels.borrow_mut();
+            
+            for channel in channels.iter_mut() {
+                if channel.state == Visibility::Showing {
+                    channel.state = Visibility::Shown;
+                } else if channel.state == Visibility::Hiding {
+                    channel.state = Visibility::Hidden;
                 }
             }
         }
@@ -790,9 +814,9 @@ where
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
-        self.draw_series(ctx, ease(percent));
-        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
-        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
+        self.draw_channel(ctx, ease(percent));
+        // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
+        // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
 
         if percent < 1.0 {
@@ -802,240 +826,240 @@ where
         }
     }
 
-    fn draw_series(&self, ctx: &C, percent: f64) -> bool {
-        let series_list = self.base.series_list.borrow();
-        let series_count = series_list.len();
-        let entity_count = self.base.data_table.frames.len();
-        let fill_opacity = self.base.options.series.fill_opacity;
-        let series_line_width = self.base.options.series.line_width;
-        let marker_options = &self.base.options.series.markers;
-        let marker_size = marker_options.size;
-        let series_states = &self.base.props.borrow().series_states;
-        let focused_series_index = self.base.props.borrow().focused_series_index;
-        let focused_entity_index = self.base.props.borrow().focused_entity_index as usize;
-        let props = self.props.borrow();
-        let label_options = &self.base.options.series.labels;
+    fn draw_channel(&self, ctx: &C, percent: f64) -> bool {
+        // let channels = self.base.channels.borrow();
+        // let channel_count = channels.len();
+        // let entity_count = self.base.data_table.frames.len();
+        // let fill_opacity = self.base.options.channel.fill_opacity;
+        // let channel_line_width = self.base.options.channel.line_width;
+        // let marker_options = &self.base.options.channel.markers;
+        // let marker_size = marker_options.size;
+        // let channel_states = &self.base.props.borrow().channel_states;
+        // let focused_channel_index = self.base.props.borrow().focused_channel_index;
+        // let focused_entity_index = self.base.props.borrow().focused_entity_index as usize;
+        // let props = self.props.borrow();
+        // let label_options = &self.base.options.channel.labels;
 
-        for idx in 0..series_count {
-            if series_states[idx] == Visibility::Hidden {
-                continue;
-            }
+        // for idx in 0..channel_count {
+        //     if channel_states[idx] == Visibility::Hidden {
+        //         continue;
+        //     }
 
-            let series = series_list.get(idx).unwrap();
-            let entities = self.lerp_points(&series.entities, percent);
-            let scale = if idx as i64 != focused_series_index {
-                1.
-            } else {
-                2.
-            };
+        //     let channel = channels.get(idx).unwrap();
+        //     let entities = self.lerp_points(&channel.entities, percent);
+        //     let scale = if idx as i64 != focused_channel_index {
+        //         1.
+        //     } else {
+        //         2.
+        //     };
 
-            ctx.set_line_join(LineJoin::Round);
+        //     ctx.set_line_join(LineJoin::Round);
 
-            // Draw series with filling.
-            if fill_opacity > 0.0 {
-                let color = self.base.change_color_alpha(series.color, fill_opacity);
-                ctx.set_fill_color(color);
-                ctx.set_stroke_color(color);
-                let mut jdx = 0;
-                loop {
-                    // Skip points with a null value.
-                    while jdx < entity_count && entities[jdx].value == 0. {
-                        jdx += 1;
-                    }
+        //     // Draw channel with filling.
+        //     if fill_opacity > 0.0 {
+        //         let color = self.base.change_color_alpha(channel.color, fill_opacity);
+        //         ctx.set_fill_color(color);
+        //         ctx.set_stroke_color(color);
+        //         let mut jdx = 0;
+        //         loop {
+        //             // Skip points with a null value.
+        //             while jdx < entity_count && entities[jdx].value == 0. {
+        //                 jdx += 1;
+        //             }
 
-                    // Stop if we have reached the end of the series.
-                    if jdx == entity_count {
-                        break;
-                    }
+        //             // Stop if we have reached the end of the channel.
+        //             if jdx == entity_count {
+        //                 break;
+        //             }
 
-                    // Connect a series of contiguous points with a non-null value and
-                    // fill the area between them and the x-axis.
-                    let mut entity = entities.get(jdx).unwrap();
-                    ctx.begin_path();
-                    ctx.move_to(entity.x, props.x_axis_top);
-                    ctx.line_to(entity.x, entity.y);
-                    let mut last_point = entity;
-                    let mut count = 1;
-                    while jdx < entity_count && entities[jdx].value != 0. {
-                        entity = entities.get(jdx).unwrap();
-                        self.curve_to(ctx, Some(last_point.cp2), Some(entity.cp1), entity);
-                        last_point = entity;
-                        count += 1;
-                        jdx += 1;
-                    }
-                    if count >= 2 {
-                        ctx.line_to(last_point.x, props.x_axis_top);
-                        ctx.close_path();
-                        ctx.fill();
-                    }
-                }
-            }
+        //             // Connect a channel of contiguous points with a non-null value and
+        //             // fill the area between them and the x-axis.
+        //             let mut entity = entities.get(jdx).unwrap();
+        //             ctx.begin_path();
+        //             ctx.move_to(entity.x, props.x_axis_top);
+        //             ctx.line_to(entity.x, entity.y);
+        //             let mut last_point = entity;
+        //             let mut count = 1;
+        //             while jdx < entity_count && entities[jdx].value != 0. {
+        //                 entity = entities.get(jdx).unwrap();
+        //                 self.curve_to(ctx, Some(last_point.cp2), Some(entity.cp1), entity);
+        //                 last_point = entity;
+        //                 count += 1;
+        //                 jdx += 1;
+        //             }
+        //             if count >= 2 {
+        //                 ctx.line_to(last_point.x, props.x_axis_top);
+        //                 ctx.close_path();
+        //                 ctx.fill();
+        //             }
+        //         }
+        //     }
 
-            // Draw series without filling.
-            if series_line_width > 0. {
-                let mut last_point: LinePoint = Default::default();
-                ctx.set_line_width(scale * series_line_width);
-                ctx.set_stroke_color(series.color);
-                ctx.begin_path();
-                for entity in entities.iter() {
-                    if entity.value != 0. {
-                        if last_point.value != 0. {
-                            self.curve_to(ctx, Some(last_point.cp2), Some(entity.cp1), entity);
-                        } else {
-                            ctx.move_to(entity.x, entity.y);
-                        }
-                    }
-                    last_point = entity.clone();
-                }
-                ctx.stroke();
-            }
+        //     // Draw channel without filling.
+        //     if channel_line_width > 0. {
+        //         let mut last_point: LinePoint = Default::default();
+        //         ctx.set_line_width(scale * channel_line_width);
+        //         ctx.set_stroke_color(channel.color);
+        //         ctx.begin_path();
+        //         for entity in entities.iter() {
+        //             if entity.value != 0. {
+        //                 if last_point.value != 0. {
+        //                     self.curve_to(ctx, Some(last_point.cp2), Some(entity.cp1), entity);
+        //                 } else {
+        //                     ctx.move_to(entity.x, entity.y);
+        //                 }
+        //             }
+        //             last_point = entity.clone();
+        //         }
+        //         ctx.stroke();
+        //     }
 
-            // Draw markers.
-            if marker_size > 0. {
-                let fill_color = if let Some(color) = marker_options.fill_color {
-                    color
-                } else {
-                    series.color
-                };
+        //     // Draw markers.
+        //     if marker_size > 0. {
+        //         let fill_color = if let Some(color) = marker_options.fill_color {
+        //             color
+        //         } else {
+        //             channel.color
+        //         };
 
-                let stroke_color = if let Some(color) = marker_options.stroke_color {
-                    color
-                } else {
-                    series.color
-                };
-                ctx.set_fill_color(fill_color);
-                ctx.set_line_width(scale * marker_options.line_width as f64);
-                ctx.set_stroke_color(stroke_color);
-                for entity in entities.iter() {
-                    if entity.value != 0. {
-                        if marker_options.enabled {
-                            entity.draw(ctx, 1.0, entity.index == focused_entity_index);
-                        } else if entity.index == focused_entity_index {
-                            // Only draw marker on hover.
-                            entity.draw(ctx, 1.0, true);
-                        }
-                    }
-                }
-            }
-        }
+        //         let stroke_color = if let Some(color) = marker_options.stroke_color {
+        //             color
+        //         } else {
+        //             channel.color
+        //         };
+        //         ctx.set_fill_color(fill_color);
+        //         ctx.set_line_width(scale * marker_options.line_width as f64);
+        //         ctx.set_stroke_color(stroke_color);
+        //         for entity in entities.iter() {
+        //             if entity.value != 0. {
+        //                 if marker_options.enabled {
+        //                     entity.draw(ctx, 1.0, entity.index == focused_entity_index);
+        //                 } else if entity.index == focused_entity_index {
+        //                     // Only draw marker on hover.
+        //                     entity.draw(ctx, 1.0, true);
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
-        // Draw labels only on the last frame.
-        if let Some(label_options) = label_options {
-            if percent == 1.0 {
-                ctx.set_fill_color(label_options.color);
-                ctx.set_font(
-                    label_options.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-                    label_options.font_style.unwrap_or(TextStyle::Normal),
-                    TextWeight::Normal,
-                    label_options.font_size.unwrap_or(12.),
-                );
-                ctx.set_text_align(TextAlign::Center);
-                ctx.set_text_baseline(BaseLine::Alphabetic);
-                for idx in 0..series_count {
-                    if series_states[idx] != Visibility::Shown {
-                        continue;
-                    }
+        // // Draw labels only on the last frame.
+        // if let Some(label_options) = label_options {
+        //     if percent == 1.0 {
+        //         ctx.set_fill_color(label_options.color);
+        //         ctx.set_font(
+        //             label_options.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+        //             label_options.font_style.unwrap_or(TextStyle::Normal),
+        //             TextWeight::Normal,
+        //             label_options.font_size.unwrap_or(12.),
+        //         );
+        //         ctx.set_text_align(TextAlign::Center);
+        //         ctx.set_text_baseline(BaseLine::Alphabetic);
+        //         for idx in 0..channel_count {
+        //             if channel_states[idx] != Visibility::Shown {
+        //                 continue;
+        //             }
 
-                    let entities = &series_list.get(idx).unwrap().entities;
-                    for entity in entities.iter() {
-                        if entity.value != 0. {
-                            let y = entity.y - marker_size - 5.;
-                            // TODO: bar.formatted_value
-                            let formatted_value = format!("{}", entity.value);
-                            ctx.fill_text(formatted_value.as_str(), entity.x, y);
-                        }
-                    }
-                }
-            }
-        }
+        //             let entities = &channels.get(idx).unwrap().entities;
+        //             for entity in entities.iter() {
+        //                 if entity.value != 0. {
+        //                     let y = entity.y - marker_size - 5.;
+        //                     // TODO: bar.formatted_value
+        //                     let formatted_value = format!("{}", entity.value);
+        //                     ctx.fill_text(formatted_value.as_str(), entity.x, y);
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         false
     }
 
-    fn update_series(&self, index: usize) {
-        let entity_count = self.base.data_table.frames.len();
-        let marker_size = self.base.options.series.markers.size;
-        let curve_tension = self.base.options.series.curve_tension;
-        let curve = curve_tension > 0. && entity_count > 2;
+    fn update_channel(&self, index: usize) {
+        // let entity_count = self.base.data_table.frames.len();
+        // let marker_size = self.base.options.channel.markers.size;
+        // let curve_tension = self.base.options.channel.curve_tension;
+        // let curve = curve_tension > 0. && entity_count > 2;
 
-        let start = if index != 0 { index } else { 0 };
+        // let start = if index != 0 { index } else { 0 };
 
-        let mut series_list = self.base.series_list.borrow_mut();
-        let end = if index == 0 {
-            series_list.len()
-        } else {
-            index + 1
-        };
+        // let mut channels = self.base.channels.borrow_mut();
+        // let end = if index == 0 {
+        //     channels.len()
+        // } else {
+        //     index + 1
+        // };
 
-        let series_states = &self.base.props.borrow().series_states;
-        let props = self.props.borrow();
-        for idx in start..end {
-            let series_state = series_states[idx];
-            let visible = series_state == Visibility::Showing || series_state == Visibility::Shown;
+        // let channel_states = &self.base.props.borrow().channel_states;
+        // let props = self.props.borrow();
+        // for idx in start..end {
+        //     let channel_state = channel_states[idx];
+        //     let visible = channel_state == Visibility::Showing || channel_state == Visibility::Shown;
 
-            let series = series_list.get_mut(idx).unwrap();
+        //     let channel = channels.get_mut(idx).unwrap();
 
-            let color = self.base.get_color(idx);
-            let highlight_color = self.base.get_highlight_color(color);
-            series.color = color;
-            series.highlight_color = highlight_color;
+        //     let color = self.base.get_color(idx);
+        //     let highlight_color = self.base.get_highlight_color(color);
+        //     channel.color = color;
+        //     channel.highlight = highlight_color;
 
-            for jdx in 0..entity_count {
-                let entity = series.entities.get_mut(jdx).unwrap();
-                entity.index = jdx;
-                entity.color = color;
-                entity.highlight_color = highlight_color;
-                entity.x = self.xlabel_x(jdx);
-                entity.y = if visible {
-                    self.value_to_y(entity.value)
-                } else {
-                    props.x_axis_top
-                };
-                entity.point_radius = if visible { marker_size } else { 0. };
-            }
+        //     for jdx in 0..entity_count {
+        //         let entity = channel.entities.get_mut(jdx).unwrap();
+        //         entity.index = jdx;
+        //         entity.color = color;
+        //         entity.highlight_color = highlight_color;
+        //         entity.x = self.xlabel_x(jdx);
+        //         entity.y = if visible {
+        //             self.value_to_y(entity.value)
+        //         } else {
+        //             props.x_axis_top
+        //         };
+        //         entity.point_radius = if visible { marker_size } else { 0. };
+        //     }
 
-            if !curve {
-                continue;
-            }
+        //     if !curve {
+        //         continue;
+        //     }
 
-            // // TODO: complete it
-            // let mut e1;
-            // let mut e2 = series.entities.get_mut(0).unwrap();
-            // let mut e3 = series.entities.get_mut(1).unwrap();
-            // for jdx in 2..entity_count {
-            //     e1 = e2;
-            //     e2 = e3;
-            //     e3 = series.entities.get_mut(jdx).unwrap();
-            //     if e1.value == 0. {
-            //         continue;
-            //     }
-            //     if e2.value == 0. {
-            //         continue;
-            //     }
-            //     if e3.value == 0. {
-            //         continue;
-            //     }
+        //     // // TODO: complete it
+        //     // let mut e1;
+        //     // let mut e2 = channel.entities.get_mut(0).unwrap();
+        //     // let mut e3 = channel.entities.get_mut(1).unwrap();
+        //     // for jdx in 2..entity_count {
+        //     //     e1 = e2;
+        //     //     e2 = e3;
+        //     //     e3 = channel.entities.get_mut(jdx).unwrap();
+        //     //     if e1.value == 0. {
+        //     //         continue;
+        //     //     }
+        //     //     if e2.value == 0. {
+        //     //         continue;
+        //     //     }
+        //     //     if e3.value == 0. {
+        //     //         continue;
+        //     //     }
 
-            //     let list = utils::calculate_control_points(
-            //         e1.as_point(),
-            //         e2.as_point(),
-            //         e3.as_point(),
-            //         curve_tension,
-            //     );
-            //     e2.cp1 = list[0];
-            //     e2.cp2 = list[1];
-            //     // ??= - Assign the value if the variable is null
-            //     e2.oldCp1?? = Point::new(e2.cp1.x, x_axis_top);
-            //     e2.oldCp2?? = Point::new(e2.cp2.x, x_axis_top);
-            // }
-        }
+        //     //     let list = utils::calculate_control_points(
+        //     //         e1.as_point(),
+        //     //         e2.as_point(),
+        //     //         e3.as_point(),
+        //     //         curve_tension,
+        //     //     );
+        //     //     e2.cp1 = list[0];
+        //     //     e2.cp2 = list[1];
+        //     //     // ??= - Assign the value if the variable is null
+        //     //     e2.oldCp1?? = Point::new(e2.cp1.x, x_axis_top);
+        //     //     e2.oldCp2?? = Point::new(e2.cp2.x, x_axis_top);
+        //     // }
+        // }
     }
 
     fn create_entity(
         &self,
-        series_index: usize,
+        channel_index: usize,
         entity_index: usize,
-        value: f64,
+        value: Option<f64>,
         color: Color,
         highlight_color: Color,
     ) -> LinePoint {
@@ -1043,7 +1067,7 @@ where
 
         let props = self.props.borrow();
         let old_y = props.x_axis_top;
-        // oldCp1 and oldCp2 are calculated in [update_series].
+        // oldCp1 and oldCp2 are calculated in [update_channel].
 
         // let formatted_value = if value != 0 {
         //     entity_value_formatter(value)
@@ -1053,7 +1077,7 @@ where
 
         LinePoint {
             index: entity_index,
-            old_value: 0.,
+            old_value: None,
             value,
             //   formatted_value,
             color,
@@ -1066,9 +1090,45 @@ where
             cp2: Default::default(),
             old_point_radius: 9.,
             x,
-            y: self.value_to_y(value),
-            point_radius: self.base.options.series.markers.size,
+            y: self.value_to_y(value.unwrap()),
+            point_radius: self.base.options.channel.markers.size,
         }
+    }
+
+    fn create_channels(&self, start: usize, end: usize) -> Vec<ChartChannel<LinePoint>> {
+        info!("create_channels");
+        let result = Vec::new();
+        // let entity_count = self.data_table.frames.len();
+        // while (start < end) {
+        //   let name = self.base.data_table.columns[start + 1].name;
+        //   let color = get_color(start);
+        //   let highlight_color = get_highlight_color(color);
+        //   let entities =
+        //       create_entities(start, 0, entity_count, color, highlight_color);
+        //   result.add(Series(name, color, highlight_color, entities));
+        //   start++;
+        // }
+        result
+    }
+
+    fn create_entities(
+        &self,
+        channel_index: usize,
+        start: usize,
+        end: usize,
+        color: Color,
+        highlight: Color,
+    ) -> Vec<LinePoint> {
+        info!("create_entities");
+        let result = Vec::new();
+        // while (start < end) {
+        //   let value = self.base.data_table.rows[start][channelIndex + 1];
+        //   let e = create_entity(channelIndex, start, value, color, highlight_color);
+        //   e.chart = this;
+        //   result.add(e);
+        //   start++;
+        // }
+        result
     }
 
     fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {

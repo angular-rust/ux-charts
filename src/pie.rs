@@ -19,8 +19,8 @@ pub struct PieEntity {
     highlight_color: Color,
     // formatted_value: String,
     index: usize,
-    old_value: f64,
-    value: f64,
+    old_value: Option<f64>,
+    value: Option<f64>,
 
     old_start_angle: f64,
     old_end_angle: f64,
@@ -114,7 +114,7 @@ where
 
         // && chart is PieChart
         // if !self.formatted_value.is_empty() && a2 - a1 > PI / 36.0 {
-        //     // let labels = self.chart.options.series.labels;
+        //     // let labels = self.chart.options.channel.labels;
         //     // if labels.enabled {
         //     //     let r = 0.25 * self.inner_radius + 0.75 * self.outer_radius;
         //     //     let a = 0.5 * (a1 + a2);
@@ -164,15 +164,15 @@ where
 
     fn data_rows_changed(&self, record: DataCollectionChangeRecord) {
         self.base
-            .update_series_visible(record.index, record.removed_count, record.added_count);
+            .update_channel_visible(record.index, record.removed_count, record.added_count);
         self.base.data_rows_changed(record);
         self.base.update_legend_content();
     }
 
     fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
         let p = Point::new(x, y);
-        // let entities = series_list.first.entities;
-        // for (let i = entities.len() - 1; i >= 0; i--) {
+        // let entities = channels.first.entities;
+        // for (let i = entities.len(); i >= 0; i--) {
         //   let pie = entities[i] as Pie;
         //   if (pie.containsPoint(p)) return i;
         // }
@@ -185,12 +185,12 @@ where
         unimplemented!()
     }
 
-    fn series_visibility_changed(&self, index: usize) {
-        self.update_series(0);
+    fn channel_visibility_changed(&self, index: usize) {
+        self.update_channel(0);
     }
 
     fn update_tooltip_content(&self) {
-        // let pie = series_list[0].entities[focused_entity_index] as Pie;
+        // let pie = channels[0].entities[focused_entity_index] as Pie;
         // tooltip.style
         //   ..borderColor = pie.color
         //   ..padding = "4px 12px";
@@ -198,6 +198,14 @@ where
         // let value = tooltip_value_formatter(pie.value);
         // tooltip.innerHtml = "$label: <strong>$value</strong>";
         unimplemented!()
+    }
+
+    /// Called when [data_table] has been changed.
+    fn data_table_changed(&self) {
+        info!("data_table_changed");
+        // self.calculate_drawing_sizes(ctx);
+        let mut channels = self.base.channels.borrow_mut();
+        *channels = self.create_channels(0, self.base.data_table.meta.len());
     }
 }
 
@@ -207,10 +215,10 @@ where
     M: fmt::Display,
     D: fmt::Display,
 {
-    fn calculate_drawing_sizes(&self) {
-        self.base.calculate_drawing_sizes();
+    fn calculate_drawing_sizes(&self, ctx: &C) {
+        self.base.calculate_drawing_sizes(ctx);
         let mut props = self.props.borrow_mut();
-        let rect = &self.base.props.borrow().series_and_axes_box;
+        let rect = &self.base.props.borrow().channel_and_axes_box;
         let half_w = rect.size.width as i64 >> 1;
         let half_h = rect.size.height as i64 >> 1;
 
@@ -231,7 +239,7 @@ where
 
         props.inner_radius = pie_hole * props.outer_radius;
 
-        let opt = &self.base.options.series;
+        let opt = &self.base.options.channel;
         let mut baseprops = self.base.props.borrow_mut();
         baseprops.entity_value_formatter = if let Some(formatter) = opt.labels.formatter {
             Some(formatter)
@@ -248,7 +256,9 @@ where
         props.start_angle = utils::deg2rad(opt.start_angle);
     }
 
-    fn set_stream(&self, stream: DataStream<'a, M, D>) {}
+    fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
+        self.base.data_table = stream;
+    }
 
     fn draw(&self, ctx: &C) {
         self.base.dispose();
@@ -260,13 +270,22 @@ where
         self.base.initialize_legend();
         self.base.initialize_tooltip();
 
+        self.base.draw(ctx);
+        // if force_redraw {
+        //     println!("BaseChart force_redraw");
+        //     self.stop_animation();
+        //     self.data_table_changed();
+        //     self.position_legend();
+
+        //     // This call is redundant for row and column changes but necessary for
+        //     // cell changes.
+        //     self.calculate_drawing_sizes(ctx);
+        //     self.update_channel(0);
+        // }
+
         // self.ctx.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid(ctx);
         self.base.start_animation();
-    }
-
-    fn update(&self, ctx: &C) {
-        self.base.update(ctx);
     }
 
     fn resize(&self, w: f64, h: f64) {
@@ -290,14 +309,14 @@ where
         if percent >= 1.0 {
             percent = 1.0;
 
-            // Update the visibility states of all series before the last frame.
-            let mut props = self.base.props.borrow_mut();
+            // Update the visibility states of all channel before the last frame.
+            let mut channels = self.base.channels.borrow_mut();
 
-            for idx in props.series_states.len()..0 {
-                if props.series_states[idx] == Visibility::Showing {
-                    props.series_states[idx] = Visibility::Shown;
-                } else if props.series_states[idx] == Visibility::Hiding {
-                    props.series_states[idx] = Visibility::Hidden;
+            for channel in channels.iter_mut() {
+                if channel.state == Visibility::Showing {
+                    channel.state = Visibility::Shown;
+                } else if channel.state == Visibility::Hiding {
+                    channel.state = Visibility::Hidden;
                 }
             }
         }
@@ -305,9 +324,9 @@ where
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
-        self.draw_series(ctx, ease(percent));
-        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
-        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
+        self.draw_channel(ctx, ease(percent));
+        // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
+        // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
 
         if percent < 1.0 {
@@ -317,15 +336,15 @@ where
         }
     }
 
-    fn draw_series(&self, ctx: &C, percent: f64) -> bool {
+    fn draw_channel(&self, ctx: &C, percent: f64) -> bool {
         ctx.set_line_width(2.);
         ctx.set_stroke_color(palette::WHITE);
         ctx.set_text_align(TextAlign::Center);
         ctx.set_text_baseline(BaseLine::Middle);
 
-        let series_list = self.base.series_list.borrow();
-        let series = series_list.first().unwrap();
-        let labels = &self.base.options.series.labels.style;
+        let channels = self.base.channels.borrow();
+        let channel = channels.first().unwrap();
+        let labels = &self.base.options.channel.labels.style;
 
         ctx.set_font(
             labels.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -335,67 +354,71 @@ where
         );
 
         let baseprops = self.base.props.borrow();
-        let focused_series_index = baseprops.focused_series_index as usize;
+        let focused_channel_index = baseprops.focused_channel_index as usize;
         let focused_entity_index = baseprops.focused_entity_index as usize;
 
-        for entity in series.entities.iter() {
+        for entity in channel.entities.iter() {
             if entity.is_empty() && percent == 1.0 {
                 continue;
             }
             let highlight =
-                entity.index == focused_series_index || entity.index == focused_entity_index;
+                entity.index == focused_channel_index || entity.index == focused_entity_index;
             entity.draw(ctx, percent, highlight);
         }
 
         return false;
     }
 
-    fn update_series(&self, index: usize) {
-        let mut sum = 0.0;
-        let props = self.props.borrow();
-        let mut start_angle = props.start_angle;
-        let pie_count = self.base.data_table.frames.len();
-        let mut series_list = self.base.series_list.borrow_mut();
-        let series = series_list.first_mut().unwrap();
+    fn update_channel(&self, index: usize) {
+        // let mut sum = 0.0;
+        // let props = self.props.borrow();
+        // let mut start_angle = props.start_angle;
 
-        let series_states = &self.base.props.borrow().series_states;
-        // Sum the values of all visible pies.
-        for idx in 0..pie_count {
-            let series_state = series_states[idx];
-            if series_state == Visibility::Showing || series_state == Visibility::Shown {
-                sum += series.entities[idx].value;
-            }
-        }
+        // let pie_count = self.base.data_table.frames.len();
 
-        for idx in 0..pie_count {
-            let entity = series.entities.get_mut(idx).unwrap();
-            let color = self.base.get_color(idx);
-            entity.index = idx;
-            // TODO: deal with name
-            //   pie.name = self.base.data_table.frames[idx][0];
-            entity.color = color;
-            entity.highlight_color = self.base.get_highlight_color(color);
-            entity.center = props.center;
-            entity.inner_radius = props.inner_radius;
-            entity.outer_radius = props.outer_radius;
+        // let mut channels = self.base.channels.borrow_mut();
 
-            let series_state = series_states[idx];
-            if series_state == Visibility::Showing || series_state == Visibility::Shown {
-                entity.start_angle = start_angle;
-                entity.end_angle = start_angle + props.direction as f64 * entity.value * TAU / sum;
-                start_angle = entity.end_angle;
-            } else {
-                entity.start_angle = start_angle;
-                entity.end_angle = start_angle;
-            }
-        }
+        // let channel = channels.first_mut().unwrap();
+
+        // let channel_states = &self.base.props.borrow().channel_states;
+
+        // // Sum the values of all visible pies.
+        // for idx in 0..pie_count {
+        //     let channel_state = channel_states[idx];
+        //     if channel_state == Visibility::Showing || channel_state == Visibility::Shown {
+        //         sum += channel.entities[idx].value;
+        //     }
+        // }
+
+        // for idx in 0..pie_count {
+        //     let entity = channel.entities.get_mut(idx).unwrap();
+        //     let color = self.base.get_color(idx);
+        //     entity.index = idx;
+        //     // TODO: deal with name
+        //     //   pie.name = self.base.data_table.frames[idx][0];
+        //     entity.color = color;
+        //     entity.highlight_color = self.base.get_highlight_color(color);
+        //     entity.center = props.center;
+        //     entity.inner_radius = props.inner_radius;
+        //     entity.outer_radius = props.outer_radius;
+
+        //     let channel_state = channel_states[idx];
+        //     if channel_state == Visibility::Showing || channel_state == Visibility::Shown {
+        //         entity.start_angle = start_angle;
+        //         entity.end_angle = start_angle + props.direction as f64 * entity.value * TAU / sum;
+        //         start_angle = entity.end_angle;
+        //     } else {
+        //         entity.start_angle = start_angle;
+        //         entity.end_angle = start_angle;
+        //     }
+        // }
     }
 
     fn create_entity(
         &self,
-        series_index: usize,
+        channel_index: usize,
         entity_index: usize,
-        value: f64,
+        value: Option<f64>,
         color: Color,
         highlight_color: Color,
     ) -> PieEntity {
@@ -412,9 +435,9 @@ where
         let mut start_angle = props.start_angle;
 
         if entity_index > 0 {
-            let series_list = self.base.series_list.borrow();
-            let series = series_list.first().unwrap();
-            let prev = series.entities.get(entity_index - 1).unwrap();
+            let channels = self.base.channels.borrow();
+            let channel = channels.first().unwrap();
+            let prev = channel.entities.get(entity_index - 1).unwrap();
             start_angle = prev.end_angle;
         }
 
@@ -426,7 +449,7 @@ where
 
         PieEntity {
             index: entity_index,
-            old_value: 0.,
+            old_value: None,
             value,
             // formatted_value,
             name,
@@ -438,19 +461,55 @@ where
             inner_radius: props.inner_radius,
             outer_radius: props.outer_radius,
             start_angle,
-            end_angle: start_angle, // To be updated in [update_series]
+            end_angle: start_angle, // To be updated in [update_channel]
         }
     }
 
+    fn create_channels(&self, start: usize, end: usize) -> Vec<ChartChannel<PieEntity>> {
+        info!("create_channels");
+        let result = Vec::new();
+        // let entity_count = self.data_table.frames.len();
+        // while (start < end) {
+        //   let name = self.base.data_table.columns[start + 1].name;
+        //   let color = get_color(start);
+        //   let highlight_color = get_highlight_color(color);
+        //   let entities =
+        //       create_entities(start, 0, entity_count, color, highlight_color);
+        //   result.add(Series(name, color, highlight_color, entities));
+        //   start++;
+        // }
+        result
+    }
+
+    fn create_entities(
+        &self,
+        channel_index: usize,
+        start: usize,
+        end: usize,
+        color: Color,
+        highlight: Color,
+    ) -> Vec<PieEntity> {
+        info!("create_entities");
+        let result = Vec::new();
+        // while (start < end) {
+        //   let value = self.base.data_table.rows[start][channelIndex + 1];
+        //   let e = create_entity(channelIndex, start, value, color, highlight_color);
+        //   e.chart = this;
+        //   result.add(e);
+        //   start++;
+        // }
+        result
+    }
+
     fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {
-        let series_list = self.base.series_list.borrow();
-        let series = series_list.first().unwrap();
+        let channels = self.base.channels.borrow();
+        let channel = channels.first().unwrap();
 
         let focused_entity_index = self.base.props.borrow().focused_entity_index as usize;
 
         let props = self.props.borrow();
 
-        let pie = series.entities.get(focused_entity_index).unwrap();
+        let pie = channel.entities.get(focused_entity_index).unwrap();
         let angle = 0.5 * (pie.start_angle + pie.end_angle);
         let radius = 0.5 * (props.inner_radius + props.outer_radius);
         let point = utils::polar2cartesian(&props.center, radius, angle);

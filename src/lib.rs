@@ -6,6 +6,9 @@ use primitives::{CanvasContext, Color, Point};
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 #[macro_use]
+extern crate log;
+
+#[macro_use]
 extern crate lazy_static;
 
 mod basechart;
@@ -42,7 +45,7 @@ pub const TAU: f64 = std::f64::consts::TAU;
 /// The pi/2 constant.
 pub const PI_2: f64 = std::f64::consts::FRAC_PI_2;
 
-pub const DEFAULT_FONT_FAMILY: &str = "Roboto";
+pub const DEFAULT_FONT_FAMILY: &str = "monospace";
 
 /// The padding of the chart itself.
 pub const CHART_PADDING: f64 = 12.0;
@@ -107,25 +110,27 @@ where
 }
 
 #[derive(Default, Debug, Clone)]
-pub struct Series<E>
+pub struct ChartChannel<E>
 where
     E: Entity,
 {
     name: String,
     color: Color,
-    highlight_color: Color,
+    highlight: Color,
+    state: Visibility,
     entities: Vec<E>,
 }
 
-impl<E> Series<E>
+impl<E> ChartChannel<E>
 where
     E: Entity,
 {
-    pub fn new(name: &str, color: Color, highlight_color: Color, entities: Vec<E>) -> Self {
+    pub fn new(name: &str, color: Color, highlight: Color, entities: Vec<E>) -> Self {
         Self {
             name: name.into(),
             color,
-            highlight_color,
+            highlight,
+            state: Visibility::Shown,
             entities,
         }
     }
@@ -154,21 +159,21 @@ where
 {
     /// Calculates various drawing sizes.
     ///
-    /// Overriding methods must call this method first to have [series_and_axes_box]
+    /// Overriding methods must call this method first to have [channel_and_axes_box]
     /// calculated.
     ///
-    fn calculate_drawing_sizes(&self);
+    fn calculate_drawing_sizes(&self, ctx: &C);
 
-    /// Updates the series at index [index]. If [index] is `null`, updates all
-    /// series.
+    /// Updates the channel at index [index]. If [index] is `null`, updates all
+    /// channel.
     ///
-    fn update_series(&self, index: usize);
+    fn update_channel(&self, index: usize);
 
     /// Draws the axes and the grid.
     ///
     fn draw_axes_and_grid(&self, ctx: &C);
 
-    /// Draws the series given the current animation percent [percent].
+    /// Draws the channel given the current animation percent [percent].
     ///
     /// If this method returns `false`, the animation is continued until [percent]
     /// reaches 1.0.
@@ -178,7 +183,7 @@ where
     /// In those cases, the overriding method will return `true` to stop the
     /// animation.
     ///
-    fn draw_series(&self, ctx: &C, percent: f64) -> bool;
+    fn draw_channel(&self, ctx: &C, percent: f64) -> bool;
 
     /// Draws the current animation frame.
     ///
@@ -188,48 +193,23 @@ where
     // when we impl for concrete chart implementation then it call concrete
     fn create_entities(
         &self,
-        series_index: i64,
-        start: i64,
-        end: i64,
-        color: String,
-        highlight_color: String,
-    ) -> Vec<E> {
-        println!("Chart Trait create_entities");
-        let result = Vec::new();
-        // while (start < end) {
-        //   let value = self.base.data_table.rows[start][seriesIndex + 1];
-        //   let e = create_entity(seriesIndex, start, value, color, highlight_color);
-        //   e.chart = this;
-        //   result.add(e);
-        //   start++;
-        // }
-        result
-    }
+        channel_index: usize,
+        start: usize,
+        end: usize,
+        color: Color,
+        highlight_color: Color,
+    ) -> Vec<E>;
 
     fn create_entity(
         &self,
-        series_index: usize,
+        channel_index: usize,
         entity_index: usize,
-        value: f64,
+        value: Option<f64>,
         color: Color,
         highlight_color: Color,
     ) -> E;
 
-    fn create_series_list(&self, start: usize, end: usize) -> Vec<Series<E>> {
-        println!("Chart Trait create_series_list");
-        let result = Vec::new();
-        // let entity_count = self.data_table.frames.len();
-        // while (start < end) {
-        //   let name = self.base.data_table.columns[start + 1].name;
-        //   let color = get_color(start);
-        //   let highlight_color = get_highlight_color(color);
-        //   let entities =
-        //       create_entities(start, 0, entity_count, color, highlight_color);
-        //   result.add(Series(name, color, highlight_color, entities));
-        //   start++;
-        // }
-        result
-    }
+    fn create_channels(&self, start: usize, end: usize) -> Vec<ChartChannel<E>>;
 
     /// Returns the position of the tooltip based on
     /// [focused_entity_index].
@@ -237,10 +217,7 @@ where
     // tooltip_height - tooltip.offset_height
     fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64>;
 
-    fn set_stream(&self, stream: DataStream<'a, M, D>);
-
-    /// called to commit calculations using non_eq pattern
-    fn update(&self, ctx: &C);
+    fn set_stream(&mut self, stream: DataStream<'a, M, D>);
 
     /// called to redraw using non_eq pattern
     fn draw(&self, ctx: &C);

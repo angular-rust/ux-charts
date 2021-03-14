@@ -16,8 +16,8 @@ pub struct PolarPoint {
     highlight_color: Color,
     // formatted_value: String,
     index: usize,
-    old_value: f64,
-    value: f64,
+    old_value: Option<f64>,
+    value: Option<f64>,
 
     old_radius: f64,
     old_angle: f64,
@@ -120,13 +120,14 @@ where
             return;
         }
 
-        let series_list = self.base.series_list.borrow();
-        let series_count = series_list.len();
-        let series = series_list.get(0).unwrap();
-        let entity_count = series.entities.len();
+        let channels = self.base.channels.borrow();
+        let channel_count = channels.len();
+        
+        let entity_count = {
+            let channel = channels.get(0).unwrap();
+            channel.entities.len()
+        };
 
-        let series_states = &self.base.props.borrow().series_states;
-        let series_list = self.base.series_list.borrow();
         let mut props = self.props.borrow_mut();
 
         // OOCH
@@ -140,16 +141,16 @@ where
             let mut max_x = -f64::MAX;
             let mut max_y = -f64::MAX;
             let mut count = 0;
-            for jdx in 0..series_count {
-                let series_state = series_states.get(jdx).unwrap();
-                if *series_state == Visibility::Hidden || *series_state == Visibility::Hiding {
+            for jdx in 0..channel_count {
+                let channel = channels.get(jdx).unwrap();
+                if channel.state == Visibility::Hidden || channel.state == Visibility::Hiding {
                     continue;
                 }
 
-                let series = series_list.get(jdx).unwrap();
-                let pp = series.entities.get(idx).unwrap();
+                let channel = channels.get(jdx).unwrap();
+                let pp = channel.entities.get(idx).unwrap();
 
-                if pp.value == 0. {
+                if pp.value.is_none() {
                     continue;
                 }
 
@@ -189,9 +190,9 @@ where
         }
 
         let angle = p.y.atan2(p.x);
-        let series_list = self.base.series_list.borrow();
-        let series = series_list.first().unwrap();
-        let points = &series.entities;
+        let channels = self.base.channels.borrow();
+        let channel = channels.first().unwrap();
+        let points = &channel.entities;
 
         for idx in points.len()..0 {
             if props.bounding_boxes.get(idx).is_none() {
@@ -209,17 +210,16 @@ where
         return -1;
     }
 
-    fn series_visibility_changed(&self, index: usize) {
-        let series_states = &self.base.props.borrow().series_states;
-        let series_state = series_states[index];
-        let visible = series_state == Visibility::Showing || series_state == Visibility::Shown;
-        let marker_size = self.base.options.series.markers.size;
-        let mut series_list = self.base.series_list.borrow_mut();
-        let series = series_list.get_mut(index).unwrap();
+    fn channel_visibility_changed(&self, index: usize) {
+        let mut channels = self.base.channels.borrow_mut();
+        let channel = channels.get_mut(index).unwrap();
 
-        for entity in series.entities.iter_mut() {
+        let visible = channel.state == Visibility::Showing || channel.state == Visibility::Shown;
+        let marker_size = self.base.options.channel.markers.size;
+
+        for entity in channel.entities.iter_mut() {
             if visible {
-                entity.radius = self.value2radius(entity.value);
+                entity.radius = self.value2radius(entity.value.unwrap());
                 entity.point_radius = marker_size;
             } else {
                 entity.radius = 0.0;
@@ -229,6 +229,14 @@ where
 
         self.calculate_bounding_boxes();
     }
+
+    /// Called when [data_table] has been changed.
+    fn data_table_changed(&self) {
+        info!("data_table_changed");
+        // self.calculate_drawing_sizes(ctx);
+        let mut channels = self.base.channels.borrow_mut();
+        *channels = self.create_channels(0, self.base.data_table.meta.len());
+    }
 }
 
 impl<'a, C, M, D> Chart<'a, C, M, D, PolarPoint> for RadarChart<'a, C, M, D>
@@ -237,8 +245,8 @@ where
     M: fmt::Display,
     D: fmt::Display,
 {
-    fn calculate_drawing_sizes(&self) {
-        self.base.calculate_drawing_sizes();
+    fn calculate_drawing_sizes(&self, ctx: &C) {
+        self.base.calculate_drawing_sizes(ctx);
 
         let mut props = self.props.borrow_mut();
 
@@ -247,7 +255,7 @@ where
 
         props.angle_interval = TAU / props.xlabels.len() as f64;
 
-        let rect = &self.base.props.borrow().series_and_axes_box;
+        let rect = &self.base.props.borrow().channel_and_axes_box;
         let xlabel_font_size = self.base.options.x_axis.labels.style.font_size.unwrap();
 
         // [_radius]*factor equals the height of the largest polygon.
@@ -267,7 +275,7 @@ where
             // TODO: complete it
             // props.y_max_value = utils::find_max_value(&self.base.data_table);
 
-            let yinterval = utils::calculate_interval(props.y_max_value, 3, ymin_interval);
+            let yinterval = utils::calculate_interval(props.y_max_value, 3, Some(ymin_interval));
             props.y_max_value = (props.y_max_value / yinterval).ceil() * yinterval;
         }
 
@@ -304,7 +312,9 @@ where
             }
     }
 
-    fn set_stream(&self, stream: DataStream<'a, M, D>) {}
+    fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
+        self.base.data_table = stream;
+    }
 
     fn draw(&self, ctx: &C) {
         self.base.dispose();
@@ -316,14 +326,23 @@ where
         self.base.initialize_legend();
         self.base.initialize_tooltip();
 
+        self.base.draw(ctx);
+        // if force_redraw {
+        //     println!("BaseChart force_redraw");
+        //     self.stop_animation();
+        //     self.data_table_changed();
+        //     self.position_legend();
+
+        //     // This call is redundant for row and column changes but necessary for
+        //     // cell changes.
+        //     self.calculate_drawing_sizes(ctx);
+        //     self.update_channel(0);
+        // }
+        self.calculate_bounding_boxes();
+
         // self.ctx.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid(ctx);
         self.base.start_animation();
-    }
-
-    fn update(&self, ctx: &C) {
-        self.base.update(ctx);
-        self.calculate_bounding_boxes();
     }
 
     fn resize(&self, w: f64, h: f64) {
@@ -424,14 +443,14 @@ where
         if percent >= 1.0 {
             percent = 1.0;
 
-            // Update the visibility states of all series before the last frame.
-            let mut props = self.base.props.borrow_mut();
-
-            for idx in props.series_states.len()..0 {
-                if props.series_states[idx] == Visibility::Showing {
-                    props.series_states[idx] = Visibility::Shown;
-                } else if props.series_states[idx] == Visibility::Hiding {
-                    props.series_states[idx] = Visibility::Hidden;
+            // Update the visibility states of all channel before the last frame.            
+            let mut channels = self.base.channels.borrow_mut();
+            
+            for channel in channels.iter_mut() {
+                if channel.state == Visibility::Showing {
+                    channel.state = Visibility::Shown;
+                } else if channel.state == Visibility::Hiding {
+                    channel.state = Visibility::Hidden;
                 }
             }
         }
@@ -439,9 +458,9 @@ where
         let props = self.base.props.borrow();
 
         let ease = props.easing_function.unwrap();
-        self.draw_series(ctx, ease(percent));
-        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
-        // context.drawImageScaled(ctx.canvas, 0, 0, width, height);
+        self.draw_channel(ctx, ease(percent));
+        // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
+        // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         self.base.draw_title(ctx);
 
         if percent < 1.0 {
@@ -451,40 +470,40 @@ where
         }
     }
 
-    fn draw_series(&self, ctx: &C, percent: f64) -> bool {
+    fn draw_channel(&self, ctx: &C, percent: f64) -> bool {
         let props = self.props.borrow();
 
-        let focused_series_index = self.base.props.borrow().focused_series_index;
+        let focused_channel_index = self.base.props.borrow().focused_channel_index;
 
-        let fill_opacity = self.base.options.series.fill_opacity;
-        let series_line_width = self.base.options.series.line_width;
-        let marker_options = &self.base.options.series.markers;
+        let fill_opacity = self.base.options.channel.fill_opacity;
+        let channel_line_width = self.base.options.channel.line_width;
+        let marker_options = &self.base.options.channel.markers;
         let marker_size = marker_options.size;
         let point_count = props.xlabels.len();
 
-        let series_list = self.base.series_list.borrow();
-        let series_states = &self.base.props.borrow().series_states;
+        let channels = self.base.channels.borrow();
         let focused_entity_index = self.base.props.borrow().focused_entity_index;
 
-        for idx in 0..series_list.len() {
-            if series_states[idx] == Visibility::Hidden {
-                continue;
-            }
-
-            let series = series_list.get(idx).unwrap();
-            let scale = if idx as i64 != focused_series_index {
+        let mut idx = 0;
+        for channel in channels.iter() {
+            let scale = if idx as i64 != focused_channel_index {
                 1.
             } else {
                 2.
             };
 
+            idx +=1;
+            if channel.state == Visibility::Hidden {
+                continue;
+            }
+
             // Draw the polygon.
-            ctx.set_line_width(scale * series_line_width);
-            ctx.set_stroke_color(series.color);
+            ctx.set_line_width(scale * channel_line_width);
+            ctx.set_stroke_color(channel.color);
             ctx.begin_path();
 
             for jdx in 0..point_count {
-                let entity = series.entities.get(jdx).unwrap();
+                let entity = channel.entities.get(jdx).unwrap();
                 // TODO: Optimize.
                 let radius = utils::lerp(entity.old_radius, entity.radius, percent);
                 let angle = utils::lerp(entity.old_angle, entity.angle, percent);
@@ -500,7 +519,7 @@ where
 
             // Optionally fill the polygon.
             if fill_opacity > 0. {
-                ctx.set_fill_color(self.base.change_color_alpha(series.color, fill_opacity));
+                ctx.set_fill_color(self.base.change_color_alpha(channel.color, fill_opacity));
                 ctx.fill();
             }
 
@@ -509,19 +528,19 @@ where
                 let fill_color = if let Some(color) = marker_options.fill_color {
                     color
                 } else {
-                    series.color
+                    channel.color
                 };
 
                 let stroke_color = if let Some(color) = marker_options.stroke_color {
                     color
                 } else {
-                    series.color
+                    channel.color
                 };
 
                 ctx.set_fill_color(fill_color);
                 ctx.set_line_width(scale * marker_options.line_width);
                 ctx.set_stroke_color(stroke_color);
-                for p in series.entities.iter() {
+                for p in channel.entities.iter() {
                     if marker_options.enabled {
                         p.draw(ctx, percent, p.index as i64 == focused_entity_index);
                     } else if p.index as i64 == focused_entity_index {
@@ -536,28 +555,27 @@ where
     }
 
     // param should be Option
-    fn update_series(&self, index: usize) {
+    fn update_channel(&self, index: usize) {
         let entity_count = self.base.data_table.frames.len();
-        let mut series_list = self.base.series_list.borrow_mut();
+        let mut channels = self.base.channels.borrow_mut();
         let props = self.props.borrow();
-        let series_states = &self.base.props.borrow().series_states;
 
-        for idx in 0..series_list.len() {
-            let mut series = series_list.get_mut(idx).unwrap();
+        let mut idx = 0;
+        for channel in channels.iter_mut() {
 
             let color = self.base.get_color(idx);
             let highlight_color = self.base.get_highlight_color(color);
-            series.color = color;
-            series.highlight_color = highlight_color;
+            channel.color = color;
+            channel.highlight = highlight_color;
 
-            let series_state = series_states[idx];
-            let visible = series_state == Visibility::Showing || series_state == Visibility::Shown;
+            let visible = channel.state == Visibility::Showing || channel.state == Visibility::Shown;
+            
             for jdx in 0..entity_count {
-                let mut entity = series.entities.get_mut(jdx).unwrap();
+                let mut entity = channel.entities.get_mut(jdx).unwrap();
                 entity.index = jdx;
                 entity.center = props.center;
                 entity.radius = if visible {
-                    self.value2radius(entity.value)
+                    self.value2radius(entity.value.unwrap())
                 } else {
                     0.0
                 };
@@ -565,35 +583,72 @@ where
                 entity.color = color;
                 entity.highlight_color = highlight_color;
             }
+            idx += 1;
         }
     }
 
     fn create_entity(
         &self,
-        series_index: usize,
+        channel_index: usize,
         entity_index: usize,
-        value: f64,
+        value: Option<f64>,
         color: Color,
         highlight_color: Color,
     ) -> PolarPoint {
         let props = self.props.borrow();
         let angle = self.get_angle(entity_index);
-        let point_radius = self.base.options.series.markers.size as f64;
+        let point_radius = self.base.options.channel.markers.size as f64;
 
         PolarPoint {
             index: entity_index,
             value,
-            old_value: 0.,
+            old_value: None,
             color,
             highlight_color,
             center: props.center,
             old_radius: 0.,
             old_angle: angle,
             old_point_radius: 0.,
-            radius: self.value2radius(value),
+            radius: self.value2radius(value.unwrap()),
             angle,
             point_radius,
         }
+    }
+
+    fn create_channels(&self, start: usize, end: usize) -> Vec<ChartChannel<PolarPoint>> {
+        info!("create_channels");
+        let result = Vec::new();
+        // let entity_count = self.data_table.frames.len();
+        // while (start < end) {
+        //   let name = self.base.data_table.columns[start + 1].name;
+        //   let color = get_color(start);
+        //   let highlight_color = get_highlight_color(color);
+        //   let entities =
+        //       create_entities(start, 0, entity_count, color, highlight_color);
+        //   result.add(Series(name, color, highlight_color, entities));
+        //   start++;
+        // }
+        result
+    }
+
+    fn create_entities(
+        &self,
+        channel_index: usize,
+        start: usize,
+        end: usize,
+        color: Color,
+        highlight: Color,
+    ) -> Vec<PolarPoint> {
+        info!("create_entities");
+        let result = Vec::new();
+        // while (start < end) {
+        //   let value = self.base.data_table.rows[start][channel_index + 1];
+        //   let e = create_entity(channel_index, start, value, color, highlight_color);
+        //   e.chart = this;
+        //   result.add(e);
+        //   start++;
+        // }
+        result
     }
 
     fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64> {
@@ -601,7 +656,7 @@ where
         let focused_entity_index = self.base.props.borrow().focused_entity_index;
 
         let bounding_box = &props.bounding_boxes[focused_entity_index as usize];
-        let offset = self.base.options.series.markers.size as f64 * 2. + 5.;
+        let offset = self.base.options.channel.markers.size as f64 * 2. + 5.;
         let origin = bounding_box.origin;
         let mut x = origin.x + bounding_box.width() + offset;
         let y = origin.y + ((bounding_box.height() - tooltip_height) / 2.).trunc();

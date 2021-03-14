@@ -18,11 +18,6 @@ pub fn deg2rad(angle: f64) -> f64 {
     angle * PI / 180.0
 }
 
-// /// Returns the base-10 logarithm of [value].
-// fn log10(value: f64) -> f64 {
-//   log(value) / f64::LN_10// ln10
-// }
-
 /// Returns a linear interpolated value based on the start value [start], the
 /// end value [end], and the interpolation factor [f].
 ///
@@ -108,34 +103,33 @@ pub fn find_min_value<'a, M: fmt::Display, D: fmt::Display>(table: DataStream<'a
 /// - the axis range [range]
 /// - the desired number of steps [targetSteps]
 /// - and the minimum interval [min_interval]
-pub fn calculate_interval(range: f64, target_steps: usize, min_interval: f64) -> f64 {
-    //   let interval = range / targetSteps;
-    //   let mag = log10(interval).floor();
-    //   let magPow = (10.0, mag).pow() as f64;
-    //   if min_interval != null {
-    //     magPow = (magPow, min_interval).max();
-    //   }
-    //   let msd = (interval / magPow).round();
-    //   if msd > 5 {
-    //     msd = 10;
-    //   } else if msd > 2 {
-    //     msd = 5;
-    //   } else if msd == 0 {
-    //     msd = 1;
-    //   }
-    //   return msd * magPow;
-    unimplemented!()
+pub fn calculate_interval(range: f64, target_steps: usize, min_interval: Option<f64>) -> f64 {
+    let interval = range / target_steps as f64;
+    let mag = interval.log10().floor();
+    let mut mag_pow = f64::powf(10.0, mag);
+    if let Some(min_interval) = min_interval {
+        mag_pow = mag_pow.max(min_interval);
+    }
+    let mut msd = (interval / mag_pow).round();
+    if msd > 5. {
+        msd = 10.;
+    } else if msd > 2. {
+        msd = 5.;
+    } else if msd == 0. {
+        msd = 1.;
+    }
+    msd * mag_pow
 }
 
 pub fn calculate_max_text_width<C: CanvasContext>(
-    context: C,
+    ctx: C,
     font: String,
     texts: Vec<String>,
 ) -> f64 {
     // let result = 0.0;
-    // context.font = font;
+    // ctx.font = font;
     // for (let text in texts) {
-    //   let width = context.measure_text(text).width;
+    //   let width = ctx.measure_text(text).width;
     //   if (result < width) result = width;
     // }
     // result

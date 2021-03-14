@@ -64,7 +64,7 @@ pub struct TooltipOptions<'a> {
 
 #[derive(Debug, Clone)]
 pub struct BarChartSeriesOptions<'a> {
-    /// An object that controls the series labels.
+    /// An object that controls the channel labels.
     /// bool - Whether to show the labels.
     pub labels: Option<StyleOption<'a>>,
 }
@@ -145,7 +145,7 @@ pub struct BarChartYAxisOptions<'a> {
 
     /// The minimum interval. If `null`, this value is automatically
     /// calculated.
-    pub min_interval: Option<usize>,
+    pub min_interval: Option<f64>,
 
     /// The desired minimum value on the axis. If set, the calculated value
     /// is guaranteed to be <= this value.
@@ -160,8 +160,8 @@ pub struct BarChartYAxisOptions<'a> {
 }
 
 pub struct BarChartOptions<'a> {
-    /// An object that controls the series.
-    pub series: BarChartSeriesOptions<'a>,
+    /// An object that controls the channel.
+    pub channel: BarChartSeriesOptions<'a>,
 
     /// An object that controls the x-axis.
     pub x_axis: BarChartXAxisOptions<'a>,
@@ -175,7 +175,7 @@ pub struct BarChartOptions<'a> {
     /// The background color of the chart.
     pub background_color: Color,
 
-    /// The color list used to render the series. If there are more series than
+    /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
     pub colors: Vec<Color>,
 
@@ -226,7 +226,7 @@ pub struct TitleOption<'a> {
 impl<'a> Default for BarChartOptions<'a> {
     fn default() -> Self {
         Self {
-            series: BarChartSeriesOptions { labels: None },
+            channel: BarChartSeriesOptions { labels: None },
             x_axis: BarChartXAxisOptions {
                 crosshair: None,
                 grid_line_color: palette::GRAY_5,
@@ -289,7 +289,7 @@ impl<'a> Default for BarChartOptions<'a> {
             title: TitleOptions {
                 position: "above",
                 style: Default::default(),
-                text: None,
+                text: Some("Bar Chart"),
             },
             tooltip: TooltipOptions {
                 enabled: true,
@@ -342,7 +342,7 @@ pub struct GaugeChartOptions<'a> {
     /// The background color of the chart.
     pub background_color: Color,
 
-    /// The color list used to render the series. If there are more series than
+    /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
     pub colors: Vec<Color>,
 
@@ -412,7 +412,7 @@ impl<'a> Default for GaugeChartOptions<'a> {
             title: TitleOptions {
                 position: "above",
                 style: Default::default(),
-                text: None,
+                text: Some("Gauge Chart"),
             },
             tooltip: TooltipOptions {
                 enabled: true,
@@ -428,14 +428,14 @@ pub struct LineChartSeriesMarkersOptions {
     /// bool - Whether markers are enabled.
     pub enabled: bool,
 
-    /// The fill color. If `null`, the stroke color of the series
+    /// The fill color. If `null`, the stroke color of the channel
     /// will be used.
     pub fill_color: Option<Color>,
 
     /// The line width of the markers.
     pub line_width: usize,
 
-    /// The stroke color. If `null`, the stroke color of the series
+    /// The stroke color. If `null`, the stroke color of the channel
     /// will be used.
     pub stroke_color: Option<Color>,
 
@@ -448,13 +448,13 @@ pub struct LineChartSeriesOptions<'a> {
     /// To draw straight lines, set this to zero.
     pub curve_tension: f64,
 
-    /// The opacity of the area between a series and the x-axis.
+    /// The opacity of the area between a channel and the x-axis.
     pub fill_opacity: f64,
 
-    /// The line width of the series.
+    /// The line width of the channel.
     pub line_width: f64,
 
-    /// An object that controls the series labels.
+    /// An object that controls the channel labels.
     /// Whether to show the labels
     pub labels: Option<StyleOption<'a>>,
 
@@ -529,7 +529,7 @@ pub struct LineChartYAxisOptions<'a> {
 
     /// The minimum interval. If `null`, this value is automatically
     /// calculated.
-    pub min_interval: Option<usize>,
+    pub min_interval: Option<f64>,
 
     /// The desired minimum value on the axis. If set, the calculated value
     /// is guaranteed to be <= this value.
@@ -544,8 +544,8 @@ pub struct LineChartYAxisOptions<'a> {
 }
 
 pub struct LineChartOptions<'a> {
-    /// An object that controls the series.
-    pub series: LineChartSeriesOptions<'a>,
+    /// An object that controls the channel.
+    pub channel: LineChartSeriesOptions<'a>,
 
     /// An object that controls the x-axis.
     pub x_axis: LineChartXAxisOptions<'a>,
@@ -559,7 +559,7 @@ pub struct LineChartOptions<'a> {
     /// The background color of the chart.
     pub background_color: Color,
 
-    /// The color list used to render the series. If there are more series than
+    /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
     pub colors: Vec<Color>,
 
@@ -602,7 +602,7 @@ impl<'a> BaseOption<'a> for LineChartOptions<'a> {
 impl<'a> Default for LineChartOptions<'a> {
     fn default() -> Self {
         Self {
-            series: LineChartSeriesOptions {
+            channel: LineChartSeriesOptions {
                 curve_tension: 0.4,
                 fill_opacity: 0.25,
                 line_width: 2_f64,
@@ -676,7 +676,7 @@ impl<'a> Default for LineChartOptions<'a> {
             title: TitleOptions {
                 position: "above",
                 style: Default::default(),
-                text: None,
+                text: Some("Line Chart"),
             },
             tooltip: TooltipOptions {
                 enabled: true,
@@ -702,7 +702,7 @@ pub struct PieChartSeriesOptions<'a> {
     /// bool - Whether to draw the slices counterclockwise.
     pub counterclockwise: bool,
 
-    /// An object that controls the series labels.
+    /// An object that controls the channel labels.
     pub labels: PieChartSeriesLabelsOptions<'a>,
 
     /// The start angle in degrees. Default is -90, which is 12 o"clock.
@@ -714,8 +714,8 @@ pub struct PieChartOptions<'a> {
     /// radius equal to this value times the radius of the chart.
     pub pie_hole: f64,
 
-    /// An object that controls the series.
-    pub series: PieChartSeriesOptions<'a>,
+    /// An object that controls the channel.
+    pub channel: PieChartSeriesOptions<'a>,
 
     /// An object that controls the animation.
     pub animation: AnimationOptions,
@@ -723,7 +723,7 @@ pub struct PieChartOptions<'a> {
     /// The background color of the chart.
     pub background_color: Color,
 
-    /// The color list used to render the series. If there are more series than
+    /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
     pub colors: Vec<Color>,
 
@@ -767,7 +767,7 @@ impl<'a> Default for PieChartOptions<'a> {
     fn default() -> Self {
         Self {
             pie_hole: 0_f64,
-            series: PieChartSeriesOptions {
+            channel: PieChartSeriesOptions {
                 counterclockwise: false,
                 labels: PieChartSeriesLabelsOptions {
                     enabled: false,
@@ -802,7 +802,7 @@ impl<'a> Default for PieChartOptions<'a> {
             title: TitleOptions {
                 position: "above",
                 style: Default::default(),
-                text: None,
+                text: Some("Pie Chart"),
             },
             tooltip: TooltipOptions {
                 enabled: true,
@@ -818,14 +818,14 @@ pub struct RadarChartSeriesMarkersOptions {
     /// bool - Whether markers are enabled.
     pub enabled: bool,
 
-    /// The fill color. If `null`, the stroke color of the series
+    /// The fill color. If `null`, the stroke color of the channel
     /// will be used.
     pub fill_color: Option<Color>,
 
     /// The line width of the markers.
     pub line_width: f64,
 
-    /// The stroke color. If `null`, the stroke color of the series
+    /// The stroke color. If `null`, the stroke color of the channel
     /// will be used.
     pub stroke_color: Option<Color>,
 
@@ -834,13 +834,13 @@ pub struct RadarChartSeriesMarkersOptions {
 }
 
 pub struct RadarChartSeriesOptions<'a> {
-    /// The opacity of the area between a series and the x-axis.
+    /// The opacity of the area between a channel and the x-axis.
     pub fill_opacity: f64,
 
-    /// The line width of the series.
+    /// The line width of the channel.
     pub line_width: f64,
 
-    /// An object that controls the series labels.
+    /// An object that controls the channel labels.
     ///   Whether to show the labels.
     pub labels: Option<StyleOption<'a>>,
 
@@ -895,8 +895,8 @@ pub struct RadarChartYAxisOptions<'a> {
 }
 
 pub struct RadarChartOptions<'a> {
-    // An object that controls the series.
-    pub series: RadarChartSeriesOptions<'a>,
+    // An object that controls the channel.
+    pub channel: RadarChartSeriesOptions<'a>,
 
     /// An object that controls the x-axis.
     pub x_axis: RadarChartXAxisOptions<'a>,
@@ -910,7 +910,7 @@ pub struct RadarChartOptions<'a> {
     /// The background color of the chart.
     pub background_color: Color,
 
-    /// The color list used to render the series. If there are more series than
+    /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
     pub colors: Vec<Color>,
 
@@ -953,7 +953,7 @@ impl<'a> BaseOption<'a> for RadarChartOptions<'a> {
 impl<'a> Default for RadarChartOptions<'a> {
     fn default() -> Self {
         Self {
-            series: RadarChartSeriesOptions {
+            channel: RadarChartSeriesOptions {
                 fill_opacity: 0.25,
                 line_width: 2.,
                 labels: None,
@@ -1009,7 +1009,7 @@ impl<'a> Default for RadarChartOptions<'a> {
             title: TitleOptions {
                 position: "above",
                 style: Default::default(),
-                text: None,
+                text: Some("Radar Chart"),
             },
             tooltip: TooltipOptions {
                 enabled: true,
