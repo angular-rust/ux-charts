@@ -2,6 +2,7 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
+use animate::easing::{get_easing, Easing};
 use dataflow::*;
 use primitives::{
     BaseLine, CanvasContext, Color, Point, Rect, Size, TextAlign, TextStyle, TextWeight,
@@ -107,13 +108,14 @@ where
         (entity_index as f64) * props.angle_interval - PI_2
     }
 
-    pub fn value2radius(&self, value: D) -> f64 {
-        // if value != 0.0 {
-        //     let props = self.props.borrow();
-        //     return value * props.radius / props.y_max_value;
-        // }
-        // 0.0
-        unimplemented!()
+    pub fn value2radius(&self, value: Option<D>) -> f64 {
+        match value {
+            Some(value) => {
+                let props = self.props.borrow();
+                value.into() * props.radius / props.y_max_value
+            }
+            None => 0.0
+        }
     }
 
     fn calculate_bounding_boxes(&self) {
@@ -123,7 +125,7 @@ where
 
         let channels = self.base.channels.borrow();
         let channel_count = channels.len();
-        
+
         let entity_count = {
             let channel = channels.get(0).unwrap();
             channel.entities.len()
@@ -220,7 +222,7 @@ where
 
         for entity in channel.entities.iter_mut() {
             if visible {
-                entity.radius = self.value2radius(entity.value.unwrap());
+                entity.radius = self.value2radius(entity.value);
                 entity.point_radius = marker_size;
             } else {
                 entity.radius = 0.0;
@@ -246,42 +248,56 @@ where
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     fn calculate_drawing_sizes(&self, ctx: &C) {
+        info!("calculate_drawing_sizes");
         self.base.calculate_drawing_sizes(ctx);
 
         let mut props = self.props.borrow_mut();
 
-        // TODO: complete it
-        // props.xlabels = self.base.data_table.getColumnValues(0);
+        props.xlabels = self
+            .base
+            .data_table
+            .meta
+            .iter()
+            .map(|item| item.name.to_string())
+            .collect();
 
         props.angle_interval = TAU / props.xlabels.len() as f64;
 
-        let rect = &self.base.props.borrow().channel_and_axes_box;
         let xlabel_font_size = self.base.options.x_axis.labels.style.font_size.unwrap();
 
         // [_radius]*factor equals the height of the largest polygon.
         let factor = 1. + ((props.xlabels.len() >> 1) as f64 * props.angle_interval - PI_2).sin();
-        props.radius = rect.size.width.min(rect.size.height) / factor
-            - factor * (xlabel_font_size + AXIS_LABEL_MARGIN as f64);
-        props.center = Point::new(
-            rect.origin.x + rect.size.width / 2.,
-            rect.origin.y + rect.size.height / factor,
-        );
 
-        // The minimum value on the y-axis is always zero
-        let yinterval = self.base.options.y_axis.interval.unwrap();
-        if let Some(yinterval) = self.base.options.y_axis.interval {
-            let ymin_interval = self.base.options.y_axis.min_interval.unwrap();
-           
-            props.y_max_value = utils::find_max_value(&self.base.data_table).into();
-
-            let yinterval = utils::calculate_interval(props.y_max_value, 3, Some(ymin_interval));
-            props.y_max_value = (props.y_max_value / yinterval).ceil() * yinterval;
+        {
+            let rect = &self.base.props.borrow().channel_and_axes_box;
+            props.radius = rect.size.width.min(rect.size.height) / factor
+                - factor * (xlabel_font_size + AXIS_LABEL_MARGIN as f64);
+            props.center = Point::new(
+                rect.origin.x + rect.size.width / 2.,
+                rect.origin.y + rect.size.height / factor,
+            );
         }
 
-        props.ylabel_formatter = self.base.options.y_axis.labels.formatter;
+        // The minimum value on the y-axis is always zero
+        let y_axis = &self.base.options.y_axis;
+        let yinterval = match y_axis.interval {
+            Some(yinterval) => yinterval,
+            None => {
+                let ymin_interval = y_axis.min_interval.unwrap_or(0.0);
+
+                props.y_max_value = utils::find_max_value(&self.base.data_table).into();
+
+                let yinterval =
+                    utils::calculate_interval(props.y_max_value, 3, Some(ymin_interval));
+                props.y_max_value = (props.y_max_value / yinterval).ceil() * yinterval;
+                yinterval
+            }
+        };
+
+        props.ylabel_formatter = y_axis.labels.formatter;
         if props.ylabel_formatter.is_none() {
             // let max_decimal_places =
-            //     max(utils::get_decimal_places(props.y_interval), utils::get_decimal_places(props.y_min_value));
+            //     max(utils::get_decimal_places(props.yinterval), utils::get_decimal_places(props.y_min_value));
             // let numberFormat = NumberFormat.decimalPattern()
             // ..maximumFractionDigits = max_decimal_places
             // ..minimumFractionDigits = max_decimal_places;
@@ -318,6 +334,7 @@ where
     }
 
     fn draw(&self, ctx: &C) {
+        info!("draw");
         self.base.dispose();
         // data_tableSubscriptionTracker
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
@@ -328,22 +345,27 @@ where
         self.base.initialize_tooltip();
 
         self.base.draw(ctx);
-        // if force_redraw {
-        //     println!("BaseChart force_redraw");
-        //     self.stop_animation();
-        //     self.data_table_changed();
-        //     self.position_legend();
 
-        //     // This call is redundant for row and column changes but necessary for
-        //     // cell changes.
-        //     self.calculate_drawing_sizes(ctx);
-        //     self.update_channel(0);
-        // }
+        self.base.stop_animation();
+        self.data_table_changed();
+        self.base.position_legend();
+
+        // This call is redundant for row and column changes but necessary for
+        // cell changes.
+        self.calculate_drawing_sizes(ctx);
+        info!("after calculate_drawing_sizes");
+
+        self.update_channel(0);
+        info!("after update_channel");
+
         self.calculate_bounding_boxes();
-
-        // self.ctx.clearRect(0, 0, self.width, self.height);
+        info!("after calculate_bounding_boxes");
         self.draw_axes_and_grid(ctx);
+        info!("after draw_axes_and_grid");
         self.base.start_animation();
+        info!("after start_animation");
+        self.draw_frame(ctx, None);
+        info!("after draw_frame");
     }
 
     fn resize(&self, w: f64, h: f64) {
@@ -444,9 +466,9 @@ where
         if percent >= 1.0 {
             percent = 1.0;
 
-            // Update the visibility states of all channel before the last frame.            
+            // Update the visibility states of all channel before the last frame.
             let mut channels = self.base.channels.borrow_mut();
-            
+
             for channel in channels.iter_mut() {
                 if channel.state == Visibility::Showing {
                     channel.state = Visibility::Shown;
@@ -458,7 +480,10 @@ where
 
         let props = self.base.props.borrow();
 
-        let ease = props.easing_function.unwrap();
+        let ease = match props.easing_function {
+            Some(val) => val,
+            None => get_easing(Easing::Linear),
+        };
         self.draw_channels(ctx, ease(percent));
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
@@ -493,7 +518,7 @@ where
                 2.
             };
 
-            idx +=1;
+            idx += 1;
             if channel.state == Visibility::Hidden {
                 continue;
             }
@@ -556,27 +581,27 @@ where
     }
 
     // param should be Option
-    fn update_channel(&self, index: usize) {
+    fn update_channel(&self, _: usize) {
         let entity_count = self.base.data_table.frames.len();
         let mut channels = self.base.channels.borrow_mut();
         let props = self.props.borrow();
 
         let mut idx = 0;
         for channel in channels.iter_mut() {
-
             let color = self.base.get_color(idx);
             let highlight_color = self.base.get_highlight_color(color);
             channel.color = color;
             channel.highlight = highlight_color;
 
-            let visible = channel.state == Visibility::Showing || channel.state == Visibility::Shown;
-            
+            let visible =
+                channel.state == Visibility::Showing || channel.state == Visibility::Shown;
+
             for jdx in 0..entity_count {
                 let mut entity = channel.entities.get_mut(jdx).unwrap();
                 entity.index = jdx;
                 entity.center = props.center;
                 entity.radius = if visible {
-                    self.value2radius(entity.value.unwrap())
+                    self.value2radius(entity.value)
                 } else {
                     0.0
                 };
@@ -610,25 +635,27 @@ where
             old_radius: 0.,
             old_angle: angle,
             old_point_radius: 0.,
-            radius: self.value2radius(value.unwrap()),
+            radius: self.value2radius(value),
             angle,
             point_radius,
         }
     }
 
     fn create_channels(&self, start: usize, end: usize) {
-        info!("create_channels");
-        let result = Vec::new();
-        // let entity_count = self.data_table.frames.len();
-        // while (start < end) {
-        //   let name = self.base.data_table.columns[start + 1].name;
-        //   let color = get_color(start);
-        //   let highlight_color = get_highlight_color(color);
-        //   let entities =
-        //       create_entities(start, 0, entity_count, color, highlight_color);
-        //   result.add(Series(name, color, highlight_color, entities));
-        //   start++;
-        // }
+        let mut start = start;
+        let mut result = Vec::new();
+        let count = self.base.data_table.frames.len();
+        let meta = &self.base.data_table.meta;
+        while start < end {
+            let channel = meta.get(start).unwrap();
+            let name = channel.name;
+            let color = self.base.get_color(start);
+            let highlight = self.base.get_highlight_color(color);
+
+            let entities = self.create_entities(start, 0, count, color, highlight);
+            result.push(ChartChannel::new(name, color, highlight, entities));
+            start += 1;
+        }
         let mut channels = self.base.channels.borrow_mut();
         *channels = result;
     }
@@ -641,15 +668,23 @@ where
         color: Color,
         highlight: Color,
     ) -> Vec<PolarPoint<D>> {
-        info!("create_entities");
-        let result = Vec::new();
-        // while (start < end) {
-        //   let value = self.base.data_table.rows[start][channel_index + 1];
-        //   let e = create_entity(channel_index, start, value, color, highlight_color);
-        //   e.chart = this;
-        //   result.add(e);
-        //   start++;
-        // }
+        let mut start = start;
+        let mut result = Vec::new();
+        while start < end {
+            let frame = self.base.data_table.frames.get(start).unwrap();
+            let value = frame.data.get(channel_index as u64);
+            let entity = match frame.data.get(channel_index as u64) {
+                Some(value) => {
+                    let value = value.clone();
+                    self.create_entity(channel_index, start, Some(value), color, highlight)
+                }
+                None => self.create_entity(channel_index, start, None, color, highlight),
+            };
+
+            //   e.chart = this;
+            result.push(entity);
+            start += 1;
+        }
         result
     }
 

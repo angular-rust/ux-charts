@@ -711,8 +711,6 @@ where
     /// options [options].
     // TODO: handle updates while animation is happening.
     fn draw(&self, ctx: &C) {
-        println!("!!!!!!!! BaseChart draw !!!!!!!!");
-
         // TODO: use this not_eq
         // let props = self.props.borrow();
         // if props.width == 0_f64 || props.height == 0_f64 {
@@ -756,7 +754,7 @@ where
     /// Updates the channel at index [index]. If [index] is `null`, updates all
     /// channel.
     ///
-    fn update_channel(&self, index: usize) {}
+    fn update_channel(&self, _: usize) {}
 
     // println!("SIZE {} {}", width, height);
     // println!("BACKGROUND {}", self.options.background());

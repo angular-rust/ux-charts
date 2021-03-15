@@ -88,7 +88,7 @@ struct BarChartProperties {
     y_title_center: Option<Point<f64>>,
     xlabels: Vec<String>,
     ylabels: Vec<String>,
-    y_interval: f64,
+    yinterval: f64,
     y_max_value: f64,
     y_min_value: f64,
     y_range: f64,
@@ -349,26 +349,26 @@ where
         }
 
         if let Some(value) = options.y_axis.interval {
-            props.y_interval = value
+            props.yinterval = value
         } else {
             let min_interval = options.y_axis.min_interval;
             if props.y_min_value == props.y_max_value {
                 if props.y_min_value == 0. {
                     props.y_max_value = 1.;
-                    props.y_interval = 1.;
+                    props.yinterval = 1.;
                 } else if props.y_min_value == 1. {
                     props.y_min_value = 0.;
-                    props.y_interval = 1.;
+                    props.yinterval = 1.;
                 } else {
-                    props.y_interval = props.y_min_value * 0.25;
-                    props.y_min_value -= props.y_interval;
-                    props.y_max_value += props.y_interval;
+                    props.yinterval = props.y_min_value * 0.25;
+                    props.y_min_value -= props.yinterval;
+                    props.y_max_value += props.yinterval;
                 }
                 if let Some(value) = min_interval {
-                    props.y_interval = props.y_interval.max(value as f64);
+                    props.yinterval = props.yinterval.max(value as f64);
                 }
             } else {
-                props.y_interval = utils::calculate_interval(
+                props.yinterval = utils::calculate_interval(
                     props.y_max_value - props.y_min_value,
                     5,
                     min_interval,
@@ -376,10 +376,10 @@ where
             }
         }
 
-        let val = props.y_min_value / props.y_interval;
+        let val = props.y_min_value / props.yinterval;
 
-        props.y_min_value = (props.y_min_value / props.y_interval).floor() * props.y_interval;
-        props.y_max_value = (props.y_max_value / props.y_interval).ceil() * props.y_interval;
+        props.y_min_value = (props.y_min_value / props.yinterval).floor() * props.yinterval;
+        props.y_max_value = (props.y_max_value / props.yinterval).ceil() * props.yinterval;
 
         props.y_range = props.y_max_value - props.y_min_value;
 
@@ -389,7 +389,7 @@ where
 
         if let None = props.ylabel_formatter {
             // let max_decimal_places =
-            //     max(utils::get_decimal_places(props.y_interval), utils::get_decimal_places(props.y_min_value));
+            //     max(utils::get_decimal_places(props.yinterval), utils::get_decimal_places(props.y_min_value));
             // let numberFormat = NumberFormat.decimalPattern()
             // ..maximumFractionDigits = max_decimal_places
             // ..minimumFractionDigits = max_decimal_places;
@@ -403,7 +403,7 @@ where
             while value <= props.y_max_value {
                 let ylabel_formatter = ylabel_formatter;
                 props.ylabels.push(ylabel_formatter(value));
-                value += props.y_interval;
+                value += props.yinterval;
             }
         } else {
             error!("NO Y LABEL FORMATTER");
@@ -612,7 +612,6 @@ where
 
         self.base.draw(ctx);
 
-        // if force_redraw {
         self.base.stop_animation();
         self.data_table_changed();
         self.base.position_legend();
@@ -621,11 +620,10 @@ where
         // cell changes.
         self.calculate_drawing_sizes(ctx);
         self.update_channel(0);
-        // }
 
         self.calculate_average_y_values(0);
 
-        // self.base.start_animation();
+        self.base.start_animation();
         self.draw_frame(ctx, None);
     }
 
@@ -967,7 +965,7 @@ where
         return false;
     }
 
-    fn update_channel(&self, index: usize) {
+    fn update_channel(&self, _: usize) {
         let entity_count = self.base.data_table.frames.len();
 
         let lefts = self.get_channel_lefts();
@@ -1045,7 +1043,6 @@ where
     }
 
     fn create_channels(&self, start: usize, end: usize) {
-        info!("create_channels {} {}", start, end);
         let mut start = start;
         let mut result = Vec::new();
         let count = self.base.data_table.frames.len();
@@ -1057,8 +1054,6 @@ where
             let highlight = self.base.get_highlight_color(color);
 
             let entities = self.create_entities(start, 0, count, color, highlight);
-            // println!("GET #{}: {} {} {}", start, name, color, highlight);
-
             result.push(ChartChannel::new(name, color, highlight, entities));
             start += 1;
         }

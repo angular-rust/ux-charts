@@ -3,6 +3,7 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
+use animate::easing::{get_easing, Easing};
 use dataflow::*;
 use primitives::{
     palette, BaseLine, CanvasContext, Color, Point, TextAlign, TextStyle, TextWeight,
@@ -270,21 +271,20 @@ where
         self.base.initialize_tooltip();
 
         self.base.draw(ctx);
-        // if force_redraw {
-        //     println!("BaseChart force_redraw");
-        //     self.stop_animation();
-        //     self.data_table_changed();
-        //     self.position_legend();
 
-        //     // This call is redundant for row and column changes but necessary for
-        //     // cell changes.
-        //     self.calculate_drawing_sizes(ctx);
-        //     self.update_channel(0);
-        // }
+        self.base.stop_animation();
+        self.data_table_changed();
+        self.base.position_legend();
+
+        // This call is redundant for row and column changes but necessary for
+        // cell changes.
+        self.calculate_drawing_sizes(ctx);
+        self.update_channel(0);
 
         // self.ctx.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid(ctx);
         self.base.start_animation();
+        self.draw_frame(ctx, None);
     }
 
     fn resize(&self, w: f64, h: f64) {
@@ -322,7 +322,10 @@ where
 
         let props = self.base.props.borrow();
 
-        let ease = props.easing_function.unwrap();
+        let ease = match props.easing_function {
+            Some(val) => val,
+            None => get_easing(Easing::Linear),
+        };
         self.draw_channels(ctx, ease(percent));
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
@@ -368,7 +371,7 @@ where
         return false;
     }
 
-    fn update_channel(&self, index: usize) {
+    fn update_channel(&self, _: usize) {
         // let mut sum = 0.0;
         // let props = self.props.borrow();
         // let mut start_angle = props.start_angle;

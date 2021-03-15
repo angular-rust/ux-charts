@@ -2,6 +2,7 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
+use animate::easing::{get_easing, Easing};
 use dataflow::*;
 use primitives::{
     BaseLine, CanvasContext, Color, LineJoin, Point, Rect, Size, TextAlign, TextStyle, TextWeight,
@@ -11,7 +12,7 @@ use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 use crate::*;
 
 #[derive(Default, Clone)]
-struct LinePoint<D> {
+pub struct LinePoint<D> {
     color: Color,
     highlight_color: Color,
     // formatted_value: String,
@@ -96,7 +97,7 @@ struct LineChartProperties {
     y_title_center: Option<Point<f64>>,
     xlabels: Vec<String>,
     ylabels: Vec<String>,
-    y_interval: f64,
+    yinterval: f64,
     y_max_value: f64,
     y_min_value: f64,
     y_range: f64,
@@ -346,28 +347,28 @@ where
             props.y_min_value = 0.0;
         }
 
-        props.y_interval = self.base.options.y_axis.interval.unwrap();
+        props.yinterval = self.base.options.y_axis.interval.unwrap();
         let min_interval = self.base.options.y_axis.min_interval;
 
-        if props.y_interval == 0. {
+        if props.yinterval == 0. {
             if props.y_min_value == props.y_max_value {
                 if props.y_min_value == 0. {
                     props.y_max_value = 1.;
-                    props.y_interval = 1.;
+                    props.yinterval = 1.;
                 } else if props.y_min_value == 1. {
                     props.y_min_value = 0.;
-                    props.y_interval = 1.;
+                    props.yinterval = 1.;
                 } else {
-                    props.y_interval = props.y_min_value * 0.25;
-                    props.y_min_value -= props.y_interval;
-                    props.y_max_value += props.y_interval;
+                    props.yinterval = props.y_min_value * 0.25;
+                    props.y_min_value -= props.yinterval;
+                    props.y_max_value += props.yinterval;
                 }
 
                 if let Some(value) = min_interval {
-                    props.y_interval = props.y_interval.max(value as f64);
+                    props.yinterval = props.yinterval.max(value as f64);
                 }
             } else {
-                props.y_interval = utils::calculate_interval(
+                props.yinterval = utils::calculate_interval(
                     props.y_max_value - props.y_min_value,
                     5,
                     min_interval,
@@ -375,16 +376,16 @@ where
             }
         }
 
-        let val = props.y_min_value / props.y_interval;
-        props.y_min_value = val.floor() * props.y_interval;
-        props.y_max_value = val.ceil() * props.y_interval;
+        let val = props.y_min_value / props.yinterval;
+        props.y_min_value = val.floor() * props.yinterval;
+        props.y_max_value = val.ceil() * props.yinterval;
         props.y_range = props.y_max_value - props.y_min_value;
 
         // y-axis labels
         props.ylabel_formatter = self.base.options.y_axis.labels.formatter;
         if let None = props.ylabel_formatter {
             // let max_decimal_places =
-            //     max(utils::get_decimal_places(props.y_interval), utils::get_decimal_places(props.y_min_value));
+            //     max(utils::get_decimal_places(props.yinterval), utils::get_decimal_places(props.y_min_value));
             // let numberFormat = NumberFormat.decimalPattern()
             // ..maximumFractionDigits = max_decimal_places
             // ..minimumFractionDigits = max_decimal_places;
@@ -397,7 +398,7 @@ where
         while value <= props.y_max_value {
             let ylabel_formatter = props.ylabel_formatter.unwrap();
             props.ylabels.push(ylabel_formatter(value));
-            value += props.y_interval;
+            value += props.yinterval;
         }
 
         let options = &self.base.options;
@@ -587,22 +588,22 @@ where
 
         self.base.draw(ctx);
 
-        // if force_redraw {
-        //     println!("BaseChart force_redraw");
-        //     self.stop_animation();
-        //     self.data_table_changed();
-        //     self.position_legend();
+        println!("BaseChart force_redraw");
+        self.base.stop_animation();
+        self.data_table_changed();
+        self.base.position_legend();
 
-        //     // This call is redundant for row and column changes but necessary for
-        //     // cell changes.
-        //     self.calculate_drawing_sizes(ctx);
-        //     self.update_channel(0);
-        // }
+        // This call is redundant for row and column changes but necessary for
+        // cell changes.
+        self.calculate_drawing_sizes(ctx);
+        self.update_channel(0);
+    
         self.calculate_average_y_values(0);
 
         // self.ctx.clearRect(0, 0, self.width, self.height);
         self.draw_axes_and_grid(ctx);
         self.base.start_animation();
+        self.draw_frame(ctx, None);
     }
 
     fn resize(&self, w: f64, h: f64) {
@@ -820,7 +821,10 @@ where
 
         let props = self.base.props.borrow();
 
-        let ease = props.easing_function.unwrap();
+        let ease = match props.easing_function {
+            Some(val) => val,
+            None => get_easing(Easing::Linear),
+        };
         self.draw_channels(ctx, ease(percent));
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
