@@ -234,8 +234,8 @@ where
     }
 
     /// Called when [data_table] has been changed.
-    fn data_table_changed(&self) {
-        info!("data_table_changed");
+    fn data_changed(&self) {
+        info!("data_changed");
         // self.calculate_drawing_sizes(ctx);
         self.create_channels(0, self.base.data_table.meta.len());
     }
@@ -347,7 +347,7 @@ where
         self.base.draw(ctx);
 
         self.base.stop_animation();
-        self.data_table_changed();
+        self.data_changed();
         self.base.position_legend();
 
         // This call is redundant for row and column changes but necessary for

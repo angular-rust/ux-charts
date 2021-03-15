@@ -202,8 +202,8 @@ where
     }
 
     /// Called when [data_table] has been changed.
-    fn data_table_changed(&self) {
-        info!("data_table_changed");
+    fn data_changed(&self) {
+        info!("data_changed");
         // self.calculate_drawing_sizes(ctx);
         self.create_channels(0, self.base.data_table.meta.len());
     }
@@ -218,15 +218,19 @@ where
     fn calculate_drawing_sizes(&self, ctx: &C) {
         self.base.calculate_drawing_sizes(ctx);
         let mut props = self.props.borrow_mut();
-        let rect = &self.base.props.borrow().channel_and_axes_box;
-        let half_w = rect.size.width as i64 >> 1;
-        let half_h = rect.size.height as i64 >> 1;
 
-        let x = rect.origin.x + half_w as f64;
-        let y = rect.origin.y + half_h as f64;
-        props.center = Point::new(x, y);
+        props.center = {
+            let rect = &self.base.props.borrow().channel_and_axes_box;
 
-        // self.outer_radius = (half_w.min(half_h) as f64) / HIGHLIGHT_OUTER_RADIUS_FACTOR;
+            let half_w = rect.size.width as i64 >> 1;
+            let half_h = rect.size.height as i64 >> 1;
+            props.outer_radius = (half_w.min(half_h) as f64) / HIGHLIGHT_OUTER_RADIUS_FACTOR;
+
+            let x = rect.origin.x + half_w as f64;
+            let y = rect.origin.y + half_h as f64;
+            Point::new(x, y)
+        };
+
         let mut pie_hole = self.base.options.pie_hole;
 
         if pie_hole > 1.0 {
@@ -273,7 +277,7 @@ where
         self.base.draw(ctx);
 
         self.base.stop_animation();
-        self.data_table_changed();
+        self.data_changed();
         self.base.position_legend();
 
         // This call is redundant for row and column changes but necessary for
@@ -372,18 +376,19 @@ where
     }
 
     fn update_channel(&self, _: usize) {
-        // let mut sum = 0.0;
-        // let props = self.props.borrow();
-        // let mut start_angle = props.start_angle;
+        let sum = 0.0;
+        let props = self.props.borrow();
+        let start_angle = props.start_angle;
 
-        // let pie_count = self.base.data_table.frames.len();
+        let pie_count = self.base.data_table.frames.len();
 
-        // let mut channels = self.base.channels.borrow_mut();
+        let mut channels = self.base.channels.borrow_mut();
 
-        // let channel = channels.first_mut().unwrap();
+        let channel = channels.first_mut().unwrap();
 
         // let channel_states = &self.base.props.borrow().channel_states;
 
+        // FIXME:
         // // Sum the values of all visible pies.
         // for idx in 0..pie_count {
         //     let channel_state = channel_states[idx];
@@ -407,7 +412,7 @@ where
         //     let channel_state = channel_states[idx];
         //     if channel_state == Visibility::Showing || channel_state == Visibility::Shown {
         //         entity.start_angle = start_angle;
-        //         entity.end_angle = start_angle + props.direction as f64 * entity.value * TAU / sum;
+        //         entity.end_angle = start_angle + props.direction as f64 * entity.value.into() * TAU / sum;
         //         start_angle = entity.end_angle;
         //     } else {
         //         entity.start_angle = start_angle;
@@ -434,14 +439,15 @@ where
 
         let props = self.props.borrow();
 
-        let mut start_angle = props.start_angle;
+        let start_angle = props.start_angle;
 
-        if entity_index > 0 {
-            let channels = self.base.channels.borrow();
-            let channel = channels.first().unwrap();
-            let prev = channel.entities.get(entity_index - 1).unwrap();
-            start_angle = prev.end_angle;
-        }
+        // FIXME:
+        // if entity_index > 0 {
+        //     let channels = self.base.channels.borrow();
+        //     let channel = channels.first().unwrap();
+        //     let prev = channel.entities.get(entity_index - 1).unwrap();
+        //     start_angle = prev.end_angle;
+        // }
 
         // let formatted_value = if value != 0. {
         //     self.entity_value_formatter(value)
@@ -468,18 +474,21 @@ where
     }
 
     fn create_channels(&self, start: usize, end: usize) {
-        info!("create_channels");
-        let result = Vec::new();
-        // let entity_count = self.data_table.frames.len();
-        // while (start < end) {
-        //   let name = self.base.data_table.columns[start + 1].name;
-        //   let color = get_color(start);
-        //   let highlight_color = get_highlight_color(color);
-        //   let entities =
-        //       create_entities(start, 0, entity_count, color, highlight_color);
-        //   result.add(Series(name, color, highlight_color, entities));
-        //   start++;
-        // }
+        let mut start = start;
+        let mut result = Vec::new();
+        let count = self.base.data_table.frames.len();
+        let meta = &self.base.data_table.meta;
+        while start < end {
+            let channel = meta.get(start).unwrap();
+            let name = channel.name;
+            let color = self.base.get_color(start);
+            let highlight = self.base.get_highlight_color(color);
+
+            let entities = self.create_entities(start, 0, count, color, highlight);
+            result.push(ChartChannel::new(name, color, highlight, entities));
+            start += 1;
+        }
+
         let mut channels = self.base.channels.borrow_mut();
         *channels = result;
     }
@@ -492,15 +501,23 @@ where
         color: Color,
         highlight: Color,
     ) -> Vec<PieEntity<D>> {
-        info!("create_entities");
-        let result = Vec::new();
-        // while (start < end) {
-        //   let value = self.base.data_table.rows[start][channelIndex + 1];
-        //   let e = create_entity(channelIndex, start, value, color, highlight_color);
-        //   e.chart = this;
-        //   result.add(e);
-        //   start++;
-        // }
+        let mut start = start;
+        let mut result = Vec::new();
+        while start < end {
+            let frame = self.base.data_table.frames.get(start).unwrap();
+            let value = frame.data.get(channel_index as u64);
+            let entity = match frame.data.get(channel_index as u64) {
+                Some(value) => {
+                    let value = value.clone();
+                    self.create_entity(channel_index, start, Some(value), color, highlight)
+                }
+                None => self.create_entity(channel_index, start, None, color, highlight),
+            };
+
+            //   e.chart = this;
+            result.push(entity);
+            start += 1;
+        }
         result
     }
 
