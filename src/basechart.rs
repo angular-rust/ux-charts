@@ -72,7 +72,7 @@ where
     /// Row 0 contains column names.
     /// Column 0 contains x-axis/pie labels.
     /// Column 1..n - 1 contain channel data.
-    pub data_table: DataStream<'a, M, D>,
+    pub data: DataStream<'a, M, D>,
 
     /// The drawing options initialized in the constructor.
     pub options: O,
@@ -117,7 +117,7 @@ where
         // container.append(ctx.canvas);
         Self {
             props: Default::default(),
-            data_table: Default::default(),
+            data: Default::default(),
             options,
             context: None,
             channels: RefCell::new(Vec::new()),
@@ -182,7 +182,7 @@ where
         let mut title_h = 0.0;
 
         if title.position != "none" && title.text.is_some() {
-            title_h = title.style.font_size.unwrap_or(12.) + 2.0 * TITLE_PADDING;
+            title_h = title.style.fontsize.unwrap_or(12.) + 2.0 * TITLE_PADDING;
         }
 
         let mut props = self.props.borrow_mut();
@@ -215,10 +215,10 @@ where
             if let Some(text) = title.text {
                 let style = &title.style;
                 ctx.set_font(
-                    style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-                    style.font_style.unwrap_or(TextStyle::Normal),
+                    style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                    style.fontstyle.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
-                    style.font_size.unwrap_or(12.),
+                    style.fontsize.unwrap_or(12.),
                 );
                 title_w = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
                 title_x = ((props.width - title_w - 2. * TITLE_PADDING) / 2.).trunc();
@@ -272,7 +272,7 @@ where
     /// Event handler for [DataTable.onRowsChanged].
     pub fn data_rows_changed(&self, record: DataCollectionChangeRecord) {
         // self.calculate_drawing_sizes(ctx);
-        let entity_count = self.data_table.frames.len();
+        let entity_count = self.data.frames.len();
         let removed_end = record.index + record.removed_count;
         let added_end = record.index + record.added_count;
         let channels = self.channels.borrow();
@@ -341,10 +341,10 @@ where
             let y = (props.title_box.origin.y + props.title_box.size.height) - TITLE_PADDING;
             let style = &title.style;
             ctx.set_font(
-                style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-                style.font_style.unwrap_or(TextStyle::Normal),
+                style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                style.fontstyle.unwrap_or(TextStyle::Normal),
                 TextWeight::Normal,
-                style.font_size.unwrap_or(12.),
+                style.fontsize.unwrap_or(12.),
             );
             ctx.set_fill_color(title.style.color);
             ctx.set_text_align(TextAlign::Center);
@@ -450,7 +450,7 @@ where
     }
 
     pub fn get_legend_labels(&self) -> Vec<String> {
-        self.data_table
+        self.data
             .meta
             .iter()
             .map(|channel| channel.name.to_string())
@@ -561,9 +561,9 @@ where
 
     pub fn update_tooltip_content(&self) {
         let props = self.props.borrow();
-        let column_count = self.data_table.meta.len();
+        let column_count = self.data.meta.len();
         let row = self
-            .data_table
+            .data
             .frames
             .get(props.focused_entity_index as usize);
         // tooltip.innerHtml = "";

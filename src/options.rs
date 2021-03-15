@@ -164,16 +164,16 @@ pub struct BarChartOptions<'a> {
     pub channel: BarChartSeriesOptions<'a>,
 
     /// An object that controls the x-axis.
-    pub x_axis: BarChartXAxisOptions<'a>,
+    pub xaxis: BarChartXAxisOptions<'a>,
 
     /// An object that controls the y-axis.
-    pub y_axis: BarChartYAxisOptions<'a>,
+    pub yaxis: BarChartYAxisOptions<'a>,
 
     /// An object that controls the animation.
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background_color: Color,
+    pub background: Color,
 
     /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
@@ -211,7 +211,7 @@ impl<'a> BaseOption<'a> for BarChartOptions<'a> {
     }
 
     fn background(&self) -> &Color {
-        &self.background_color
+        &self.background
     }
 }
 
@@ -227,7 +227,7 @@ impl<'a> Default for BarChartOptions<'a> {
     fn default() -> Self {
         Self {
             channel: BarChartSeriesOptions { labels: None },
-            x_axis: BarChartXAxisOptions {
+            xaxis: BarChartXAxisOptions {
                 crosshair: None,
                 grid_line_color: palette::GRAY_5,
                 grid_line_width: 1.,
@@ -244,7 +244,7 @@ impl<'a> Default for BarChartOptions<'a> {
                     text: None,
                 },
             },
-            y_axis: BarChartYAxisOptions {
+            yaxis: BarChartYAxisOptions {
                 grid_line_color: palette::GRAY_5,
                 grid_line_width: 0.,
                 line_color: palette::GRAY_5,
@@ -268,7 +268,7 @@ impl<'a> Default for BarChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background_color: palette::WHITE,
+            background: palette::WHITE,
             colors: vec![
                 Color::RGB(0x7c, 0xb5, 0xec),
                 Color::RGB(0x43, 0x43, 0x48),
@@ -303,29 +303,29 @@ impl<'a> Default for BarChartOptions<'a> {
 
 #[derive(Debug, Clone)]
 pub struct StyleOption<'a> {
-    pub background_color: Color,
+    pub background: Color,
     pub border_color: Color,
     pub border_width: f64, // i32?
     /// The title"s color
     pub color: Color,
     /// The title"s font family.
-    pub font_family: Option<&'a str>,
+    pub fontfamily: Option<&'a str>,
     /// The title"s font size.
-    pub font_size: Option<f64>,
+    pub fontsize: Option<f64>,
     /// The title"s font style.
-    pub font_style: Option<TextStyle>,
+    pub fontstyle: Option<TextStyle>,
 }
 
 impl<'a> Default for StyleOption<'a> {
     fn default() -> Self {
         Self {
-            background_color: palette::WHITE,
+            background: palette::WHITE,
             border_color: palette::GRAY_4,
             border_width: 0_f64,
             color: palette::GRAY_9,
-            font_family: Some("Roboto"),
-            font_size: Some(12_f64),
-            font_style: Some(TextStyle::Normal),
+            fontfamily: Some("Roboto"),
+            fontsize: Some(12_f64),
+            fontstyle: Some(TextStyle::Normal),
         }
     }
 }
@@ -340,7 +340,7 @@ pub struct GaugeChartOptions<'a> {
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background_color: Color,
+    pub background: Color,
 
     /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
@@ -378,7 +378,7 @@ impl<'a> BaseOption<'a> for GaugeChartOptions<'a> {
     }
 
     fn background(&self) -> &Color {
-        &self.background_color
+        &self.background
     }
 }
 
@@ -391,7 +391,7 @@ impl<'a> Default for GaugeChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background_color: palette::GRAY_3,
+            background: palette::GRAY_3,
             colors: vec![
                 Color::RGB(0x7c, 0xb5, 0xec),
                 Color::RGB(0x43, 0x43, 0x48),
@@ -548,16 +548,16 @@ pub struct LineChartOptions<'a> {
     pub channel: LineChartSeriesOptions<'a>,
 
     /// An object that controls the x-axis.
-    pub x_axis: LineChartXAxisOptions<'a>,
+    pub xaxis: LineChartXAxisOptions<'a>,
 
     /// An object that controls the y-axis.
-    pub y_axis: LineChartYAxisOptions<'a>,
+    pub yaxis: LineChartYAxisOptions<'a>,
 
     /// An object that controls the animation.
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background_color: Color,
+    pub background: Color,
 
     /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
@@ -595,7 +595,7 @@ impl<'a> BaseOption<'a> for LineChartOptions<'a> {
     }
 
     fn background(&self) -> &Color {
-        &self.background_color
+        &self.background
     }
 }
 
@@ -615,7 +615,7 @@ impl<'a> Default for LineChartOptions<'a> {
                     size: 4.,
                 },
             },
-            x_axis: LineChartXAxisOptions {
+            xaxis: LineChartXAxisOptions {
                 grid_line_color: palette::GRAY_5,
                 grid_line_width: 1.,
                 line_color: palette::GRAY_5,
@@ -631,7 +631,7 @@ impl<'a> Default for LineChartOptions<'a> {
                     text: None,
                 },
             },
-            y_axis: LineChartYAxisOptions {
+            yaxis: LineChartYAxisOptions {
                 grid_line_color: palette::GRAY_5,
                 grid_line_width: 0.,
                 line_color: palette::GRAY_5,
@@ -655,7 +655,7 @@ impl<'a> Default for LineChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background_color: palette::WHITE,
+            background: palette::WHITE,
             colors: vec![
                 Color::RGB(0x7c, 0xb5, 0xec),
                 Color::RGB(0x43, 0x43, 0x48),
@@ -721,7 +721,7 @@ pub struct PieChartOptions<'a> {
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background_color: Color,
+    pub background: Color,
 
     /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
@@ -759,7 +759,7 @@ impl<'a> BaseOption<'a> for PieChartOptions<'a> {
     }
 
     fn background(&self) -> &Color {
-        &self.background_color
+        &self.background
     }
 }
 
@@ -781,7 +781,7 @@ impl<'a> Default for PieChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background_color: palette::WHITE,
+            background: palette::WHITE,
             colors: vec![
                 Color::RGB(0x7c, 0xb5, 0xec),
                 Color::RGB(0x43, 0x43, 0x48),
@@ -899,10 +899,10 @@ pub struct RadarChartOptions<'a> {
     pub channel: RadarChartSeriesOptions<'a>,
 
     /// An object that controls the x-axis.
-    pub x_axis: RadarChartXAxisOptions<'a>,
+    pub xaxis: RadarChartXAxisOptions<'a>,
 
     /// An object that controls the y-axis.
-    pub y_axis: RadarChartYAxisOptions<'a>,
+    pub yaxis: RadarChartYAxisOptions<'a>,
 
     /// An object that controls the animation.
     pub animation: AnimationOptions,
@@ -965,7 +965,7 @@ impl<'a> Default for RadarChartOptions<'a> {
                     size: 4.,
                 },
             },
-            x_axis: RadarChartXAxisOptions {
+            xaxis: RadarChartXAxisOptions {
                 grid_line_color: palette::GRAY_5,
                 grid_line_width: 1_f64,
                 labels: RadarChartXAxisLabelsOptions {
@@ -973,7 +973,7 @@ impl<'a> Default for RadarChartOptions<'a> {
                     style: Default::default(),
                 },
             },
-            y_axis: RadarChartYAxisOptions {
+            yaxis: RadarChartYAxisOptions {
                 grid_line_color: palette::GRAY_5,
                 grid_line_width: 1_f64,
                 interval: None,

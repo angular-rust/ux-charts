@@ -89,9 +89,9 @@ struct BarChartProperties {
     xlabels: Vec<String>,
     ylabels: Vec<String>,
     yinterval: f64,
-    y_max_value: f64,
-    y_min_value: f64,
-    y_range: f64,
+    ymax_value: f64,
+    ymin_value: f64,
+    yrange: f64,
 
     /// The horizontal offset of the tooltip with respect to the vertical line
     /// passing through an x-axis label.
@@ -143,7 +143,7 @@ where
         match value {
             Some(value) => {
                 props.x_axis_top
-                    - (value.into() - props.y_min_value) / props.y_range * props.y_axis_length
+                    - (value.into() - props.ymin_value) / props.yrange * props.y_axis_length
             }
             None => props.x_axis_top,
         }
@@ -281,7 +281,7 @@ where
     fn data_changed(&self) {
         info!("data_changed");
         // self.calculate_drawing_sizes(ctx);
-        self.create_channels(0, self.base.data_table.meta.len());
+        self.create_channels(0, self.base.data.meta.len());
     }
 
     fn get_channel_lefts(&self) -> Vec<f64> {
@@ -320,72 +320,71 @@ where
         let options = &self.base.options;
 
         // y-axis min-max.
-        props.y_max_value = if let Some(value) = options.y_axis.max_value {
+        props.ymax_value = if let Some(value) = options.yaxis.max_value {
             value as f64
         } else {
             f64::NEG_INFINITY
         };
 
-        props.y_max_value = props
-            .y_max_value
-            .max(utils::find_max_value(&self.base.data_table).into());
+        props.ymax_value = props
+            .ymax_value
+            .max(utils::find_max_value(&self.base.data).into());
 
-        if props.y_max_value == f64::NEG_INFINITY {
-            props.y_max_value = 0.;
+        if props.ymax_value == f64::NEG_INFINITY {
+            props.ymax_value = 0.;
         }
 
-        props.y_min_value = if let Some(value) = options.y_axis.min_value {
+        props.ymin_value = if let Some(value) = options.yaxis.min_value {
             value as f64
         } else {
             f64::INFINITY
         };
         
-        props.y_min_value = props
-            .y_min_value
-            .min(utils::find_min_value(&self.base.data_table).into());
+        props.ymin_value = props
+            .ymin_value
+            .min(utils::find_min_value(&self.base.data).into());
 
-        if props.y_min_value == f64::INFINITY {
-            props.y_min_value = 0.;
+        if props.ymin_value == f64::INFINITY {
+            props.ymin_value = 0.;
         }
 
-        if let Some(value) = options.y_axis.interval {
+        if let Some(value) = options.yaxis.interval {
             props.yinterval = value
         } else {
-            let min_interval = options.y_axis.min_interval;
-            if props.y_min_value == props.y_max_value {
-                if props.y_min_value == 0. {
-                    props.y_max_value = 1.;
+            let min_interval = options.yaxis.min_interval;
+            if props.ymin_value == props.ymax_value {
+                if props.ymin_value == 0. {
+                    props.ymax_value = 1.;
                     props.yinterval = 1.;
-                } else if props.y_min_value == 1. {
-                    props.y_min_value = 0.;
+                } else if props.ymin_value == 1. {
+                    props.ymin_value = 0.;
                     props.yinterval = 1.;
                 } else {
-                    props.yinterval = props.y_min_value * 0.25;
-                    props.y_min_value -= props.yinterval;
-                    props.y_max_value += props.yinterval;
+                    props.yinterval = props.ymin_value * 0.25;
+                    props.ymin_value -= props.yinterval;
+                    props.ymax_value += props.yinterval;
                 }
                 if let Some(value) = min_interval {
                     props.yinterval = props.yinterval.max(value as f64);
                 }
             } else {
                 props.yinterval = utils::calculate_interval(
-                    props.y_max_value - props.y_min_value,
+                    props.ymax_value - props.ymin_value,
                     5,
                     min_interval,
                 );
             }
         }
 
-        let val = props.y_min_value / props.yinterval;
+        let val = props.ymin_value / props.yinterval;
 
-        props.y_min_value = (props.y_min_value / props.yinterval).floor() * props.yinterval;
-        props.y_max_value = (props.y_max_value / props.yinterval).ceil() * props.yinterval;
-
-        props.y_range = props.y_max_value - props.y_min_value;
+        props.ymin_value = (props.ymin_value / props.yinterval).floor() * props.yinterval;
+        props.ymax_value = (props.ymax_value / props.yinterval).ceil() * props.yinterval;
+        props.yrange = props.ymax_value - props.ymin_value;
 
         // y-axis labels
         props.ylabels = Vec::new();
-        props.ylabel_formatter = options.y_axis.labels.formatter;
+        props.ylabel_formatter = options.yaxis.labels.formatter;
 
         if let None = props.ylabel_formatter {
             // let max_decimal_places =
@@ -399,8 +398,8 @@ where
         }
 
         if let Some(ylabel_formatter) = props.ylabel_formatter {
-            let mut value = props.y_min_value;
-            while value <= props.y_max_value {
+            let mut value = props.ymin_value;
+            while value <= props.ymax_value {
                 let ylabel_formatter = ylabel_formatter;
                 props.ylabels.push(ylabel_formatter(value));
                 value += props.yinterval;
@@ -411,7 +410,7 @@ where
 
         props.ylabel_max_width = utils::calculate_max_text_width(
             ctx,
-            &options.y_axis.labels.style,
+            &options.yaxis.labels.style,
             &props.ylabels,
         );
 
@@ -432,18 +431,18 @@ where
         let mut xtitle_top = 0.;
         let mut xtitle_width = 0.;
         let mut xtitle_height = 0.;
-        let xtitle = &options.x_axis.title;
+        let xtitle = &options.xaxis.title;
 
         if let Some(text) = xtitle.text {
             let style = &xtitle.style;
             ctx.set_font(
-                style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-                style.font_style.unwrap_or(TextStyle::Normal),
+                style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                style.fontstyle.unwrap_or(TextStyle::Normal),
                 TextWeight::Normal,
-                style.font_size.unwrap_or(12.),
+                style.fontsize.unwrap_or(12.),
             );
             xtitle_width = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
-            xtitle_height = xtitle.style.font_size.unwrap_or(12.) + 2. * TITLE_PADDING;
+            xtitle_height = xtitle.style.fontsize.unwrap_or(12.) + 2. * TITLE_PADDING;
             xtitle_top =
                 channel_and_axes_box.origin.y + channel_and_axes_box.size.height - xtitle_height;
         }
@@ -453,18 +452,18 @@ where
         let ytitle_top = 0.;
         let mut ytitle_width = 0.;
         let mut ytitle_height = 0.;
-        let ytitle = &options.y_axis.title;
+        let ytitle = &options.yaxis.title;
 
         if let Some(text) = ytitle.text {
             let style = &ytitle.style;
             ctx.set_font(
-                style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-                style.font_style.unwrap_or(TextStyle::Normal),
+                style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                style.fontstyle.unwrap_or(TextStyle::Normal),
                 TextWeight::Normal,
-                style.font_size.unwrap_or(12.),
+                style.fontsize.unwrap_or(12.),
             );
             ytitle_height = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
-            ytitle_width = ytitle.style.font_size.unwrap_or(12.) + 2. * TITLE_PADDING;
+            ytitle_width = ytitle.style.fontsize.unwrap_or(12.) + 2. * TITLE_PADDING;
             ytitle_left = channel_and_axes_box.origin.x;
         }
 
@@ -493,17 +492,17 @@ where
         // x-axis labels and x-axis"s position.
         props.xlabels = Vec::new();
 
-        for frame in self.base.data_table.frames.iter() {
+        for frame in self.base.data.frames.iter() {
             props.xlabels.push(frame.metric.to_string());
         }
 
         props.xlabel_max_width = utils::calculate_max_text_width(
             ctx,
-            &options.x_axis.labels.style,
+            &options.xaxis.labels.style,
             &props.xlabels,
         );
 
-        let row_count = self.base.data_table.frames.len() + 1;
+        let row_count = self.base.data.frames.len() + 1;
         props.xlabel_hop = if props.xlabel_offset_factor > 0. && row_count > 1 {
             props.x_axis_length / row_count as f64
         } else if row_count > 1 {
@@ -514,9 +513,9 @@ where
 
         props.xlabel_rotation = 0.;
 
-        let font_size = options.x_axis.labels.style.font_size.unwrap();
-        let max_rotation = options.x_axis.labels.max_rotation;
-        let min_rotation = options.x_axis.labels.min_rotation;
+        let font_size = options.xaxis.labels.style.fontsize.unwrap();
+        let max_rotation = options.xaxis.labels.max_rotation;
+        let min_rotation = options.xaxis.labels.min_rotation;
         let angles = [0, -45, 45, -90, 90];
         
         props.xlabel_step = 1;
@@ -560,7 +559,7 @@ where
         // Wrap up.
         props.y_axis_length = props.x_axis_top
             - channel_and_axes_box.origin.y
-            - (options.y_axis.labels.style.font_size.unwrap() / 2.).trunc();
+            - (options.yaxis.labels.style.fontsize.unwrap() / 2.).trunc();
         props.ylabel_hop = props.y_axis_length / props.ylabels.len() as f64;
 
         xtitle_left = props.y_axis_left + ((props.x_axis_length - xtitle_width) / 2.).trunc();
@@ -596,7 +595,7 @@ where
     }
 
     fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
-        self.base.data_table = stream;
+        self.base.data = stream;
     }
 
     fn draw(&self, ctx: &C) {
@@ -640,7 +639,7 @@ where
         let props = self.props.borrow();
         if let Some(x_title_center) = props.x_title_center {
             info!("== draw x title");
-            let opt = &options.x_axis.title;
+            let opt = &options.xaxis.title;
 
             if let Some(text) = opt.text {
                 let style = &opt.style;
@@ -648,10 +647,10 @@ where
                 ctx.set_fill_color(style.color);
 
                 ctx.set_font(
-                    &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-                    style.font_style.unwrap_or(TextStyle::Normal),
+                    &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                    style.fontstyle.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
-                    style.font_size.unwrap_or(12.),
+                    style.fontsize.unwrap_or(12.),
                 );
 
                 ctx.set_text_align(TextAlign::Center);
@@ -664,17 +663,17 @@ where
         // y-axis title.
         if let Some(y_title_center) = props.y_title_center {
             info!("== draw y title");
-            let opt = &options.y_axis.title;
+            let opt = &options.yaxis.title;
             if let Some(text) = opt.text {
                 let style = &opt.style;
                 ctx.save();
                 ctx.set_fill_color(style.color);
 
                 ctx.set_font(
-                    &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-                    style.font_style.unwrap_or(TextStyle::Normal),
+                    &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                    style.fontstyle.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
-                    style.font_size.unwrap_or(12.),
+                    style.fontsize.unwrap_or(12.),
                 );
 
                 ctx.translate(y_title_center.x, y_title_center.y);
@@ -687,19 +686,19 @@ where
         }
 
         // x-axis labels.
-        let x_axis = &options.x_axis;
+        let x_axis = &options.xaxis;
         let style = &x_axis.labels.style;
         ctx.set_fill_color(style.color);
 
         ctx.set_font(
-            &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-            style.font_style.unwrap_or(TextStyle::Normal),
+            &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+            style.fontstyle.unwrap_or(TextStyle::Normal),
             TextWeight::Normal,
-            style.font_size.unwrap_or(12.),
+            style.fontsize.unwrap_or(12.),
         );
 
         let mut x = self.xlabel_x(0);
-        let mut y = props.x_axis_top + AXIS_LABEL_MARGIN as f64 + style.font_size.unwrap_or(12.);
+        let mut y = props.x_axis_top + AXIS_LABEL_MARGIN as f64 + style.fontsize.unwrap_or(12.);
         let scaled_label_hop = props.xlabel_step as f64 * props.xlabel_hop;
 
         debug!(
@@ -733,7 +732,7 @@ where
             ctx.set_text_baseline(BaseLine::Middle);
             if props.xlabel_rotation == 90. {
                 x += props.xlabel_rotation.signum()
-                    * ((style.font_size.unwrap_or(12.) / 8.).trunc());
+                    * ((style.fontsize.unwrap_or(12.) / 8.).trunc());
             }
             let angle = utils::deg2rad(props.xlabel_rotation);
             warn!("1X for label {}", x);
@@ -757,15 +756,15 @@ where
         }
 
         // y-axis labels.
-        let y_axis = &options.y_axis;
+        let y_axis = &options.yaxis;
         let style = &y_axis.labels.style;
         ctx.set_fill_color(y_axis.labels.style.color);
 
         ctx.set_font(
-            &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-            style.font_style.unwrap_or(TextStyle::Normal),
+            &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+            style.fontstyle.unwrap_or(TextStyle::Normal),
             TextWeight::Normal,
-            style.font_size.unwrap_or(12.),
+            style.fontsize.unwrap_or(12.),
         );
 
         {
@@ -773,7 +772,7 @@ where
             ctx.set_text_align(TextAlign::Right);
             ctx.set_text_baseline(BaseLine::Middle);
             x = props.y_axis_left - AXIS_LABEL_MARGIN as f64;
-            y = props.x_axis_top - (style.font_size.unwrap_or(12.) / 8.).trunc();
+            y = props.x_axis_top - (style.fontsize.unwrap_or(12.) / 8.).trunc();
             for label in props.ylabels.iter() {
                 ctx.fill_text(label.as_str(), x, y);
                 y -= props.ylabel_hop;
@@ -781,7 +780,7 @@ where
         }
 
         // x grid lines - draw bottom up.
-        let x_axis = &options.x_axis;
+        let x_axis = &options.xaxis;
         if x_axis.grid_line_width > 0. {
             ctx.set_line_width(x_axis.grid_line_width);
             ctx.set_stroke_color(x_axis.grid_line_color);
@@ -798,7 +797,7 @@ where
         }
 
         // y grid lines or x-axis ticks - draw from left to right.
-        let y_axis = &options.y_axis;
+        let y_axis = &options.yaxis;
         let mut line_width = y_axis.grid_line_width;
         x = props.y_axis_left;
 
@@ -902,7 +901,7 @@ where
         let channels = self.base.channels.borrow();
         let focused_entity_index = self.base.props.borrow().focused_entity_index;
 
-        let crosshair = &self.base.options.x_axis.crosshair;
+        let crosshair = &self.base.options.xaxis.crosshair;
         let labels = &self.base.options.channel.labels;
         let props = self.props.borrow();
 
@@ -939,10 +938,10 @@ where
                     if let Some(labels) = labels {
                         ctx.set_fill_color(labels.color);
                         ctx.set_font(
-                            labels.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-                            labels.font_style.unwrap_or(TextStyle::Normal),
+                            labels.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                            labels.fontstyle.unwrap_or(TextStyle::Normal),
                             TextWeight::Normal,
-                            labels.font_size.unwrap_or(12.),
+                            labels.fontsize.unwrap_or(12.),
                         );
                         ctx.set_text_align(TextAlign::Center);
                         ctx.set_text_baseline(BaseLine::Alphabetic);
@@ -966,7 +965,7 @@ where
     }
 
     fn update_channel(&self, _: usize) {
-        let entity_count = self.base.data_table.frames.len();
+        let entity_count = self.base.data.frames.len();
 
         let lefts = self.get_channel_lefts();
         let props = self.props.borrow();
@@ -1045,8 +1044,8 @@ where
     fn create_channels(&self, start: usize, end: usize) {
         let mut start = start;
         let mut result = Vec::new();
-        let count = self.base.data_table.frames.len();
-        let meta = &self.base.data_table.meta;
+        let count = self.base.data.frames.len();
+        let meta = &self.base.data.meta;
         while start < end {
             let channel = meta.get(start).unwrap();
             let name = channel.name;
@@ -1073,7 +1072,7 @@ where
         let mut start = start;
         let mut result = Vec::new();
         while start < end {
-            let frame = self.base.data_table.frames.get(start).unwrap();
+            let frame = self.base.data.frames.get(start).unwrap();
             let value = frame.data.get(channel_index as u64);
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {

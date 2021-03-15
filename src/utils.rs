@@ -163,10 +163,10 @@ pub fn calculate_max_text_width<C: CanvasContext>(
 ) -> f64 {
     let mut result = 0.0;
     ctx.set_font(
-        style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-        style.font_style.unwrap_or(TextStyle::Normal),
+        style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+        style.fontstyle.unwrap_or(TextStyle::Normal),
         TextWeight::Normal,
-        style.font_size.unwrap_or(12.),
+        style.fontsize.unwrap_or(12.),
     );
 
     for text in texts.iter() {
@@ -189,7 +189,7 @@ pub fn calculate_control_points(
     p2: Point<f64>,
     p3: Point<f64>,
     t: f64,
-) -> Vec<Point<f64>> {
+) -> (Point<f64>, Point<f64>) {
     let d21 = p2.distance_to(p1);
     let d23 = p2.distance_to(p3);
     let fa = t * d21 / (d21 + d23);
@@ -197,7 +197,7 @@ pub fn calculate_control_points(
     let v13 = p3 - p1;
     let cp1 = p2 - v13 * fa;
     let cp2 = p2 + v13 * fb;
-    vec![cp1, cp2]
+    (cp1, cp2)
 }
 
 /// Returns the number of decimal digits of [value].

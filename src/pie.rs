@@ -182,7 +182,7 @@ where
     }
 
     pub fn get_legend_labels(&self) -> Vec<String> {
-        //self.data_table.getColumnValues<String>(0)
+        //self.data.getColumnValues<String>(0)
         unimplemented!()
     }
 
@@ -205,7 +205,7 @@ where
     fn data_changed(&self) {
         info!("data_changed");
         // self.calculate_drawing_sizes(ctx);
-        self.create_channels(0, self.base.data_table.meta.len());
+        self.create_channels(0, self.base.data.meta.len());
     }
 }
 
@@ -261,7 +261,7 @@ where
     }
 
     fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
-        self.base.data_table = stream;
+        self.base.data = stream;
     }
 
     fn draw(&self, ctx: &C) {
@@ -353,10 +353,10 @@ where
         let labels = &self.base.options.channel.labels.style;
 
         ctx.set_font(
-            labels.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-            labels.font_style.unwrap_or(TextStyle::Normal),
+            labels.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+            labels.fontstyle.unwrap_or(TextStyle::Normal),
             TextWeight::Normal,
-            labels.font_size.unwrap_or(12.),
+            labels.fontsize.unwrap_or(12.),
         );
 
         let baseprops = self.base.props.borrow();
@@ -380,7 +380,7 @@ where
         let props = self.props.borrow();
         let start_angle = props.start_angle;
 
-        let pie_count = self.base.data_table.frames.len();
+        let pie_count = self.base.data.frames.len();
 
         let mut channels = self.base.channels.borrow_mut();
 
@@ -402,7 +402,7 @@ where
         //     let color = self.base.get_color(idx);
         //     entity.index = idx;
         //     // TODO: deal with name
-        //     //   pie.name = self.base.data_table.frames[idx][0];
+        //     //   pie.name = self.base.data.frames[idx][0];
         //     entity.color = color;
         //     entity.highlight_color = self.base.get_highlight_color(color);
         //     entity.center = props.center;
@@ -433,7 +433,7 @@ where
         let color = self.base.get_color(entity_index);
         let highlight_color = self.base.change_color_alpha(color, 0.5);
 
-        let stream = &self.base.data_table;
+        let stream = &self.base.data;
         let frame = stream.frames.get(entity_index).unwrap();
         let name = format!("{}", frame.metric);
 
@@ -476,8 +476,8 @@ where
     fn create_channels(&self, start: usize, end: usize) {
         let mut start = start;
         let mut result = Vec::new();
-        let count = self.base.data_table.frames.len();
-        let meta = &self.base.data_table.meta;
+        let count = self.base.data.frames.len();
+        let meta = &self.base.data.meta;
         while start < end {
             let channel = meta.get(start).unwrap();
             let name = channel.name;
@@ -504,7 +504,7 @@ where
         let mut start = start;
         let mut result = Vec::new();
         while start < end {
-            let frame = self.base.data_table.frames.get(start).unwrap();
+            let frame = self.base.data.frames.get(start).unwrap();
             let value = frame.data.get(channel_index as u64);
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {

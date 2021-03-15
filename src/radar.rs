@@ -237,7 +237,7 @@ where
     fn data_changed(&self) {
         info!("data_changed");
         // self.calculate_drawing_sizes(ctx);
-        self.create_channels(0, self.base.data_table.meta.len());
+        self.create_channels(0, self.base.data.meta.len());
     }
 }
 
@@ -255,7 +255,7 @@ where
 
         props.xlabels = self
             .base
-            .data_table
+            .data
             .meta
             .iter()
             .map(|item| item.name.to_string())
@@ -263,7 +263,7 @@ where
 
         props.angle_interval = TAU / props.xlabels.len() as f64;
 
-        let xlabel_font_size = self.base.options.x_axis.labels.style.font_size.unwrap();
+        let xlabel_font_size = self.base.options.xaxis.labels.style.fontsize.unwrap();
 
         // [_radius]*factor equals the height of the largest polygon.
         let factor = 1. + ((props.xlabels.len() >> 1) as f64 * props.angle_interval - PI_2).sin();
@@ -279,13 +279,13 @@ where
         }
 
         // The minimum value on the y-axis is always zero
-        let y_axis = &self.base.options.y_axis;
+        let y_axis = &self.base.options.yaxis;
         let yinterval = match y_axis.interval {
             Some(yinterval) => yinterval,
             None => {
                 let ymin_interval = y_axis.min_interval.unwrap_or(0.0);
 
-                props.y_max_value = utils::find_max_value(&self.base.data_table).into();
+                props.y_max_value = utils::find_max_value(&self.base.data).into();
 
                 let yinterval =
                     utils::calculate_interval(props.y_max_value, 3, Some(ymin_interval));
@@ -330,7 +330,7 @@ where
     }
 
     fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
-        self.base.data_table = stream;
+        self.base.data = stream;
     }
 
     fn draw(&self, ctx: &C) {
@@ -378,10 +378,10 @@ where
         let ylabel_count = props.ylabels.len();
 
         // x-axis grid lines (i.e. concentric equilateral polygons).
-        let mut line_width = self.base.options.x_axis.grid_line_width;
+        let mut line_width = self.base.options.xaxis.grid_line_width;
         if line_width > 0. {
             ctx.set_line_width(line_width);
-            ctx.set_stroke_color(self.base.options.x_axis.grid_line_color);
+            ctx.set_stroke_color(self.base.options.xaxis.grid_line_color);
             ctx.begin_path();
             let mut radius = props.radius;
             for idx in ylabel_count - 1..1 {
@@ -398,10 +398,10 @@ where
         }
 
         // y-axis grid lines (i.e. radii from the center to the x-axis labels).
-        line_width = self.base.options.y_axis.grid_line_width;
+        line_width = self.base.options.yaxis.grid_line_width;
         if line_width > 0. {
             ctx.set_line_width(line_width);
-            ctx.set_stroke_color(self.base.options.y_axis.grid_line_color);
+            ctx.set_stroke_color(self.base.options.yaxis.grid_line_color);
             ctx.begin_path();
             let mut angle = -PI_2;
             for idx in 0..xlabel_count {
@@ -414,16 +414,16 @@ where
         }
 
         // y-axis labels - don"t draw the first (at center) and the last ones.
-        let style = &self.base.options.y_axis.labels.style;
+        let style = &self.base.options.yaxis.labels.style;
         let x = props.center.x - AXIS_LABEL_MARGIN as f64;
         let mut y = props.center.y - props.ylabel_hop;
         ctx.set_fill_color(style.color);
 
         ctx.set_font(
-            &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-            style.font_style.unwrap_or(TextStyle::Normal),
+            &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+            style.fontstyle.unwrap_or(TextStyle::Normal),
             TextWeight::Normal,
-            style.font_size.unwrap_or(12.),
+            style.fontsize.unwrap_or(12.),
         );
 
         ctx.set_text_align(TextAlign::Right);
@@ -434,19 +434,19 @@ where
         }
 
         // x-axis labels.
-        let style = &self.base.options.x_axis.labels.style;
+        let style = &self.base.options.xaxis.labels.style;
         ctx.set_fill_color(style.color);
 
         ctx.set_font(
-            &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-            style.font_style.unwrap_or(TextStyle::Normal),
+            &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+            style.fontstyle.unwrap_or(TextStyle::Normal),
             TextWeight::Normal,
-            style.font_size.unwrap_or(12.),
+            style.fontsize.unwrap_or(12.),
         );
 
         ctx.set_text_align(TextAlign::Center);
         ctx.set_text_baseline(BaseLine::Middle);
-        let font_size = style.font_size.unwrap();
+        let font_size = style.fontsize.unwrap();
         let mut angle = -PI_2;
         let radius = props.radius + AXIS_LABEL_MARGIN as f64;
         for idx in 0..xlabel_count {
@@ -582,7 +582,7 @@ where
 
     // param should be Option
     fn update_channel(&self, _: usize) {
-        let entity_count = self.base.data_table.frames.len();
+        let entity_count = self.base.data.frames.len();
         let mut channels = self.base.channels.borrow_mut();
         let props = self.props.borrow();
 
@@ -644,8 +644,8 @@ where
     fn create_channels(&self, start: usize, end: usize) {
         let mut start = start;
         let mut result = Vec::new();
-        let count = self.base.data_table.frames.len();
-        let meta = &self.base.data_table.meta;
+        let count = self.base.data.frames.len();
+        let meta = &self.base.data.meta;
         while start < end {
             let channel = meta.get(start).unwrap();
             let name = channel.name;
@@ -671,7 +671,7 @@ where
         let mut start = start;
         let mut result = Vec::new();
         while start < end {
-            let frame = self.base.data_table.frames.get(start).unwrap();
+            let frame = self.base.data.frames.get(start).unwrap();
             let value = frame.data.get(channel_index as u64);
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {

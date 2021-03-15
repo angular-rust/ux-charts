@@ -233,7 +233,7 @@ where
     fn data_changed(&self) {
         info!("data_changed");
         // self.calculate_drawing_sizes(ctx);
-        self.create_channels(0, self.base.data_table.meta.len());
+        self.create_channels(0, self.base.data.meta.len());
     }
 }
 
@@ -248,11 +248,11 @@ where
 
         let mut props = self.props.borrow_mut();
 
-        let gauge_count = self.base.data_table.frames.len();
+        let gauge_count = self.base.data.frames.len();
         let mut label_total_height = 0.;
 
         if let Some(style) = &self.base.options.labels {
-            label_total_height = AXIS_LABEL_MARGIN as f64 + style.font_size.unwrap_or(12.);
+            label_total_height = AXIS_LABEL_MARGIN as f64 + style.fontsize.unwrap_or(12.);
         }
 
         let channel_and_axes_box = &self.base.props.borrow().channel_and_axes_box;
@@ -266,7 +266,7 @@ where
     }
 
     fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
-        self.base.data_table = stream;
+        self.base.data = stream;
     }
 
     fn draw(&self, ctx: &C) {
@@ -365,15 +365,15 @@ where
                 let x = entity.center.x;
                 let y = entity.center.y
                     + entity.outer_radius
-                    + style.font_size.unwrap_or(12.)
+                    + style.fontsize.unwrap_or(12.)
                     + AXIS_LABEL_MARGIN as f64;
                 ctx.set_fill_color(style.color);
 
                 ctx.set_font(
-                    &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-                    style.font_style.unwrap_or(TextStyle::Normal),
+                    &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                    style.fontstyle.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
-                    style.font_size.unwrap_or(12.),
+                    style.fontsize.unwrap_or(12.),
                 );
                 ctx.set_text_align(TextAlign::Center);
                 ctx.fill_text(&entity.name, x, y);
@@ -383,7 +383,7 @@ where
     }
 
     fn update_channel(&self, _: usize) {
-        let len = self.base.data_table.frames.len();
+        let len = self.base.data.frames.len();
         let props = self.props.borrow();
         let mut channels = self.base.channels.borrow_mut();
         let channel = channels.first_mut().unwrap();
@@ -415,7 +415,7 @@ where
         let color = self.base.get_color(entity_index);
         let highlight_color = self.base.change_color_alpha(color, 0.5);
 
-        let stream = &self.base.data_table;
+        let stream = &self.base.data;
         let frame = stream.frames.get(entity_index).unwrap();
         let name = format!("{}", frame.metric);
 
@@ -429,7 +429,7 @@ where
             value,
             name,
             color,
-            background_color: options.background_color,
+            background_color: options.background,
             highlight_color,
             old_value: None,
             old_start_angle: props.start_angle,
@@ -445,8 +445,8 @@ where
     fn create_channels(&self, start: usize, end: usize) {
         let mut start = start;
         let mut result = Vec::new();
-        let count = self.base.data_table.frames.len();
-        let meta = &self.base.data_table.meta;
+        let count = self.base.data.frames.len();
+        let meta = &self.base.data.meta;
         while start < end {
             let channel = meta.get(start).unwrap();
             let name = channel.name;
@@ -473,7 +473,7 @@ where
         let mut start = start;
         let mut result = Vec::new();
         while start < end {
-            let frame = self.base.data_table.frames.get(start).unwrap();
+            let frame = self.base.data.frames.get(start).unwrap();
             let value = frame.data.get(channel_index as u64);
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {
