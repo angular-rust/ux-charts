@@ -582,7 +582,7 @@ where
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
         //   ..add(dataTable.onColumnsChange.listen(dataColumnsChanged))
         //   ..add(dataTable.onRowsChange.listen(data_rows_changed));
-        // self.easing_function = get_easing(self.options.animation().easing);
+        // self.easing = get_easing(self.options.animation().easing);
         self.base.initialize_legend();
         self.base.initialize_tooltip();
 
@@ -821,7 +821,7 @@ where
 
         let props = self.base.props.borrow();
 
-        let ease = match props.easing_function {
+        let ease = match props.easing {
             Some(val) => val,
             None => get_easing(Easing::Linear),
         };

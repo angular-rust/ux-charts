@@ -20,7 +20,7 @@ pub struct BaseChartProperties {
     pub animation_start_time: Option<i64>,
 
     // dataTableSubscriptionTracker: StreamSubscriptionTracker, // = StreamSubscriptionTracker();
-    pub easing_function: Option<EasingFunction>,
+    pub easing: Option<EasingFunction>,
 
     /// The chart"s width.
     pub height: f64,
@@ -722,7 +722,7 @@ where
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
         //   ..add(dataTable.onColumnsChange.listen(dataColumnsChanged))
         //   ..add(dataTable.onRowsChange.listen(data_rows_changed));
-        // self.easing_function = get_easing(self.options.animation().easing);
+        // self.easing = get_easing(self.options.animation().easing);
         self.initialize_legend();
         self.initialize_tooltip();
 

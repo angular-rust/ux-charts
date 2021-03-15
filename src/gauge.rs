@@ -110,19 +110,18 @@ impl<D> Entity for GaugeEntity<D> {
 impl<C, D> Drawable<C> for GaugeEntity<D>
 where
     C: CanvasContext,
+    D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let tmp_color = &self.color;
         let tmp_end_angle = self.end_angle;
 
         // Draw the background.
-        // FIXME:
         // self.end_angle = self.start_angle + TAU;
         // self.color = self.background_color;
-        self.draw_entity(ctx, 1.0, false);
+        // self.draw_entity(ctx, 1.0, false);
 
         // Draw the foreground.
-        // FIXME:
         // self.color = *tmp_color;
         // self.end_angle = tmp_end_angle;
         self.draw_entity(ctx, percent, highlight);
@@ -130,23 +129,37 @@ where
         // Draw the percent.
         let fs1 = 0.75 * self.inner_radius;
         let family = DEFAULT_FONT_FAMILY;
-        // FIXME: empty entity
-        // let text1 = utils::lerp(self.old_value.unwrap(), self.value.unwrap(), percent)
-        //     .round()
-        //     .to_string();
-        // ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);
-        // let w1 = ctx.measure_text(text1.as_str()).width;
 
-        // let fs2 = 0.6 * fs1;
-        // let text2 = "%";
-        // ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs2);
-        // let w2 = ctx.measure_text(text2).width;
+        let old_value = match self.old_value {
+            Some(value) => {
+                value.into()
+            }
+            None => 0.0
+        };
 
-        // let y = self.center.y + 0.3 * fs1;
-        // ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);
-        // ctx.fill_text(text1.as_str(), self.center.x - 0.5 * w2, y);
-        // ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs2);
-        // ctx.fill_text(text2, self.center.x + 0.5 * w1, y);
+        let value = match self.old_value {
+            Some(value) => {
+                value.into()
+            }
+            None => 0.0
+        };
+        
+        let text1 = utils::lerp(old_value, value, percent)
+            .round()
+            .to_string();
+        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);
+        let w1 = ctx.measure_text(text1.as_str()).width;
+
+        let fs2 = 0.6 * fs1;
+        let text2 = "%";
+        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs2);
+        let w2 = ctx.measure_text(text2).width;
+
+        let y = self.center.y + 0.3 * fs1;
+        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);
+        ctx.fill_text(text1.as_str(), self.center.x - 0.5 * w2, y);
+        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs2);
+        ctx.fill_text(text2, self.center.x + 0.5 * w1, y);
     }
 }
 
@@ -173,7 +186,7 @@ impl<'a, C, M, D> GaugeChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display + Copy,
+    D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     pub fn new(options: GaugeChartOptions<'a>) -> Self {
         Self {
@@ -183,13 +196,18 @@ where
     }
 
     fn get_gauge_center(&self, index: usize) -> Point<f64> {
-        // Point((index + 0.5) * gauge_hop, gauge_center_y)
-        unimplemented!()
+        let props = self.props.borrow();
+        Point::new((index as f64 + 0.5) * props.gauge_hop, props.gauge_center_y)
     }
 
-    fn value_to_angle(&self, value: D) -> f64 {
-        // value * TAU / 100
-        unimplemented!()
+    fn value_to_angle(&self, value: Option<D>) -> f64 {
+        match value {
+            Some(value) => {
+                value.into() * TAU / 100.
+            }
+            None => 0.0
+        }
+        
     }
 
     fn update_tooltip_content(&self) {
@@ -223,7 +241,7 @@ impl<'a, C, M, D> Chart<'a, C, M, D, GaugeEntity<D>> for GaugeChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display + Copy,
+    D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     fn calculate_drawing_sizes(&self, ctx: &C) {
         self.base.calculate_drawing_sizes(ctx);
@@ -257,7 +275,7 @@ where
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
         //   ..add(dataTable.onColumnsChange.listen(dataColumnsChanged))
         //   ..add(dataTable.onRowsChange.listen(data_rows_changed));
-        // self.easing_function = get_easing(self.options.animation().easing);
+        // self.easing = get_easing(self.options.animation().easing);
         self.base.initialize_legend();
         self.base.initialize_tooltip();
         
@@ -313,7 +331,7 @@ where
 
         let props = self.base.props.borrow();
 
-        let ease = match props.easing_function {
+        let ease = match props.easing {
             Some(val) => val,
             None => get_easing(Easing::Linear),
         };
@@ -341,25 +359,25 @@ where
         let focused_entity_index = self.base.props.borrow().focused_entity_index as usize;
 
         for entity in channel.entities.iter() {
-            // let highlight = entity.index == focused_entity_index;
-            // entity.draw(ctx, percent, highlight);
-            // if let Some(style) = labels {
-            //     let x = entity.center.x;
-            //     let y = entity.center.y
-            //         + entity.outer_radius
-            //         + style.font_size.unwrap_or(12.)
-            //         + AXIS_LABEL_MARGIN as f64;
-            //     ctx.set_fill_color(style.color);
+            let highlight = entity.index == focused_entity_index;
+            entity.draw(ctx, percent, highlight);
+            if let Some(style) = labels {
+                let x = entity.center.x;
+                let y = entity.center.y
+                    + entity.outer_radius
+                    + style.font_size.unwrap_or(12.)
+                    + AXIS_LABEL_MARGIN as f64;
+                ctx.set_fill_color(style.color);
 
-            //     ctx.set_font(
-            //         &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
-            //         style.font_style.unwrap_or(TextStyle::Normal),
-            //         TextWeight::Normal,
-            //         style.font_size.unwrap_or(12.),
-            //     );
-            //     ctx.set_text_align(TextAlign::Center);
-            //     ctx.fill_text(&entity.name, x, y);
-            // }
+                ctx.set_font(
+                    &style.font_family.unwrap_or(DEFAULT_FONT_FAMILY),
+                    style.font_style.unwrap_or(TextStyle::Normal),
+                    TextWeight::Normal,
+                    style.font_size.unwrap_or(12.),
+                );
+                ctx.set_text_align(TextAlign::Center);
+                ctx.fill_text(&entity.name, x, y);
+            }
         }
         return false;
     }
@@ -370,18 +388,18 @@ where
         let mut channels = self.base.channels.borrow_mut();
         let channel = channels.first_mut().unwrap();
         for idx in 0..len {
-            // let color = self.base.get_color(idx);
-            // let highlight_color = self.base.change_color_alpha(color, 0.5);
-            // let entity = channel.entities.get_mut(idx).unwrap();
-            // entity.index = idx;
-            // // TODO: deal with name
-            // //   gauge.name = self.base.data_table.frames[idx][0];
-            // entity.color = color;
-            // entity.highlight_color = highlight_color;
-            // entity.center = self.get_gauge_center(idx);
-            // entity.inner_radius = props.gauge_inner_radius;
-            // entity.outer_radius = props.gauge_outer_radius;
-            // entity.end_angle = props.start_angle + self.value_to_angle(entity.value);
+            let color = self.base.get_color(idx);
+            let highlight_color = self.base.change_color_alpha(color, 0.5);
+            let entity = channel.entities.get_mut(idx).unwrap();
+            entity.index = idx;
+            // TODO: deal with name
+            //   gauge.name = self.base.data_table.frames[idx][0];
+            entity.color = color;
+            entity.highlight_color = highlight_color;
+            entity.center = self.get_gauge_center(idx);
+            entity.inner_radius = props.gauge_inner_radius;
+            entity.outer_radius = props.gauge_outer_radius;
+            entity.end_angle = props.start_angle + self.value_to_angle(entity.value);
         }
     }
 
@@ -420,23 +438,26 @@ where
             inner_radius: props.gauge_inner_radius,
             outer_radius: props.gauge_outer_radius,
             start_angle: props.start_angle,
-            end_angle: props.start_angle + self.value_to_angle(value.unwrap()),
+            end_angle: props.start_angle + self.value_to_angle(value),
         }
     }
 
     fn create_channels(&self, start: usize, end: usize) {
-        println!("create_channels");
-        let result = Vec::new();
-        // let entity_count = self.data_table.frames.len();
-        // while (start < end) {
-        //   let name = self.base.data_table.columns[start + 1].name;
-        //   let color = get_color(start);
-        //   let highlight_color = get_highlight_color(color);
-        //   let entities =
-        //       create_entities(start, 0, entity_count, color, highlight_color);
-        //   result.add(Series(name, color, highlight_color, entities));
-        //   start++;
-        // }
+        let mut start = start;
+        let mut result = Vec::new();
+        let count = self.base.data_table.frames.len();
+        let meta = &self.base.data_table.meta;
+        while start < end {
+            let channel = meta.get(start).unwrap();
+            let name = channel.name;
+            let color = self.base.get_color(start);
+            let highlight = self.base.get_highlight_color(color);
+
+            let entities = self.create_entities(start, 0, count, color, highlight);
+            result.push(ChartChannel::new(name, color, highlight, entities));
+            start += 1;
+        }
+
         let mut channels = self.base.channels.borrow_mut();
         *channels = result;
     }
@@ -449,15 +470,23 @@ where
         color: Color,
         highlight: Color,
     ) -> Vec<GaugeEntity<D>> {
-        info!("create_entities");
-        let result = Vec::new();
-        // while (start < end) {
-        //   let value = self.base.data_table.rows[start][channel_index + 1];
-        //   let e = create_entity(channel_index, start, value, color, highlight_color);
-        //   e.chart = this;
-        //   result.add(e);
-        //   start++;
-        // }
+        let mut start = start;
+        let mut result = Vec::new();
+        while start < end {
+            let frame = self.base.data_table.frames.get(start).unwrap();
+            let value = frame.data.get(channel_index as u64);
+            let entity = match frame.data.get(channel_index as u64) {
+                Some(value) => {
+                    let value = value.clone();
+                    self.create_entity(channel_index, start, Some(value), color, highlight)
+                }
+                None => self.create_entity(channel_index, start, None, color, highlight),
+            };
+
+            //   e.chart = this;
+            result.push(entity);
+            start += 1;
+        }
         result
     }
 
