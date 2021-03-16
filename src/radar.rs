@@ -114,7 +114,7 @@ where
                 let props = self.props.borrow();
                 value.into() * props.radius / props.y_max_value
             }
-            None => 0.0
+            None => 0.0,
         }
     }
 
@@ -269,7 +269,7 @@ where
         let factor = 1. + ((props.xlabels.len() >> 1) as f64 * props.angle_interval - PI_2).sin();
 
         {
-            let rect = &self.base.props.borrow().channel_and_axes_box;
+            let rect = &self.base.props.borrow().area;
             props.radius = rect.size.width.min(rect.size.height) / factor
                 - factor * (xlabel_font_size + AXIS_LABEL_MARGIN as f64);
             props.center = Point::new(
@@ -279,11 +279,11 @@ where
         }
 
         // The minimum value on the y-axis is always zero
-        let y_axis = &self.base.options.yaxis;
-        let yinterval = match y_axis.interval {
+        let yaxis = &self.base.options.yaxis;
+        let yinterval = match yaxis.interval {
             Some(yinterval) => yinterval,
             None => {
-                let ymin_interval = y_axis.min_interval.unwrap_or(0.0);
+                let ymin_interval = yaxis.min_interval.unwrap_or(0.0);
 
                 props.y_max_value = utils::find_max_value(&self.base.data).into();
 
@@ -294,7 +294,7 @@ where
             }
         };
 
-        props.ylabel_formatter = y_axis.labels.formatter;
+        props.ylabel_formatter = yaxis.labels.formatter;
         if props.ylabel_formatter.is_none() {
             // let max_decimal_places =
             //     max(utils::get_decimal_places(props.yinterval), utils::get_decimal_places(props.y_min_value));

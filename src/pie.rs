@@ -220,7 +220,7 @@ where
         let mut props = self.props.borrow_mut();
 
         props.center = {
-            let rect = &self.base.props.borrow().channel_and_axes_box;
+            let rect = &self.base.props.borrow().area;
 
             let half_w = rect.size.width as i64 >> 1;
             let half_h = rect.size.height as i64 >> 1;

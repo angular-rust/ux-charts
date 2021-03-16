@@ -131,22 +131,16 @@ where
         let family = DEFAULT_FONT_FAMILY;
 
         let old_value = match self.old_value {
-            Some(value) => {
-                value.into()
-            }
-            None => 0.0
+            Some(value) => value.into(),
+            None => 0.0,
         };
 
         let value = match self.old_value {
-            Some(value) => {
-                value.into()
-            }
-            None => 0.0
+            Some(value) => value.into(),
+            None => 0.0,
         };
-        
-        let text1 = utils::lerp(old_value, value, percent)
-            .round()
-            .to_string();
+
+        let text1 = utils::lerp(old_value, value, percent).round().to_string();
         ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);
         let w1 = ctx.measure_text(text1.as_str()).width;
 
@@ -202,12 +196,9 @@ where
 
     fn value_to_angle(&self, value: Option<D>) -> f64 {
         match value {
-            Some(value) => {
-                value.into() * TAU / 100.
-            }
-            None => 0.0
+            Some(value) => value.into() * TAU / 100.,
+            None => 0.0,
         }
-        
     }
 
     fn update_tooltip_content(&self) {
@@ -255,12 +246,12 @@ where
             label_total_height = AXIS_LABEL_MARGIN as f64 + style.fontsize.unwrap_or(12.);
         }
 
-        let channel_and_axes_box = &self.base.props.borrow().channel_and_axes_box;
-        props.gauge_center_y = channel_and_axes_box.origin.y + 0.5 * channel_and_axes_box.size.height;
-        props.gauge_hop = channel_and_axes_box.size.width / gauge_count as f64;
+        let area = &self.base.props.borrow().area;
+        props.gauge_center_y = area.origin.y + 0.5 * area.size.height;
+        props.gauge_hop = area.size.width / gauge_count as f64;
 
         let avail_w = 0.618 * props.gauge_hop; // Golden ratio.
-        let avail_h = channel_and_axes_box.size.height - 2. * label_total_height as f64;
+        let avail_h = area.size.height - 2. * label_total_height as f64;
         props.gauge_outer_radius = 0.5 * avail_w.min(avail_h) / HIGHLIGHT_OUTER_RADIUS_FACTOR;
         props.gauge_inner_radius = 0.5 * props.gauge_outer_radius;
     }
@@ -278,9 +269,9 @@ where
         // self.easing = get_easing(self.options.animation().easing);
         self.base.initialize_legend();
         self.base.initialize_tooltip();
-        
+
         self.base.draw(ctx);
-        
+
         self.base.stop_animation();
         self.data_changed();
         self.base.position_legend();
@@ -317,9 +308,9 @@ where
         if percent >= 1.0 {
             percent = 1.0;
 
-            // Update the visibility states of all channel before the last frame.            
+            // Update the visibility states of all channel before the last frame.
             let mut channels = self.base.channels.borrow_mut();
-            
+
             for channel in channels.iter_mut() {
                 if channel.state == Visibility::Showing {
                     channel.state = Visibility::Shown;

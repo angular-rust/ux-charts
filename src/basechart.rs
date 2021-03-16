@@ -8,7 +8,6 @@ use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use super::*;
 
-
 // channel_states moved to channels
 
 #[derive(Default, Clone)]
@@ -51,7 +50,7 @@ pub struct BaseChartProperties {
     pub tooltip_value_formatter: Option<ValueFormatter>,
 
     /// Bounding box of the channel and axes.
-    pub channel_and_axes_box: Rect<f64>,
+    pub area: Rect<f64>,
 
     /// Bounding box of the chart title.
     pub title_box: Rect<f64>,
@@ -107,14 +106,6 @@ where
     /// If the CSS position of [container] is "static", it will be changed to
     /// "relative".
     pub fn new(options: O) -> Self {
-        // if (container.getComputedStyle().position == "static") {
-        //   container.style.position = "relative";
-        // }
-        // context = CanvasElement().getContext("2d");
-        // ctx = CanvasElement().getContext("2d");
-        // ctx = CanvasElement().getContext("2d");
-
-        // container.append(ctx.canvas);
         Self {
             props: Default::default(),
             data: Default::default(),
@@ -164,94 +155,6 @@ where
 
         if let Some(callback) = animation.on_end {
             callback();
-        }
-    }
-
-    /// Calculates various drawing sizes.
-    ///
-    /// Overriding methods must call this method first to have [channel_and_axes_box]
-    /// calculated.
-    ///
-    pub fn calculate_drawing_sizes(&self, ctx: &C) {
-        info!("calculate_drawing_sizes");
-        let title = self.options.title();
-
-        let mut title_x = 0.0;
-        let mut title_y = 0.0;
-        let mut title_w = 0.0;
-        let mut title_h = 0.0;
-
-        if title.position != "none" && title.text.is_some() {
-            title_h = title.style.fontsize.unwrap_or(12.) + 2.0 * TITLE_PADDING;
-        }
-
-        let mut props = self.props.borrow_mut();
-        props.channel_and_axes_box = Rect {
-            origin: Point::new(CHART_PADDING, CHART_PADDING),
-            size: Size::new(
-                props.width - 2.0 * CHART_PADDING,
-                props.height - 2.0 * CHART_PADDING,
-            ),
-        };
-
-        // Consider the title.
-        if title_h > 0.0 {
-            match title.position {
-                "above" => {
-                    title_y = CHART_PADDING;
-                    props.channel_and_axes_box.origin.x += title_h + CHART_TITLE_MARGIN;
-                    props.channel_and_axes_box.size.height -= title_h + CHART_TITLE_MARGIN;
-                }
-                "middle" => {
-                    title_y = f64::floor((props.height - title_h) / 2.0);
-                }
-                "below" => {
-                    title_y = props.height - title_h - CHART_PADDING;
-                    props.channel_and_axes_box.size.height -= title_h + CHART_TITLE_MARGIN;
-                }
-                _ => {}
-            }
-
-            if let Some(text) = title.text {
-                let style = &title.style;
-                ctx.set_font(
-                    style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
-                    style.fontstyle.unwrap_or(TextStyle::Normal),
-                    TextWeight::Normal,
-                    style.fontsize.unwrap_or(12.),
-                );
-                title_w = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
-                title_x = ((props.width - title_w - 2. * TITLE_PADDING) / 2.).trunc();
-            }
-        }
-
-        props.title_box = Rect {
-            origin: Point::new(title_x, title_y),
-            size: Size::new(title_w, title_h),
-        };
-
-        // Consider the legend.
-        if let Some(legend) = props.legend {
-            //   let lwm = self.legend.offset_width + legend_margin;
-            //   let lhm = self.legend.offset_height + legend_margin;
-            let position = self.options.legend().position;
-            match position {
-                "right" => {
-                    // props.channel_and_axes_box.size.width -= lwm;
-                }
-                "bottom" => {
-                    // props.channel_and_axes_box.size.height -= lhm;
-                }
-                "left" => {
-                    // props.channel_and_axes_box.origin.x += lwm;
-                    // props.channel_and_axes_box.size.width -= lwm;
-                }
-                "top" => {
-                    // props.channel_and_axes_box.origin.y += lhm;
-                    // props.channel_and_axes_box.size.height -= lhm;
-                }
-                _ => {}
-            }
         }
     }
 
@@ -357,7 +260,7 @@ where
     pub fn initialize_legend(&self) {
         let new_len = self.get_legend_labels().len();
         let props = self.props.borrow_mut();
-        
+
         if let Some(legend) = props.legend {
             //   self.legend.remove();
             //   self.legend = null;
@@ -562,10 +465,7 @@ where
     pub fn update_tooltip_content(&self) {
         let props = self.props.borrow();
         let column_count = self.data.meta.len();
-        let row = self
-            .data
-            .frames
-            .get(props.focused_entity_index as usize);
+        let row = self.data.frames.get(props.focused_entity_index as usize);
         // tooltip.innerHtml = "";
 
         // // Tooltip title
@@ -699,8 +599,85 @@ where
     D: fmt::Display + Copy,
     O: BaseOption<'a>,
 {
+    /// Calculates various drawing sizes.
+    ///
+    /// Overriding methods must call this method first to have [area]
+    /// calculated.
+    ///
     fn calculate_drawing_sizes(&self, ctx: &C) {
-        todo!()
+        info!("calculate_drawing_sizes");
+        let title = self.options.title();
+
+        let mut title_x = 0.0;
+        let mut title_y = 0.0;
+        let mut title_w = 0.0;
+        let mut title_h = 0.0;
+
+        if title.position != "none" && title.text.is_some() {
+            title_h = title.style.fontsize.unwrap_or(12.) + 2.0 * TITLE_PADDING;
+        }
+
+        let mut props = self.props.borrow_mut();
+
+        // Consider the title.
+        if title_h > 0.0 {
+            match title.position {
+                "above" => {
+                    title_y = CHART_PADDING;
+                    props.area.origin.x += title_h + CHART_TITLE_MARGIN;
+                    props.area.size.height -= title_h + CHART_TITLE_MARGIN;
+                }
+                "middle" => {
+                    title_y = f64::floor((props.height - title_h) / 2.0);
+                }
+                "below" => {
+                    title_y = props.height - title_h - CHART_PADDING;
+                    props.area.size.height -= title_h + CHART_TITLE_MARGIN;
+                }
+                _ => {}
+            }
+
+            if let Some(text) = title.text {
+                let style = &title.style;
+                ctx.set_font(
+                    style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                    style.fontstyle.unwrap_or(TextStyle::Normal),
+                    TextWeight::Normal,
+                    style.fontsize.unwrap_or(12.),
+                );
+                title_w = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
+                title_x = ((props.width - title_w - 2. * TITLE_PADDING) / 2.).trunc();
+            }
+        }
+
+        props.title_box = Rect {
+            origin: Point::new(title_x, title_y),
+            size: Size::new(title_w, title_h),
+        };
+
+        // Consider the legend.
+        if let Some(legend) = props.legend {
+            //   let lwm = self.legend.offset_width + legend_margin;
+            //   let lhm = self.legend.offset_height + legend_margin;
+            let position = self.options.legend().position;
+            match position {
+                "right" => {
+                    // props.area.size.width -= lwm;
+                }
+                "bottom" => {
+                    // props.area.size.height -= lhm;
+                }
+                "left" => {
+                    // props.area.origin.x += lwm;
+                    // props.area.size.width -= lwm;
+                }
+                "top" => {
+                    // props.area.origin.y += lhm;
+                    // props.area.size.height -= lhm;
+                }
+                _ => {}
+            }
+        }
     }
 
     fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
@@ -717,18 +694,12 @@ where
         //     return;
         // }
 
-        self.dispose();
         // data_tableSubscriptionTracker
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
         //   ..add(dataTable.onColumnsChange.listen(dataColumnsChanged))
         //   ..add(dataTable.onRowsChange.listen(data_rows_changed));
-        // self.easing = get_easing(self.options.animation().easing);
-        self.initialize_legend();
-        self.initialize_tooltip();
 
         // self.ctx.clearRect(0, 0, self.width, self.height);
-        self.draw_axes_and_grid(ctx);
-        self.start_animation();
     }
 
     /// Resizes just only change size state for chart and do not resize the container/canvas.
@@ -745,6 +716,14 @@ where
             props.height = h;
             // force_redraw = true; // now_eq
         }
+
+        props.area = Rect {
+            origin: Point::new(CHART_PADDING, CHART_PADDING),
+            size: Size::new(
+                props.width - 2.0 * CHART_PADDING,
+                props.height - 2.0 * CHART_PADDING,
+            ),
+        };
     }
 
     /// Draws the axes and the grid.

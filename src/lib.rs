@@ -159,7 +159,7 @@ where
 {
     /// Calculates various drawing sizes.
     ///
-    /// Overriding methods must call this method first to have [channel_and_axes_box]
+    /// Overriding methods must call this method first to have [area]
     /// calculated.
     ///
     fn calculate_drawing_sizes(&self, ctx: &C);

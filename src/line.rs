@@ -81,10 +81,10 @@ impl<D> Entity for LinePoint<D> {
 
 #[derive(Default, Clone)]
 struct LineChartProperties {
-    x_axis_top: f64,
-    y_axis_left: f64,
-    x_axis_length: f64,
-    y_axis_length: f64,
+    xaxis_top: f64,
+    yaxis_left: f64,
+    xaxis_length: f64,
+    yaxis_length: f64,
     xlabel_max_width: f64,
     ylabel_max_width: f64,
     xlabel_rotation: f64, // 0..90
@@ -138,7 +138,7 @@ where
     /// Returns the x coordinate of the x-axis label at [index].
     fn xlabel_x(&self, index: usize) -> f64 {
         let props = self.props.borrow();
-        props.y_axis_left + props.xlabel_hop * ((index as f64) + props.xlabel_offset_factor)
+        props.yaxis_left + props.xlabel_hop * ((index as f64) + props.xlabel_offset_factor)
     }
 
     /// Returns the y-coordinate corresponding to the data point [value] and
@@ -147,10 +147,10 @@ where
         let props = self.props.borrow();
         match value {
             Some(value) => {
-                props.x_axis_top
-                    - (value.into() - props.ymin_value) / props.yrange * props.y_axis_length
+                props.xaxis_top
+                    - (value.into() - props.ymin_value) / props.yrange * props.yaxis_length
             }
-            None => props.x_axis_top,
+            None => props.xaxis_top,
         }
     }
 
@@ -165,12 +165,12 @@ where
     fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
         let props = self.props.borrow();
 
-        let dx = x - props.y_axis_left;
+        let dx = x - props.yaxis_left;
         // If (x, y) is inside the rectangle defined by the two axes.
-        if y > props.x_axis_top - props.y_axis_length
-            && y < props.x_axis_top
+        if y > props.xaxis_top - props.yaxis_length
+            && y < props.xaxis_top
             && dx > 0.
-            && dx < props.x_axis_length
+            && dx < props.xaxis_length
         {
             let index = (dx / props.xlabel_hop - props.xlabel_offset_factor).round() as usize;
             // If there is at least one visible point in the current point group...
@@ -419,7 +419,7 @@ where
             props.ylabel_formatter
         };
 
-        let channel_and_axes_box = &baseprops.channel_and_axes_box;
+        let area = &baseprops.area;
 
         // x-axis title
         #[allow(unused_assignments)]
@@ -439,8 +439,7 @@ where
             );
             xtitle_width = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
             xtitle_height = xtitle.style.fontsize.unwrap_or(12.) + 2. * TITLE_PADDING;
-            xtitle_top =
-                channel_and_axes_box.origin.y + channel_and_axes_box.size.height - xtitle_height;
+            xtitle_top = area.origin.y + area.size.height - xtitle_height;
         }
 
         // y-axis title.
@@ -460,28 +459,26 @@ where
             );
             ytitle_height = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
             ytitle_width = ytitle.style.fontsize.unwrap_or(12.) + 2. * TITLE_PADDING;
-            ytitle_left = channel_and_axes_box.origin.x;
+            ytitle_left = area.origin.x;
         }
 
         // Axes" size and position.
-        props.y_axis_left =
-            channel_and_axes_box.origin.x + props.ylabel_max_width + AXIS_LABEL_MARGIN as f64;
+        props.yaxis_left = area.origin.x + props.ylabel_max_width + AXIS_LABEL_MARGIN as f64;
         if ytitle_width > 0. {
-            props.y_axis_left += ytitle_width + CHART_TITLE_MARGIN;
+            props.yaxis_left += ytitle_width + CHART_TITLE_MARGIN;
         } else {
-            props.y_axis_left += AXIS_LABEL_MARGIN as f64;
+            props.yaxis_left += AXIS_LABEL_MARGIN as f64;
         }
 
-        props.x_axis_length =
-            (channel_and_axes_box.origin.x + channel_and_axes_box.size.width) - props.y_axis_left;
+        props.xaxis_length = (area.origin.x + area.size.width) - props.yaxis_left;
 
-        props.x_axis_top = channel_and_axes_box.origin.y + channel_and_axes_box.size.height;
+        props.xaxis_top = area.origin.y + area.size.height;
         if xtitle_height > 0. {
-            props.x_axis_top -= xtitle_height + CHART_TITLE_MARGIN;
+            props.xaxis_top -= xtitle_height + CHART_TITLE_MARGIN;
         } else {
-            props.x_axis_top -= AXIS_LABEL_MARGIN as f64;
+            props.xaxis_top -= AXIS_LABEL_MARGIN as f64;
         }
-        props.x_axis_top -= AXIS_LABEL_MARGIN as f64;
+        props.xaxis_top -= AXIS_LABEL_MARGIN as f64;
 
         // x-axis labels and x-axis"s position.
         let row_count = self.base.data.meta.len();
@@ -495,11 +492,11 @@ where
             utils::calculate_max_text_width(ctx, &options.xaxis.labels.style, &props.xlabels);
 
         if props.xlabel_offset_factor > 0. && row_count > 1 {
-            props.xlabel_hop = props.x_axis_length / row_count as f64;
+            props.xlabel_hop = props.xaxis_length / row_count as f64;
         } else if row_count > 1 {
-            props.xlabel_hop = props.x_axis_length / (row_count - 1) as f64;
+            props.xlabel_hop = props.xaxis_length / (row_count - 1) as f64;
         } else {
-            props.xlabel_hop = props.x_axis_length;
+            props.xlabel_hop = props.xaxis_length;
         }
         props.xlabel_rotation = 0.;
 
@@ -531,7 +528,7 @@ where
 
                 props.xlabel_rotation = angle as f64;
                 props.xlabel_step = step as i64;
-                props.x_axis_top -=
+                props.xaxis_top -=
                     props.xlabel_max_width * abs_angle_rad.sin() + font_size * abs_angle_rad.cos();
                 // TODO: fixme
                 // break outer;
@@ -539,15 +536,14 @@ where
         }
 
         // Wrap up.
-        props.y_axis_length = props.x_axis_top
-            - channel_and_axes_box.origin.y
+        props.yaxis_length = props.xaxis_top
+            - area.origin.y
             - (self.base.options.yaxis.labels.style.fontsize.unwrap() / 2.).trunc();
-        props.ylabel_hop = props.y_axis_length / props.ylabels.len() as f64;
+        props.ylabel_hop = props.yaxis_length / props.ylabels.len() as f64;
 
-        xtitle_left = props.y_axis_left + ((props.x_axis_length - xtitle_width) / 2.).trunc();
+        xtitle_left = props.yaxis_left + ((props.xaxis_length - xtitle_width) / 2.).trunc();
 
-        let ytitle_top =
-            channel_and_axes_box.origin.y + ((props.y_axis_length - ytitle_height) / 2.).trunc();
+        let ytitle_top = area.origin.y + ((props.yaxis_length - ytitle_height) / 2.).trunc();
 
         if xtitle_height > 0. {
             props.x_title_box = Rect::new(
@@ -676,7 +672,7 @@ where
         );
 
         let mut x = self.xlabel_x(0);
-        let mut y = props.x_axis_top + AXIS_LABEL_MARGIN as f64 + style.fontsize.unwrap_or(12.);
+        let mut y = props.xaxis_top + AXIS_LABEL_MARGIN as f64 + style.fontsize.unwrap_or(12.);
         let scaled_label_hop = props.xlabel_step as f64 * props.xlabel_hop;
 
         if props.xlabel_rotation == 0. {
@@ -728,8 +724,8 @@ where
 
         ctx.set_text_align(TextAlign::Right);
         ctx.set_text_baseline(BaseLine::Middle);
-        x = props.y_axis_left - AXIS_LABEL_MARGIN as f64;
-        y = props.x_axis_top - (style.fontsize.unwrap_or(12.) / 8.).trunc();
+        x = props.yaxis_left - AXIS_LABEL_MARGIN as f64;
+        y = props.xaxis_top - (style.fontsize.unwrap_or(12.) / 8.).trunc();
         for label in props.ylabels.iter() {
             ctx.fill_text(label.as_str(), x, y);
             y -= props.ylabel_hop;
@@ -741,11 +737,11 @@ where
             ctx.set_line_width(opt.grid_line_width);
             ctx.set_stroke_color(opt.grid_line_color);
             ctx.begin_path();
-            y = props.x_axis_top - props.ylabel_hop;
+            y = props.xaxis_top - props.ylabel_hop;
             // TODO: should draw 2 and len - 1 lines
             for idx in 0..props.ylabels.len() {
-                ctx.move_to(props.y_axis_left, y);
-                ctx.line_to(props.y_axis_left + props.x_axis_length, y);
+                ctx.move_to(props.yaxis_left, y);
+                ctx.line_to(props.yaxis_left + props.xaxis_length, y);
                 y -= props.ylabel_hop;
             }
             ctx.stroke();
@@ -754,17 +750,17 @@ where
         // y grid lines or x-axis ticks - draw from left to right.
         let opt = &self.base.options.yaxis;
         let mut line_width = opt.grid_line_width;
-        x = props.y_axis_left;
+        x = props.yaxis_left;
 
         if props.xlabel_step > 1 {
             x = self.xlabel_x(0);
         }
 
         if line_width > 0. {
-            y = props.x_axis_top - props.y_axis_length;
+            y = props.xaxis_top - props.yaxis_length;
         } else {
             line_width = 1.;
-            y = props.x_axis_top + AXIS_LABEL_MARGIN as f64;
+            y = props.xaxis_top + AXIS_LABEL_MARGIN as f64;
         }
 
         ctx.set_line_width(line_width);
@@ -773,7 +769,7 @@ where
         let mut idx = 0;
         while idx < props.xlabels.len() {
             ctx.move_to(x, y);
-            ctx.line_to(x, props.x_axis_top);
+            ctx.line_to(x, props.xaxis_top);
             x += scaled_label_hop;
             idx += props.xlabel_step as usize;
         }
@@ -785,8 +781,8 @@ where
             ctx.set_line_width(opt.line_width);
             ctx.set_stroke_color(opt.line_color);
             ctx.begin_path();
-            ctx.move_to(props.y_axis_left, props.x_axis_top);
-            ctx.line_to(props.y_axis_left + props.x_axis_length, props.x_axis_top);
+            ctx.move_to(props.yaxis_left, props.xaxis_top);
+            ctx.line_to(props.yaxis_left + props.xaxis_length, props.xaxis_top);
             ctx.stroke();
         }
 
@@ -796,8 +792,8 @@ where
             ctx.set_line_width(opt.line_width);
             ctx.set_stroke_color(opt.line_color);
             ctx.begin_path();
-            ctx.move_to(props.y_axis_left, props.x_axis_top - props.y_axis_length);
-            ctx.line_to(props.y_axis_left, props.x_axis_top);
+            ctx.move_to(props.yaxis_left, props.xaxis_top - props.yaxis_length);
+            ctx.line_to(props.yaxis_left, props.xaxis_top);
             ctx.stroke();
         }
     }
@@ -897,7 +893,7 @@ where
                     // fill the area between them and the x-axis.
                     let mut entity = entities.get(jdx).unwrap();
                     ctx.begin_path();
-                    ctx.move_to(entity.x, props.x_axis_top);
+                    ctx.move_to(entity.x, props.xaxis_top);
                     ctx.line_to(entity.x, entity.y);
                     let mut last_point = entity;
                     let mut count = 1;
@@ -909,7 +905,7 @@ where
                         jdx += 1;
                     }
                     if count >= 2 {
-                        ctx.line_to(last_point.x, props.x_axis_top);
+                        ctx.line_to(last_point.x, props.xaxis_top);
                         ctx.close_path();
                         ctx.fill();
                     }
@@ -1040,7 +1036,7 @@ where
                 entity.y = if visible {
                     self.value_to_y(entity.value)
                 } else {
-                    props.x_axis_top
+                    props.xaxis_top
                 };
                 entity.point_radius = if visible { marker_size } else { 0. };
             }
@@ -1068,17 +1064,17 @@ where
             //         e3.as_point(),
             //         curve_tension,
             //     );
-                
+
             //     e2.cp1 = cp1;
             //     e2.cp2 = cp2;
-                
+
             //     if e2.old_cp1.is_none() {
-            //         e2.old_cp1 = Some(Point::new(e2.cp1.x, props.x_axis_top));
+            //         e2.old_cp1 = Some(Point::new(e2.cp1.x, props.xaxis_top));
             //     }
 
             //     if e2.old_cp2.is_none() {
-            //         e2.old_cp2 = Some(Point::new(e2.cp2.x, props.x_axis_top));
-            //     }                
+            //         e2.old_cp2 = Some(Point::new(e2.cp2.x, props.xaxis_top));
+            //     }
             // }
             idx += 1;
         }
@@ -1095,7 +1091,7 @@ where
         let x = self.xlabel_x(entity_index);
 
         let props = self.props.borrow();
-        let old_y = props.x_axis_top;
+        let old_y = props.xaxis_top;
         // oldCp1 and oldCp2 are calculated in [update_channel].
 
         // let formatted_value = if value != 0 {
@@ -1178,14 +1174,14 @@ where
 
         let mut x = self.xlabel_x(focused_entity_index) + props.tooltip_offset;
         let y = f64::max(
-            props.x_axis_top - props.y_axis_length,
+            props.xaxis_top - props.yaxis_length,
             props.average_y_values[focused_entity_index] - (tooltip_height / 2.).trunc(),
         );
 
         let width = self.base.props.borrow().width;
         if x + tooltip_width > width {
             x -= tooltip_width + 2. * props.tooltip_offset;
-            x = x.max(props.y_axis_left);
+            x = x.max(props.yaxis_left);
         }
 
         Point::new(x, y)

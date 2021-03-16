@@ -53,6 +53,19 @@ features = [
   "Window",
   "Document",
   "CanvasRenderingContext2d",
+  "TextMetrics",
+  "HtmlCanvasElement",
+  "HtmlImageElement",
+  "SvgImageElement",
+  "HtmlVideoElement",
+  "ImageBitmap",
+  "CanvasWindingRule",
+  "Path2d",
+  "CanvasPattern",
+  "CanvasGradient",
+  "HitRegionOptions",
+  "ImageData",
+  "DomMatrix"
 ]
 
 [dev-dependencies]

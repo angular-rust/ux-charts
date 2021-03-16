@@ -8,7 +8,7 @@ use dataflow::*;
 use primitives::{
     BaseLine, CanvasContext, Color, Point, Rect, Size, TextAlign, TextStyle, TextWeight,
 };
-use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use std::{cell::{RefCell, RefMut}, collections::HashMap, fmt, rc::Rc};
 
 use crate::*;
 
@@ -44,7 +44,7 @@ where
         let x = utils::lerp(self.old_left, self.left, percent);
         let h = utils::lerp(self.old_height, self.height, percent);
         //FIXME:
-        let w = utils::lerp(self.old_width, 10. /*self.width*/, percent);
+        let w = utils::lerp(self.old_width, self.width, percent);
         let y = self.bottom - h;
         // info!("draw entity {}, {}, {}, {}", x.round(), y.round(), w.round(), h.round());
 
@@ -70,10 +70,10 @@ impl<D> Entity for BarEntity<D> {
 
 #[derive(Default, Clone)]
 struct BarChartProperties {
-    x_axis_top: f64,
-    y_axis_left: f64,
-    x_axis_length: f64,
-    y_axis_length: f64,
+    xaxis_top: f64,
+    yaxis_left: f64,
+    xaxis_length: f64,
+    yaxis_length: f64,
     xlabel_max_width: f64,
     ylabel_max_width: f64,
     xlabel_rotation: f64, // 0..90
@@ -133,7 +133,7 @@ where
     /// Returns the x coordinate of the x-axis label at [index].
     fn xlabel_x(&self, index: usize) -> f64 {
         let props = self.props.borrow();
-        props.y_axis_left + props.xlabel_hop * ((index as f64) + props.xlabel_offset_factor)
+        props.yaxis_left + props.xlabel_hop * ((index as f64) + props.xlabel_offset_factor)
     }
 
     /// Returns the y-coordinate corresponding to the data point [value] and
@@ -142,10 +142,10 @@ where
         let props = self.props.borrow();
         match value {
             Some(value) => {
-                props.x_axis_top
-                    - (value.into() - props.ymin_value) / props.yrange * props.y_axis_length
+                props.xaxis_top
+                    - (value.into() - props.ymin_value) / props.yrange * props.yaxis_length
             }
-            None => props.x_axis_top,
+            None => props.xaxis_top,
         }
     }
 
@@ -160,12 +160,12 @@ where
 
     fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
         let props = self.props.borrow();
-        let dx = x - props.y_axis_left;
+        let dx = x - props.yaxis_left;
         // If (x, y) is inside the rectangle defined by the two axes.
-        if y > props.x_axis_top - props.y_axis_length
-            && y < props.x_axis_top
+        if y > props.xaxis_top - props.yaxis_length
+            && y < props.xaxis_top
             && dx > 0.
-            && dx < props.x_axis_length
+            && dx < props.xaxis_length
         {
             let index = (dx / props.xlabel_hop - props.xlabel_offset_factor).round() as usize;
             // If there is at least one visible point in the current point group...
@@ -176,9 +176,8 @@ where
         return -1;
     }
 
-    fn update_bar_width(&self) {
+    fn update_bar_width(&self, props: &mut BarChartProperties) {
         let count = self.count_visible_channel(None);
-        let mut props = self.props.borrow_mut();
         if count > 0 {
             props.bar_width =
                 (props.bar_group_width + props.bar_spacing) / (count as f64) - props.bar_spacing;
@@ -189,6 +188,7 @@ where
 
     fn get_bar_left(&self, channel_index: usize, bar_index: usize) -> f64 {
         let props = self.props.borrow();
+        warn!("BGW {} {} {}", props.bar_group_width, props.bar_width, props.bar_spacing);
         self.xlabel_x(bar_index) - 0.5 * props.bar_group_width
             + (self.count_visible_channel(Some(channel_index)) as f64)
                 * (props.bar_width + props.bar_spacing)
@@ -218,7 +218,7 @@ where
             None => 0.0,
             Some(_) => {
                 let props = self.props.borrow();
-                props.x_axis_top - self.value_to_y(value)
+                props.xaxis_top - self.value_to_y(value)
             }
         }
     }
@@ -263,7 +263,7 @@ where
                     }
                 }
                 props.average_y_values[idx] = if count > 0 {
-                    props.x_axis_top - sum / count as f64
+                    props.xaxis_top - sum / count as f64
                 } else {
                     0.
                 };
@@ -271,18 +271,18 @@ where
         }
     }
 
-    fn channel_visibility_changed(&self, index: usize) {
-        self.update_bar_width();
-        self.update_channel(0);
-        self.calculate_average_y_values(0);
-    }
+    // fn channel_visibility_changed(&self, index: usize) {
+    //     self.update_bar_width();
+    //     self.update_channel(0);
+    //     self.calculate_average_y_values(0);
+    // }
 
-    /// Called when [data_table] has been changed.
-    fn data_changed(&self) {
-        info!("data_changed");
-        // self.calculate_drawing_sizes(ctx);
-        self.create_channels(0, self.base.data.meta.len());
-    }
+    // /// Called when [data_table] has been changed.
+    // fn data_changed(&self) {
+    //     info!("data_changed");
+    //     // self.calculate_drawing_sizes(ctx);
+    //     // self.create_channels(0, self.base.data.meta.len());
+    // }
 
     fn get_channel_lefts(&self) -> Vec<f64> {
         let mut result = Vec::new();
@@ -306,14 +306,6 @@ where
     fn calculate_drawing_sizes(&self, ctx: &C) {
         info!("calculate_drawing_sizes");
         self.base.calculate_drawing_sizes(ctx);
-
-        {
-            let mut props = self.props.borrow_mut();
-            props.bar_group_width = 0.618 * props.xlabel_hop; // Golden ratio.
-            props.tooltip_offset = 0.5 * props.xlabel_hop + 4.;
-        }
-
-        self.update_bar_width();
 
         let mut props = self.props.borrow_mut();
         let mut baseprops = self.base.props.borrow_mut();
@@ -339,7 +331,7 @@ where
         } else {
             f64::INFINITY
         };
-        
+
         props.ymin_value = props
             .ymin_value
             .min(utils::find_min_value(&self.base.data).into());
@@ -368,11 +360,8 @@ where
                     props.yinterval = props.yinterval.max(value as f64);
                 }
             } else {
-                props.yinterval = utils::calculate_interval(
-                    props.ymax_value - props.ymin_value,
-                    5,
-                    min_interval,
-                );
+                props.yinterval =
+                    utils::calculate_interval(props.ymax_value - props.ymin_value, 5, min_interval);
             }
         }
 
@@ -408,11 +397,8 @@ where
             error!("NO Y LABEL FORMATTER");
         }
 
-        props.ylabel_max_width = utils::calculate_max_text_width(
-            ctx,
-            &options.yaxis.labels.style,
-            &props.ylabels,
-        );
+        props.ylabel_max_width =
+            utils::calculate_max_text_width(ctx, &options.yaxis.labels.style, &props.ylabels);
 
         baseprops.entity_value_formatter = props.ylabel_formatter;
 
@@ -424,7 +410,7 @@ where
             props.ylabel_formatter
         };
 
-        let channel_and_axes_box = &baseprops.channel_and_axes_box;
+        let area = &baseprops.area;
 
         // x-axis title
         let mut xtitle_left = 0.;
@@ -443,8 +429,7 @@ where
             );
             xtitle_width = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
             xtitle_height = xtitle.style.fontsize.unwrap_or(12.) + 2. * TITLE_PADDING;
-            xtitle_top =
-                channel_and_axes_box.origin.y + channel_and_axes_box.size.height - xtitle_height;
+            xtitle_top = area.origin.y + area.size.height - xtitle_height;
         }
 
         // y-axis title
@@ -464,30 +449,29 @@ where
             );
             ytitle_height = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
             ytitle_width = ytitle.style.fontsize.unwrap_or(12.) + 2. * TITLE_PADDING;
-            ytitle_left = channel_and_axes_box.origin.x;
+            ytitle_left = area.origin.x;
         }
 
         // Axes" size and position
-        props.y_axis_left =
-            channel_and_axes_box.origin.x + props.ylabel_max_width + AXIS_LABEL_MARGIN as f64;
+        props.yaxis_left = area.origin.x + props.ylabel_max_width + AXIS_LABEL_MARGIN as f64;
+        
         if ytitle_width > 0. {
-            props.y_axis_left += ytitle_width + CHART_TITLE_MARGIN;
+            props.yaxis_left += ytitle_width + CHART_TITLE_MARGIN;
         } else {
-            props.y_axis_left += AXIS_LABEL_MARGIN as f64;
+            props.yaxis_left += AXIS_LABEL_MARGIN as f64;
         }
 
-        props.x_axis_length =
-            (channel_and_axes_box.origin.x + channel_and_axes_box.size.width) - props.y_axis_left;
+        props.xaxis_length = (area.origin.x + area.size.width) - props.yaxis_left;
 
-        props.x_axis_top = channel_and_axes_box.origin.y + channel_and_axes_box.size.height;
+        props.xaxis_top = area.origin.y + area.size.height;
 
         if xtitle_height > 0. {
-            props.x_axis_top -= xtitle_height + CHART_TITLE_MARGIN;
+            props.xaxis_top -= xtitle_height + CHART_TITLE_MARGIN;
         } else {
-            props.x_axis_top -= AXIS_LABEL_MARGIN as f64;
+            props.xaxis_top -= AXIS_LABEL_MARGIN as f64;
         }
 
-        props.x_axis_top -= AXIS_LABEL_MARGIN as f64;
+        props.xaxis_top -= AXIS_LABEL_MARGIN as f64;
 
         // x-axis labels and x-axis"s position.
         props.xlabels = Vec::new();
@@ -496,20 +480,22 @@ where
             props.xlabels.push(frame.metric.to_string());
         }
 
-        props.xlabel_max_width = utils::calculate_max_text_width(
-            ctx,
-            &options.xaxis.labels.style,
-            &props.xlabels,
-        );
+        props.xlabel_max_width =
+            utils::calculate_max_text_width(ctx, &options.xaxis.labels.style, &props.xlabels);
 
         let row_count = self.base.data.frames.len() + 1;
         props.xlabel_hop = if props.xlabel_offset_factor > 0. && row_count > 1 {
-            props.x_axis_length / row_count as f64
+            props.xaxis_length / row_count as f64
         } else if row_count > 1 {
-            props.x_axis_length / (row_count - 1) as f64
+            props.xaxis_length / (row_count - 1) as f64
         } else {
-            props.x_axis_length
+            props.xaxis_length
         };
+
+        props.tooltip_offset = 0.5 * props.xlabel_hop + 4.;
+
+        props.bar_group_width = 0.618 * props.xlabel_hop; // Golden ratio.
+        self.update_bar_width(&mut props);
 
         props.xlabel_rotation = 0.;
 
@@ -517,7 +503,7 @@ where
         let max_rotation = options.xaxis.labels.max_rotation;
         let min_rotation = options.xaxis.labels.min_rotation;
         let angles = [0, -45, 45, -90, 90];
-        
+
         props.xlabel_step = 1;
 
         // // outer:
@@ -547,25 +533,24 @@ where
         //         // props.xlabel_rotation = angle as f64;
 
         //         // FIXME:
-        //         // props.x_axis_top -=
+        //         // props.xaxis_top -=
         //         //     props.xlabel_max_width * abs_angle_rad.sin() + font_size * abs_angle_rad.cos();
         //         // TODO: fixme
         //         // break outer;
         //     }
         // }
 
-        // warn!("LAST-X AXIS {}", props.x_axis_top);
+        // warn!("LAST-X AXIS {}", props.xaxis_top);
 
         // Wrap up.
-        props.y_axis_length = props.x_axis_top
-            - channel_and_axes_box.origin.y
+        props.yaxis_length = props.xaxis_top
+            - area.origin.y
             - (options.yaxis.labels.style.fontsize.unwrap() / 2.).trunc();
-        props.ylabel_hop = props.y_axis_length / props.ylabels.len() as f64;
+        props.ylabel_hop = props.yaxis_length / props.ylabels.len() as f64;
 
-        xtitle_left = props.y_axis_left + ((props.x_axis_length - xtitle_width) / 2.).trunc();
+        xtitle_left = props.yaxis_left + ((props.xaxis_length - xtitle_width) / 2.).trunc();
 
-        let ytitle_top =
-            channel_and_axes_box.origin.y + ((props.y_axis_length - ytitle_height) / 2.).trunc();
+        let ytitle_top = area.origin.y + ((props.yaxis_length - ytitle_height) / 2.).trunc();
 
         if xtitle_height > 0. {
             props.x_title_box = Rect::new(
@@ -596,6 +581,7 @@ where
 
     fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
         self.base.data = stream;
+        self.create_channels(0, self.base.data.meta.len());
     }
 
     fn draw(&self, ctx: &C) {
@@ -606,23 +592,16 @@ where
         //   ..add(dataTable.onColumnsChange.listen(dataColumnsChanged))
         //   ..add(dataTable.onRowsChange.listen(data_rows_changed));
         // self.easing = get_easing(self.options.animation().easing);
-        self.base.initialize_legend();
-        self.base.initialize_tooltip();
-
-        self.base.draw(ctx);
-
-        self.base.stop_animation();
-        self.data_changed();
-        self.base.position_legend();
+        // self.base.initialize_legend();
+        // self.base.initialize_tooltip();
+        // self.base.position_legend();
 
         // This call is redundant for row and column changes but necessary for
         // cell changes.
         self.calculate_drawing_sizes(ctx);
-        self.update_channel(0);
-
         self.calculate_average_y_values(0);
-
-        self.base.start_animation();
+        self.update_channel(0);
+        
         self.draw_frame(ctx, None);
     }
 
@@ -686,8 +665,8 @@ where
         }
 
         // x-axis labels.
-        let x_axis = &options.xaxis;
-        let style = &x_axis.labels.style;
+        let xaxis = &options.xaxis;
+        let style = &xaxis.labels.style;
         ctx.set_fill_color(style.color);
 
         ctx.set_font(
@@ -698,7 +677,7 @@ where
         );
 
         let mut x = self.xlabel_x(0);
-        let mut y = props.x_axis_top + AXIS_LABEL_MARGIN as f64 + style.fontsize.unwrap_or(12.);
+        let mut y = props.xaxis_top + AXIS_LABEL_MARGIN as f64 + style.fontsize.unwrap_or(12.);
         let scaled_label_hop = props.xlabel_step as f64 * props.xlabel_hop;
 
         debug!(
@@ -731,8 +710,8 @@ where
             });
             ctx.set_text_baseline(BaseLine::Middle);
             if props.xlabel_rotation == 90. {
-                x += props.xlabel_rotation.signum()
-                    * ((style.fontsize.unwrap_or(12.) / 8.).trunc());
+                x +=
+                    props.xlabel_rotation.signum() * ((style.fontsize.unwrap_or(12.) / 8.).trunc());
             }
             let angle = utils::deg2rad(props.xlabel_rotation);
             warn!("1X for label {}", x);
@@ -756,9 +735,9 @@ where
         }
 
         // y-axis labels.
-        let y_axis = &options.yaxis;
-        let style = &y_axis.labels.style;
-        ctx.set_fill_color(y_axis.labels.style.color);
+        let yaxis = &options.yaxis;
+        let style = &yaxis.labels.style;
+        ctx.set_fill_color(yaxis.labels.style.color);
 
         ctx.set_font(
             &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -771,8 +750,8 @@ where
             // seems y-labels
             ctx.set_text_align(TextAlign::Right);
             ctx.set_text_baseline(BaseLine::Middle);
-            x = props.y_axis_left - AXIS_LABEL_MARGIN as f64;
-            y = props.x_axis_top - (style.fontsize.unwrap_or(12.) / 8.).trunc();
+            x = props.yaxis_left - AXIS_LABEL_MARGIN as f64;
+            y = props.xaxis_top - (style.fontsize.unwrap_or(12.) / 8.).trunc();
             for label in props.ylabels.iter() {
                 ctx.fill_text(label.as_str(), x, y);
                 y -= props.ylabel_hop;
@@ -780,48 +759,48 @@ where
         }
 
         // x grid lines - draw bottom up.
-        let x_axis = &options.xaxis;
-        if x_axis.grid_line_width > 0. {
-            ctx.set_line_width(x_axis.grid_line_width);
-            ctx.set_stroke_color(x_axis.grid_line_color);
+        let xaxis = &options.xaxis;
+        if xaxis.grid_line_width > 0. {
+            ctx.set_line_width(xaxis.grid_line_width);
+            ctx.set_stroke_color(xaxis.grid_line_color);
             ctx.begin_path();
-            
+
             // skip zero line
-            y = props.x_axis_top - props.ylabel_hop;
+            y = props.xaxis_top - props.ylabel_hop;
             for idx in 1..props.ylabels.len() {
-                ctx.move_to(props.y_axis_left, y);
-                ctx.line_to(props.y_axis_left + props.x_axis_length, y);
+                ctx.move_to(props.yaxis_left, y);
+                ctx.line_to(props.yaxis_left + props.xaxis_length, y);
                 y -= props.ylabel_hop;
             }
             ctx.stroke();
         }
 
         // y grid lines or x-axis ticks - draw from left to right.
-        let y_axis = &options.yaxis;
-        let mut line_width = y_axis.grid_line_width;
-        x = props.y_axis_left;
+        let yaxis = &options.yaxis;
+        let mut line_width = yaxis.grid_line_width;
+        x = props.yaxis_left;
 
         if props.xlabel_step > 1 {
             x = self.xlabel_x(0);
         }
 
         if line_width > 0. {
-            y = props.x_axis_top - props.y_axis_length;
+            y = props.xaxis_top - props.yaxis_length;
         } else {
             line_width = 1.;
-            y = props.x_axis_top + AXIS_LABEL_MARGIN as f64;
+            y = props.xaxis_top + AXIS_LABEL_MARGIN as f64;
         }
 
         {
             // seems it ticks
             ctx.set_line_width(line_width);
-            ctx.set_stroke_color(y_axis.grid_line_color);
+            ctx.set_stroke_color(yaxis.grid_line_color);
             ctx.begin_path();
             let mut idx = 0;
             // draw ticks with final tick
             while idx < props.xlabels.len() + 1 {
                 ctx.move_to(x, y);
-                ctx.line_to(x, props.x_axis_top);
+                ctx.line_to(x, props.xaxis_top);
                 x += scaled_label_hop;
                 idx += props.xlabel_step as usize;
             }
@@ -829,24 +808,24 @@ where
         }
 
         // x-axis itself.
-        if x_axis.line_width > 0. {
+        if xaxis.line_width > 0. {
             // warn!("DRAW X-AXIS");
-            ctx.set_line_width(x_axis.line_width);
-            ctx.set_stroke_color(x_axis.line_color);
+            ctx.set_line_width(xaxis.line_width);
+            ctx.set_stroke_color(xaxis.line_color);
             ctx.begin_path();
-            ctx.move_to(props.y_axis_left, props.x_axis_top);
-            ctx.line_to(props.y_axis_left + props.x_axis_length, props.x_axis_top);
+            ctx.move_to(props.yaxis_left, props.xaxis_top);
+            ctx.line_to(props.yaxis_left + props.xaxis_length, props.xaxis_top);
             ctx.stroke();
         }
 
         // y-axis itself.
-        if y_axis.line_width > 0. {
+        if yaxis.line_width > 0. {
             // warn!("DRAW Y-AXIS");
-            ctx.set_line_width(y_axis.line_width);
-            ctx.set_stroke_color(y_axis.line_color);
+            ctx.set_line_width(yaxis.line_width);
+            ctx.set_stroke_color(yaxis.line_color);
             ctx.begin_path();
-            ctx.move_to(props.y_axis_left, props.x_axis_top - props.y_axis_length);
-            ctx.line_to(props.y_axis_left, props.x_axis_top);
+            ctx.move_to(props.yaxis_left, props.xaxis_top - props.yaxis_length);
+            ctx.line_to(props.yaxis_left, props.xaxis_top);
             ctx.stroke();
         }
     }
@@ -925,10 +904,10 @@ where
                 if focused_entity_index >= 0 {
                     ctx.set_fill_color(crosshair.color);
                     ctx.fill_rect(
-                        props.y_axis_left + props.xlabel_hop * focused_entity_index as f64,
-                        props.x_axis_top - props.y_axis_length,
+                        props.yaxis_left + props.xlabel_hop * focused_entity_index as f64,
+                        props.xaxis_top - props.yaxis_length,
                         props.xlabel_hop,
-                        props.y_axis_length,
+                        props.yaxis_length,
                     );
                 }
 
@@ -951,7 +930,7 @@ where
                                 continue;
                             }
                             let x = entity.left + 0.5 * entity.width;
-                            let y = props.x_axis_top - entity.height - 5.;
+                            let y = props.xaxis_top - entity.height - 5.;
                             // TODO: bar.formatted_value
                             let formatted_value = format!("{}", entity.value.unwrap());
                             ctx.fill_text(formatted_value.as_str(), x, y);
@@ -977,7 +956,7 @@ where
             let mut bar_width = 0.0;
 
             if channel.state == Visibility::Showing || channel.state == Visibility::Shown {
-                bar_width = bar_width;
+                bar_width = props.bar_width;
             }
 
             let color = self.base.get_color(idx);
@@ -991,7 +970,7 @@ where
                 entity.color = color;
                 entity.highlight_color = highlight_color;
                 entity.left = left;
-                entity.bottom = props.x_axis_top;
+                entity.bottom = props.xaxis_top;
                 entity.height = self.value_to_bar_height(entity.value);
                 entity.width = bar_width;
                 left += props.xlabel_hop;
@@ -1031,7 +1010,7 @@ where
             //   formatted_value: value != null ? entity_value_formatter(value) : null
             color,
             highlight_color,
-            bottom: props.x_axis_top,
+            bottom: props.xaxis_top,
             old_left,
             left,
             old_height,
@@ -1095,14 +1074,14 @@ where
 
         let mut x = self.xlabel_x(focused_entity_index) + props.tooltip_offset;
         let y = f64::max(
-            props.x_axis_top - props.y_axis_length,
+            props.xaxis_top - props.yaxis_length,
             props.average_y_values[focused_entity_index] - (tooltip_height / 2.).trunc(),
         );
 
         let width = self.base.props.borrow().width;
         if x + tooltip_width > width {
             x -= tooltip_width + 2. * props.tooltip_offset;
-            x = x.max(props.y_axis_left);
+            x = x.max(props.yaxis_left);
         }
 
         Point::new(x, y)
