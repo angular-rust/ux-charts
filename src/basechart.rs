@@ -240,7 +240,8 @@ where
         let title = self.options.title();
         if let Some(text) = title.text {
             let props = self.props.borrow();
-            let x = ((props.title_box.origin.x + props.title_box.size.width) / 2.).trunc();
+            // let x = ((props.title_box.origin.x + props.title_box.size.width) / 2.).trunc();
+            let x = props.title_box.origin.x;
             let y = (props.title_box.origin.y + props.title_box.size.height) - TITLE_PADDING;
             let style = &title.style;
             ctx.set_font(
@@ -250,10 +251,8 @@ where
                 style.fontsize.unwrap_or(12.),
             );
             ctx.set_fill_color(title.style.color);
-            ctx.set_text_align(TextAlign::Center);
+            // ctx.set_text_align(TextAlign::Center);
             ctx.fill_text(text, x, y);
-        } else {
-            println!("No title")
         }
     }
 
@@ -266,7 +265,7 @@ where
             //   self.legend = null;
         }
 
-        if self.options.legend().position == "none" {
+        if let Position::None = self.options.legend().position {
             return;
         }
 
@@ -605,7 +604,6 @@ where
     /// calculated.
     ///
     fn calculate_drawing_sizes(&self, ctx: &C) {
-        info!("calculate_drawing_sizes");
         let title = self.options.title();
 
         let mut title_x = 0.0;
@@ -613,30 +611,33 @@ where
         let mut title_w = 0.0;
         let mut title_h = 0.0;
 
-        if title.position != "none" && title.text.is_some() {
-            title_h = title.style.fontsize.unwrap_or(12.) + 2.0 * TITLE_PADDING;
-        }
-
         let mut props = self.props.borrow_mut();
 
-        // Consider the title.
-        if title_h > 0.0 {
-            match title.position {
-                "above" => {
-                    title_y = CHART_PADDING;
-                    props.area.origin.x += title_h + CHART_TITLE_MARGIN;
-                    props.area.size.height -= title_h + CHART_TITLE_MARGIN;
-                }
-                "middle" => {
-                    title_y = f64::floor((props.height - title_h) / 2.0);
-                }
-                "below" => {
-                    title_y = props.height - title_h - CHART_PADDING;
-                    props.area.size.height -= title_h + CHART_TITLE_MARGIN;
-                }
-                _ => {}
+        let prepare_title = match title.position {
+            Position::Above => {
+                title_h = title.style.fontsize.unwrap_or(12.) + 2.0 * TITLE_PADDING;
+                title_y = CHART_PADDING;
+                props.area.origin.y += title_h + CHART_TITLE_MARGIN;
+                props.area.size.height -= title_h + CHART_TITLE_MARGIN;
+                true
             }
+            Position::Middle => {
+                title_h = title.style.fontsize.unwrap_or(12.) + 2.0 * TITLE_PADDING;
+                title_y = f64::floor((props.height - title_h) / 2.0);
+                true
+            }
+            Position::Below => {
+                title_h = title.style.fontsize.unwrap_or(12.) + 2.0 * TITLE_PADDING;
+                title_y = props.height - title_h - CHART_PADDING;
+                props.area.size.height -= title_h + CHART_TITLE_MARGIN;
+                true
+            }
+            _ => {
+                false
+            }
+        };
 
+        if prepare_title {
             if let Some(text) = title.text {
                 let style = &title.style;
                 ctx.set_font(
@@ -648,30 +649,32 @@ where
                 title_w = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
                 title_x = ((props.width - title_w - 2. * TITLE_PADDING) / 2.).trunc();
             }
+    
+            // Consider the title.
+            props.title_box = Rect {
+                origin: Point::new(title_x, title_y),
+                size: Size::new(title_w, title_h),
+            };
         }
-
-        props.title_box = Rect {
-            origin: Point::new(title_x, title_y),
-            size: Size::new(title_w, title_h),
-        };
+        
 
         // Consider the legend.
-        if let Some(legend) = props.legend {
+        if let Some(_) = props.legend {
             //   let lwm = self.legend.offset_width + legend_margin;
             //   let lhm = self.legend.offset_height + legend_margin;
-            let position = self.options.legend().position;
-            match position {
-                "right" => {
+            let opt = self.options.legend();
+            match opt.position {
+                Position::Right => {
                     // props.area.size.width -= lwm;
                 }
-                "bottom" => {
+                Position::Bottom => {
                     // props.area.size.height -= lhm;
                 }
-                "left" => {
+                Position::Left => {
                     // props.area.origin.x += lwm;
                     // props.area.size.width -= lwm;
                 }
-                "top" => {
+                Position::Top => {
                     // props.area.origin.y += lhm;
                     // props.area.size.height -= lhm;
                 }

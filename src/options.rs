@@ -1,6 +1,17 @@
 use super::{LabelFormatter, ValueFormatter};
 use primitives::{palette, Color, TextStyle};
 
+pub enum Position {
+    Above,
+    Middle,
+    Below,
+    Left, 
+    Top, 
+    Bottom, 
+    Right,
+    None, 
+}
+
 pub trait BaseOption<'a> {
     fn animation(&self) -> &AnimationOptions;
     fn colors(&self) -> &Vec<Color>;
@@ -30,7 +41,7 @@ pub struct LegendOptions<'a> {
 
     /// The position of the legend relative to the chart area.
     /// Supported values: "left", "top", "bottom", "right", "none".
-    pub position: &'a str,
+    pub position: Position,
 
     /// An object that controls the styling of the legend.
     pub style: StyleOption<'a>,
@@ -39,7 +50,7 @@ pub struct LegendOptions<'a> {
 pub struct TitleOptions<'a> {
     /// The position of the title relative to the chart area.
     /// Supported values: "above", "below", "middle", "none";
-    pub position: &'a str,
+    pub position: Position,
 
     /// An object that controls the styling of the chart title.
     pub style: StyleOption<'a>,
@@ -105,7 +116,7 @@ pub struct BarChartXAxisOptions<'a> {
 
     /// The position of the axis relative to the chart area.
     /// Supported values: "bottom".
-    pub position: &'a str,
+    pub position: Position,
 
     /// An object that controls the axis title.
     pub title: TitleOption<'a>,
@@ -153,7 +164,7 @@ pub struct BarChartYAxisOptions<'a> {
 
     /// The position of the axis relative to the chart area.
     /// Supported values: "left".
-    pub position: &'a str,
+    pub position: Position,
 
     /// An object that controls the axis title.
     pub title: TitleOption<'a>,
@@ -238,7 +249,7 @@ impl<'a> Default for BarChartOptions<'a> {
                     min_rotation: -90,
                     style: Default::default(),
                 },
-                position: "bottom",
+                position: Position::Bottom,
                 title: TitleOption {
                     style: Default::default(),
                     text: None,
@@ -257,7 +268,7 @@ impl<'a> Default for BarChartOptions<'a> {
                 max_value: None,
                 min_interval: None,
                 min_value: None,
-                position: "left",
+                position: Position::Left,
                 title: TitleOption {
                     style: Default::default(),
                     text: None,
@@ -283,11 +294,11 @@ impl<'a> Default for BarChartOptions<'a> {
             ],
             legend: LegendOptions {
                 label_formatter: None,
-                position: "right",
+                position: Position::Right,
                 style: Default::default(),
             },
             title: TitleOptions {
-                position: "above",
+                position: Position::Above,
                 style: Default::default(),
                 text: None,
             },
@@ -342,6 +353,9 @@ pub struct GaugeChartOptions<'a> {
     /// The background color of the chart.
     pub background: Color,
 
+    /// The background color of the gauge.
+    pub gauge_background: Color,
+
     /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
     pub colors: Vec<Color>,
@@ -391,7 +405,8 @@ impl<'a> Default for GaugeChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background: palette::GRAY_3,
+            background: palette::WHITE,
+            gauge_background: palette::GRAY_3,
             colors: vec![
                 Color::RGB(0x7c, 0xb5, 0xec),
                 Color::RGB(0x43, 0x43, 0x48),
@@ -406,13 +421,13 @@ impl<'a> Default for GaugeChartOptions<'a> {
             ],
             legend: LegendOptions {
                 label_formatter: None,
-                position: "right",
+                position: Position::Right,
                 style: Default::default(),
             },
             title: TitleOptions {
-                position: "above",
+                position: Position::Above,
                 style: Default::default(),
-                text: Some("Gauge Chart"),
+                text: None,
             },
             tooltip: TooltipOptions {
                 enabled: true,
@@ -490,7 +505,7 @@ pub struct LineChartXAxisOptions<'a> {
 
     /// The position of the axis relative to the chart area.
     /// Supported values: "bottom".
-    pub position: &'a str,
+    pub position: Position,
 
     /// An object that controls the axis title.
     pub title: TitleOption<'a>,
@@ -537,7 +552,7 @@ pub struct LineChartYAxisOptions<'a> {
 
     /// The position of the axis relative to the chart area.
     /// Supported values: "left".
-    pub position: &'a str,
+    pub position: Position,
 
     /// An object that controls the axis title.
     pub title: TitleOption<'a>,
@@ -625,7 +640,7 @@ impl<'a> Default for LineChartOptions<'a> {
                     min_rotation: -90,
                     style: Default::default(),
                 },
-                position: "bottom",
+                position: Position::Bottom,
                 title: TitleOption {
                     style: Default::default(),
                     text: None,
@@ -644,7 +659,7 @@ impl<'a> Default for LineChartOptions<'a> {
                 max_value: None,
                 min_interval: None,
                 min_value: None,
-                position: "left",
+                position: Position::Left,
                 title: TitleOption {
                     style: Default::default(),
                     text: None,
@@ -670,13 +685,13 @@ impl<'a> Default for LineChartOptions<'a> {
             ],
             legend: LegendOptions {
                 label_formatter: None,
-                position: "right",
+                position: Position::Right,
                 style: Default::default(),
             },
             title: TitleOptions {
-                position: "above",
+                position: Position::Above,
                 style: Default::default(),
-                text: Some("Line Chart"),
+                text: None,
             },
             tooltip: TooltipOptions {
                 enabled: true,
@@ -705,7 +720,7 @@ pub struct PieChartSeriesOptions<'a> {
     /// An object that controls the channel labels.
     pub labels: PieChartSeriesLabelsOptions<'a>,
 
-    /// The start angle in degrees. Default is -90, which is 12 o"clock.
+    /// The start angle in degrees. Default is -90, which is 12 o'clock.
     pub start_angle: f64,
 }
 
@@ -796,13 +811,13 @@ impl<'a> Default for PieChartOptions<'a> {
             ],
             legend: LegendOptions {
                 label_formatter: None,
-                position: "right",
+                position: Position::Right,
                 style: Default::default(),
             },
             title: TitleOptions {
-                position: "above",
+                position: Position::Above,
                 style: Default::default(),
-                text: Some("Pie Chart"),
+                text: None,
             },
             tooltip: TooltipOptions {
                 enabled: true,
@@ -1003,13 +1018,13 @@ impl<'a> Default for RadarChartOptions<'a> {
             ],
             legend: LegendOptions {
                 label_formatter: None,
-                position: "right",
+                position: Position::Right,
                 style: Default::default(),
             },
             title: TitleOptions {
-                position: "above",
+                position: Position::Above,
                 style: Default::default(),
-                text: Some("Radar Chart"),
+                text: None,
             },
             tooltip: TooltipOptions {
                 enabled: true,

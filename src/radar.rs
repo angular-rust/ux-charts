@@ -1,3 +1,4 @@
+#![allow(unused_assignments)]
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 #![allow(dead_code)]
@@ -426,7 +427,7 @@ where
             style.fontsize.unwrap_or(12.),
         );
 
-        ctx.set_text_align(TextAlign::Right);
+        // ctx.set_text_align(TextAlign::Right);
         ctx.set_text_baseline(BaseLine::Middle);
         for idx in 1..ylabel_count - 2 {
             ctx.fill_text(props.ylabels[idx].as_str(), x, y);
@@ -444,7 +445,7 @@ where
             style.fontsize.unwrap_or(12.),
         );
 
-        ctx.set_text_align(TextAlign::Center);
+        // ctx.set_text_align(TextAlign::Center);
         ctx.set_text_baseline(BaseLine::Middle);
         let font_size = style.fontsize.unwrap();
         let mut angle = -PI_2;
@@ -499,7 +500,8 @@ where
     fn draw_channels(&self, ctx: &C, percent: f64) -> bool {
         let props = self.props.borrow();
 
-        let focused_channel_index = self.base.props.borrow().focused_channel_index;
+        let mut focused_channel_index = self.base.props.borrow().focused_channel_index;
+        focused_channel_index = -1; //FIXME:
 
         let fill_opacity = self.base.options.channel.fill_opacity;
         let channel_line_width = self.base.options.channel.line_width;
@@ -681,7 +683,6 @@ where
                 None => self.create_entity(channel_index, start, None, color, highlight),
             };
 
-            //   e.chart = this;
             result.push(entity);
             start += 1;
         }

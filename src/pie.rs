@@ -154,7 +154,7 @@ impl<'a, C, M, D> PieChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display + Copy,
+    D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     pub fn new(options: PieChartOptions<'a>) -> Self {
         Self {
@@ -201,19 +201,19 @@ where
         unimplemented!()
     }
 
-    /// Called when [data_table] has been changed.
-    fn data_changed(&self) {
-        info!("data_changed");
-        // self.calculate_drawing_sizes(ctx);
-        self.create_channels(0, self.base.data.meta.len());
-    }
+    // Called when [data_table] has been changed.
+    // fn data_changed(&self) {
+    //     info!("data_changed");
+    //     // self.calculate_drawing_sizes(ctx);
+    //     self.create_channels(0, self.base.data.meta.len());
+    // }
 }
 
 impl<'a, C, M, D> Chart<'a, C, M, D, PieEntity<D>> for PieChart<'a, C, M, D>
 where
     C: CanvasContext,
     M: fmt::Display,
-    D: fmt::Display + Copy,
+    D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     fn calculate_drawing_sizes(&self, ctx: &C) {
         self.base.calculate_drawing_sizes(ctx);
@@ -262,6 +262,7 @@ where
 
     fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
         self.base.data = stream;
+        self.create_channels(0, self.base.data.meta.len());
     }
 
     fn draw(&self, ctx: &C) {
@@ -271,23 +272,15 @@ where
         //   ..add(dataTable.onColumnsChange.listen(dataColumnsChanged))
         //   ..add(dataTable.onRowsChange.listen(data_rows_changed));
         // self.easing = get_easing(self.options.animation().easing);
-        self.base.initialize_legend();
-        self.base.initialize_tooltip();
-
-        self.base.draw(ctx);
-
-        self.base.stop_animation();
-        self.data_changed();
-        self.base.position_legend();
+        // self.base.initialize_legend();
+        // self.base.initialize_tooltip();
+        // self.base.position_legend();
 
         // This call is redundant for row and column changes but necessary for
         // cell changes.
         self.calculate_drawing_sizes(ctx);
         self.update_channel(0);
 
-        // self.ctx.clearRect(0, 0, self.width, self.height);
-        self.draw_axes_and_grid(ctx);
-        self.base.start_animation();
         self.draw_frame(ctx, None);
     }
 
@@ -305,7 +298,10 @@ where
     ///
     /// If [time] is `null`, draws the last frame (i.e. no animation).
     fn draw_frame(&self, ctx: &C, time: Option<i64>) {
+        // clear surface
         self.base.draw_frame(ctx, time);
+
+        self.draw_axes_and_grid(ctx);
 
         let mut percent = self.base.calculate_percent(time);
 
@@ -314,7 +310,6 @@ where
 
             // Update the visibility states of all channel before the last frame.
             let mut channels = self.base.channels.borrow_mut();
-
             for channel in channels.iter_mut() {
                 if channel.state == Visibility::Showing {
                     channel.state = Visibility::Shown;
@@ -343,9 +338,10 @@ where
     }
 
     fn draw_channels(&self, ctx: &C, percent: f64) -> bool {
+        info!("draw_channels");
         ctx.set_line_width(2.);
         ctx.set_stroke_color(palette::WHITE);
-        ctx.set_text_align(TextAlign::Center);
+        // ctx.set_text_align(TextAlign::Center);
         ctx.set_text_baseline(BaseLine::Middle);
 
         let channels = self.base.channels.borrow();
@@ -360,15 +356,19 @@ where
         );
 
         let baseprops = self.base.props.borrow();
-        let focused_channel_index = baseprops.focused_channel_index as usize;
-        let focused_entity_index = baseprops.focused_entity_index as usize;
+        let mut focused_channel_index = baseprops.focused_channel_index;
+        focused_channel_index = -1; //FIXME:
+        let mut focused_entity_index = baseprops.focused_entity_index;
+        focused_entity_index = -1; //FIXME:
 
         for entity in channel.entities.iter() {
             if entity.is_empty() && percent == 1.0 {
                 continue;
             }
-            let highlight =
-                entity.index == focused_channel_index || entity.index == focused_entity_index;
+            
+            let highlight = entity.index as i64 == focused_channel_index
+                || entity.index as i64 == focused_entity_index;
+            info!("draw entity");
             entity.draw(ctx, percent, highlight);
         }
 
@@ -376,49 +376,55 @@ where
     }
 
     fn update_channel(&self, _: usize) {
-        let sum = 0.0;
+        info!("update_channel");
+
         let props = self.props.borrow();
-        let start_angle = props.start_angle;
-
-        let pie_count = self.base.data.frames.len();
-
         let mut channels = self.base.channels.borrow_mut();
 
-        let channel = channels.first_mut().unwrap();
+        let mut idx = 0;
+        for channel in channels.iter_mut() {
+            if channel.state == Visibility::Showing || channel.state == Visibility::Shown {
+                let mut sum: f64 = 0.0;
+                // Sum the values of all visible pies.
+                for entity in channel.entities.iter() {
+                    match entity.value {
+                        Some(value) => sum += value.into(),
+                        None => {}
+                    }
+                }
 
-        // let channel_states = &self.base.props.borrow().channel_states;
+                let mut start_angle = props.start_angle;
+                for entity in channel.entities.iter_mut() {
+                    match entity.value {
+                        Some(value) => {
+                            let color = self.base.get_color(idx);
+                            entity.index = idx;
+                            entity.color = color;
+                            entity.highlight_color = self.base.get_highlight_color(color);
+                            entity.center = props.center;
+                            entity.inner_radius = props.inner_radius;
+                            entity.outer_radius = props.outer_radius;
+                            entity.start_angle = start_angle;
+                            entity.end_angle =
+                                start_angle + props.direction as f64 * value.into() * TAU / sum;
+                            start_angle = entity.end_angle;
 
-        // FIXME:
-        // // Sum the values of all visible pies.
-        // for idx in 0..pie_count {
-        //     let channel_state = channel_states[idx];
-        //     if channel_state == Visibility::Showing || channel_state == Visibility::Shown {
-        //         sum += channel.entities[idx].value;
-        //     }
-        // }
-
-        // for idx in 0..pie_count {
-        //     let entity = channel.entities.get_mut(idx).unwrap();
-        //     let color = self.base.get_color(idx);
-        //     entity.index = idx;
-        //     // TODO: deal with name
-        //     //   pie.name = self.base.data.frames[idx][0];
-        //     entity.color = color;
-        //     entity.highlight_color = self.base.get_highlight_color(color);
-        //     entity.center = props.center;
-        //     entity.inner_radius = props.inner_radius;
-        //     entity.outer_radius = props.outer_radius;
-
-        //     let channel_state = channel_states[idx];
-        //     if channel_state == Visibility::Showing || channel_state == Visibility::Shown {
-        //         entity.start_angle = start_angle;
-        //         entity.end_angle = start_angle + props.direction as f64 * entity.value.into() * TAU / sum;
-        //         start_angle = entity.end_angle;
-        //     } else {
-        //         entity.start_angle = start_angle;
-        //         entity.end_angle = start_angle;
-        //     }
-        // }
+                            let val:f64 = value.into();
+                            info!(
+                                "update item [{}] {} {}",
+                                entity.name,
+                                val,
+                                props.direction as f64 * value.into() * TAU / sum,                                
+                            );
+                        }
+                        None => {
+                            // hole in channel data
+                        }
+                    }
+                }
+            }
+            idx += 1;
+        }
     }
 
     fn create_entity(
@@ -441,7 +447,7 @@ where
 
         let start_angle = props.start_angle;
 
-        // FIXME:
+        // FIXME: should be handled in update_channel
         // if entity_index > 0 {
         //     let channels = self.base.channels.borrow();
         //     let channel = channels.first().unwrap();
@@ -469,7 +475,7 @@ where
             inner_radius: props.inner_radius,
             outer_radius: props.outer_radius,
             start_angle,
-            end_angle: start_angle, // To be updated in [update_channel]
+            end_angle: start_angle, // To be updated in `update_channel`
         }
     }
 
@@ -478,6 +484,7 @@ where
         let mut result = Vec::new();
         let count = self.base.data.frames.len();
         let meta = &self.base.data.meta;
+
         while start < end {
             let channel = meta.get(start).unwrap();
             let name = channel.name;
@@ -514,7 +521,6 @@ where
                 None => self.create_entity(channel_index, start, None, color, highlight),
             };
 
-            //   e.chart = this;
             result.push(entity);
             start += 1;
         }

@@ -1,12 +1,11 @@
+#![allow(unused_assignments)]
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
 use animate::easing::{get_easing, Easing};
 use dataflow::*;
-use primitives::{
-    BaseLine, CanvasContext, Color, LineJoin, Point, Rect, Size, TextAlign, TextStyle, TextWeight,
-};
+use primitives::{BaseLine, CanvasContext, Color, LineJoin, Point, Rect, Size, TextAlign, TextStyle, TextWeight, palette};
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use crate::*;
@@ -27,10 +26,10 @@ pub struct LinePoint<D> {
     old_point_radius: f64,
 
     /// The first control point.
-    cp1: Point<f64>,
+    cp1: Option<Point<f64>>,
 
     /// The second control point.
-    cp2: Point<f64>,
+    cp2: Option<Point<f64>>,
     x: f64,
     y: f64,
 
@@ -40,6 +39,14 @@ pub struct LinePoint<D> {
 impl<D> LinePoint<D> {
     fn as_point(&self) -> Point<f64> {
         Point::new(self.x, self.y)
+    }
+
+    fn debug(&self) {
+        if self.value.is_none() {
+            info!("EMPTY {:?} [None] {:?}", self.cp1, self.cp2);
+            return;
+        }
+        info!("EMPTY {:?} [{}x{}] {:?}", self.cp1, self.x.round(), self.y.round(), self.cp2);        
     }
 }
 
@@ -58,6 +65,8 @@ where
             ctx.arc(cx, cy, 2. * pr, 0., TAU, false);
             ctx.fill();
         }
+
+        ctx.set_fill_color(self.color);
 
         ctx.begin_path();
         ctx.arc(cx, cy, pr, 0., TAU, false);
@@ -91,10 +100,10 @@ struct LineChartProperties {
     xlabel_step: i64,
     xlabel_hop: f64, // Distance between two consecutive x-axis labels.
     ylabel_hop: f64, // Distance between two consecutive x-axis labels.
-    x_title_box: Rect<f64>,
-    y_title_box: Rect<f64>,
-    x_title_center: Option<Point<f64>>,
-    y_title_center: Option<Point<f64>>,
+    xtitle_box: Rect<f64>,
+    ytitle_box: Rect<f64>,
+    xtitle_center: Option<Point<f64>>,
+    ytitle_center: Option<Point<f64>>,
     xlabels: Vec<String>,
     ylabels: Vec<String>,
     yinterval: f64,
@@ -234,20 +243,20 @@ where
                 let x = utils::lerp(p.old_x, p.x, percent);
                 let y = utils::lerp(p.old_y, p.y, percent);
 
-                let cp1 = if p.cp1 != Default::default() {
-                    // FIXME:
-                    // utils::lerp(p.old_cp1, p.cp1, percent)
-                    Default::default()
-                } else {
-                    Default::default()
+                let cp1 = match p.cp1 {
+                    Some(value) => {
+                        // Some(utils::lerp(p.old_cp1, value, percent))
+                        Some(value)
+                    }
+                    None => None
                 };
 
-                let cp2 = if p.cp2 != Default::default() {
-                    // FIXME:
-                    // utils::lerp(p.old_cp2, p.cp2, percent)
-                    Default::default()
-                } else {
-                    Default::default()
+                let cp2 = match p.cp2 {
+                    Some(value) => {
+                        // Some(utils::lerp(p.old_cp2, value, percent))
+                        Some(value)
+                    }
+                    None => None
                 };
 
                 LinePoint {
@@ -271,10 +280,10 @@ where
             .collect()
     }
 
-    fn channel_visibility_changed(&self, index: usize) {
-        self.update_channel(index);
-        self.calculate_average_y_values(0);
-    }
+    // fn channel_visibility_changed(&self, index: usize) {
+    //     self.update_channel(index);
+    //     self.calculate_average_y_values(0);
+    // }
 
     fn curve_to(
         &self,
@@ -284,26 +293,30 @@ where
         p: &LinePoint<D>,
     ) {
         if cp2.is_none() && cp1.is_none() {
+            // info!("line_to");
             ctx.line_to(p.x, p.y);
         } else if cp2.is_none() {
+            // info!("quadratic_curve_to");
             let cp = cp1.unwrap();
             ctx.quadratic_curve_to(cp.x, cp.y, p.x, p.y);
         } else if cp1.is_none() {
+            // info!("quadratic_curve_to");
             let cp = cp2.unwrap();
             ctx.quadratic_curve_to(cp.x, cp.y, p.x, p.y);
         } else {
+            // info!("bezier_curve_to");
             let cp1 = cp1.unwrap();
             let cp2 = cp2.unwrap();
             ctx.bezier_curve_to(cp1.x, cp1.y, cp2.x, cp2.y, p.x, p.y);
         }
     }
 
-    /// Called when [data_table] has been changed.
-    fn data_changed(&self) {
-        info!("data_changed");
-        // self.calculate_drawing_sizes(ctx);
-        self.create_channels(0, self.base.data.meta.len());
-    }
+    // /// Called when [data_table] has been changed.
+    // fn data_changed(&self) {
+    //     info!("data_changed");
+    //     // self.calculate_drawing_sizes(ctx);
+    //     self.create_channels(0, self.base.data.meta.len());
+    // }
 }
 
 impl<'a, C, M, D> Chart<'a, C, M, D, LinePoint<D>> for LineChart<'a, C, M, D>
@@ -316,15 +329,13 @@ where
 
     // TODO: Separate y-axis stuff into a separate method.
     fn calculate_drawing_sizes(&self, ctx: &C) {
-        info!("calculate_drawing_sizes");
         self.base.calculate_drawing_sizes(ctx);
+
         let mut props = self.props.borrow_mut();
         let mut baseprops = self.base.props.borrow_mut();
         let options = &self.base.options;
 
-        props.tooltip_offset = options.channel.markers.size * 2. + 5.;
-
-        // y-axis min-max
+        // y-axis min-max.
         props.ymax_value = if let Some(value) = options.yaxis.max_value {
             value as f64
         } else {
@@ -336,10 +347,10 @@ where
             .max(utils::find_max_value(&self.base.data).into());
 
         if props.ymax_value == f64::NEG_INFINITY {
-            props.ymax_value = 0.0;
+            props.ymax_value = 0.;
         }
 
-        props.ymin_value = if let Some(value) = self.base.options.yaxis.min_value {
+        props.ymin_value = if let Some(value) = options.yaxis.min_value {
             value as f64
         } else {
             f64::INFINITY
@@ -350,13 +361,13 @@ where
             .min(utils::find_min_value(&self.base.data).into());
 
         if props.ymin_value == f64::INFINITY {
-            props.ymin_value = 0.0;
+            props.ymin_value = 0.;
         }
 
         if let Some(value) = options.yaxis.interval {
             props.yinterval = value
         } else {
-            let min_interval = self.base.options.yaxis.min_interval;
+            let min_interval = options.yaxis.min_interval;
             if props.ymin_value == props.ymax_value {
                 if props.ymin_value == 0. {
                     props.ymax_value = 1.;
@@ -369,7 +380,6 @@ where
                     props.ymin_value -= props.yinterval;
                     props.ymax_value += props.yinterval;
                 }
-
                 if let Some(value) = min_interval {
                     props.yinterval = props.yinterval.max(value as f64);
                 }
@@ -386,7 +396,9 @@ where
         props.yrange = props.ymax_value - props.ymin_value;
 
         // y-axis labels
-        props.ylabel_formatter = self.base.options.yaxis.labels.formatter;
+        props.ylabels = Vec::new();
+        props.ylabel_formatter = options.yaxis.labels.formatter;
+
         if let None = props.ylabel_formatter {
             // let max_decimal_places =
             //     max(utils::get_decimal_places(props.yinterval), utils::get_decimal_places(props.y_min_value));
@@ -398,14 +410,17 @@ where
             props.ylabel_formatter = Some(a);
         }
 
-        let mut value = props.ymin_value;
-        while value <= props.ymax_value {
-            let ylabel_formatter = props.ylabel_formatter.unwrap();
-            props.ylabels.push(ylabel_formatter(value));
-            value += props.yinterval;
+        if let Some(ylabel_formatter) = props.ylabel_formatter {
+            let mut value = props.ymin_value;
+            while value <= props.ymax_value {
+                let ylabel_formatter = ylabel_formatter;
+                props.ylabels.push(ylabel_formatter(value));
+                value += props.yinterval;
+            }
+        } else {
+            error!("NO Y LABEL FORMATTER");
         }
 
-        let options = &self.base.options;
         props.ylabel_max_width =
             utils::calculate_max_text_width(ctx, &options.yaxis.labels.style, &props.ylabels);
 
@@ -422,12 +437,10 @@ where
         let area = &baseprops.area;
 
         // x-axis title
-        #[allow(unused_assignments)]
-        let mut xtitle_left = 0.;
         let mut xtitle_top = 0.;
         let mut xtitle_width = 0.;
         let mut xtitle_height = 0.;
-        let xtitle = &self.base.options.xaxis.title;
+        let xtitle = &options.xaxis.title;
 
         if let Some(text) = xtitle.text {
             let style = &xtitle.style;
@@ -442,12 +455,12 @@ where
             xtitle_top = area.origin.y + area.size.height - xtitle_height;
         }
 
-        // y-axis title.
+        // y-axis title
         let mut ytitle_left = 0.;
         let ytitle_top = 0.;
         let mut ytitle_width = 0.;
         let mut ytitle_height = 0.;
-        let ytitle = &self.base.options.yaxis.title;
+        let ytitle = &options.yaxis.title;
 
         if let Some(text) = ytitle.text {
             let style = &ytitle.style;
@@ -462,8 +475,9 @@ where
             ytitle_left = area.origin.x;
         }
 
-        // Axes" size and position.
+        // Axes" size and position
         props.yaxis_left = area.origin.x + props.ylabel_max_width + AXIS_LABEL_MARGIN as f64;
+
         if ytitle_width > 0. {
             props.yaxis_left += ytitle_width + CHART_TITLE_MARGIN;
         } else {
@@ -473,137 +487,143 @@ where
         props.xaxis_length = (area.origin.x + area.size.width) - props.yaxis_left;
 
         props.xaxis_top = area.origin.y + area.size.height;
+
         if xtitle_height > 0. {
             props.xaxis_top -= xtitle_height + CHART_TITLE_MARGIN;
         } else {
             props.xaxis_top -= AXIS_LABEL_MARGIN as f64;
         }
+
         props.xaxis_top -= AXIS_LABEL_MARGIN as f64;
 
-        // x-axis labels and x-axis"s position.
-        let row_count = self.base.data.meta.len();
+        // x-axis labels and x-axis"s position
         props.xlabels = Vec::new();
-        for idx in 0..row_count {
-            let row = self.base.data.meta.get(idx).unwrap();
-            props.xlabels.push(row.name.to_string());
+
+        for frame in self.base.data.frames.iter() {
+            props.xlabels.push(frame.metric.to_string());
         }
 
         props.xlabel_max_width =
             utils::calculate_max_text_width(ctx, &options.xaxis.labels.style, &props.xlabels);
 
-        if props.xlabel_offset_factor > 0. && row_count > 1 {
-            props.xlabel_hop = props.xaxis_length / row_count as f64;
+        let row_count = self.base.data.frames.len() + 1;
+        props.xlabel_hop = if props.xlabel_offset_factor > 0. && row_count > 1 {
+            props.xaxis_length / row_count as f64
         } else if row_count > 1 {
-            props.xlabel_hop = props.xaxis_length / (row_count - 1) as f64;
+            props.xaxis_length / (row_count - 1) as f64
         } else {
-            props.xlabel_hop = props.xaxis_length;
-        }
+            props.xaxis_length
+        };
+
+        props.tooltip_offset = 0.5 * props.xlabel_hop + 4.;
+
+        // props.bar_group_width = 0.618 * props.xlabel_hop; // Golden ratio.
+        // self.update_bar_width(&mut props);
+
         props.xlabel_rotation = 0.;
 
-        let font_size = self.base.options.xaxis.labels.style.fontsize.unwrap();
-        let max_rotation = self.base.options.xaxis.labels.max_rotation;
-        let min_rotation = self.base.options.xaxis.labels.min_rotation;
-        let angles = vec![0, -45, 45, -90, 90];
+        let font_size = options.xaxis.labels.style.fontsize.unwrap();
+        let max_rotation = options.xaxis.labels.max_rotation;
+        let min_rotation = options.xaxis.labels.min_rotation;
+        let angles = [0, -45, 45, -90, 90];
 
-        // outer:
-        for step in 1..row_count {
-            let scaled_label_hop = step as f64 * props.xlabel_hop;
-            let min_spacing = (0.1 * scaled_label_hop as f64).max(10.);
-            for angle in angles.iter() {
-                let angle = *angle;
-                if angle > max_rotation || angle < min_rotation {
-                    continue;
-                }
+        props.xlabel_step = 1;
 
-                let abs_angle_rad = utils::deg2rad(angle as f64).abs();
-                let label_spacing = if angle == 0 {
-                    scaled_label_hop - props.xlabel_max_width
-                } else {
-                    scaled_label_hop * abs_angle_rad.sin() - font_size
-                };
+        // // outer:
+        // for step in 1..row_count {
+        //     let scaled_label_hop = step as f64 * props.xlabel_hop;
+        //     let min_spacing = (0.1 * scaled_label_hop as f64).max(10.);
+        //     // props.xlabel_step = step as i64;
+        //     props.xlabel_step = 1;
 
-                if label_spacing < min_spacing {
-                    continue;
-                }
+        //     for angle in angles.iter() {
+        //         let angle = *angle;
+        //         if angle > max_rotation || angle < min_rotation {
+        //             continue;
+        //         }
 
-                props.xlabel_rotation = angle as f64;
-                props.xlabel_step = step as i64;
-                props.xaxis_top -=
-                    props.xlabel_max_width * abs_angle_rad.sin() + font_size * abs_angle_rad.cos();
-                // TODO: fixme
-                // break outer;
-            }
-        }
+        //         let abs_angle_rad = utils::deg2rad(angle as f64).abs();
+        //         let label_spacing = if angle == 0 {
+        //             scaled_label_hop - props.xlabel_max_width
+        //         } else {
+        //             scaled_label_hop * abs_angle_rad.sin() - font_size
+        //         };
+
+        //         if label_spacing < min_spacing {
+        //             continue;
+        //         }
+
+        //         // props.xlabel_rotation = angle as f64;
+
+        //         // FIXME:
+        //         // props.xaxis_top -=
+        //         //     props.xlabel_max_width * abs_angle_rad.sin() + font_size * abs_angle_rad.cos();
+        //         // TODO: fixme
+        //         // break outer;
+        //     }
+        // }
+
+        // warn!("LAST-X AXIS {}", props.xaxis_top);
 
         // Wrap up.
         props.yaxis_length = props.xaxis_top
             - area.origin.y
-            - (self.base.options.yaxis.labels.style.fontsize.unwrap() / 2.).trunc();
-        props.ylabel_hop = props.yaxis_length / props.ylabels.len() as f64;
+            - (options.yaxis.labels.style.fontsize.unwrap() / 2.).trunc();
+        props.ylabel_hop = props.yaxis_length / (props.ylabels.len() - 1) as f64;
 
-        xtitle_left = props.yaxis_left + ((props.xaxis_length - xtitle_width) / 2.).trunc();
+        let xtitle_left = props.yaxis_left + ((props.xaxis_length - xtitle_width) / 2.).trunc();
 
         let ytitle_top = area.origin.y + ((props.yaxis_length - ytitle_height) / 2.).trunc();
 
         if xtitle_height > 0. {
-            props.x_title_box = Rect::new(
+            props.xtitle_box = Rect::new(
                 Point::new(xtitle_left, xtitle_top),
                 Size::new(xtitle_width, xtitle_height),
             );
-            props.x_title_center = Some(Point::new(
+            props.xtitle_center = Some(Point::new(
                 xtitle_left + (xtitle_width / 2.).trunc(),
                 xtitle_top + (xtitle_height / 2.).trunc(),
             ));
         } else {
-            props.x_title_center = None;
+            props.xtitle_center = None;
         }
 
         if ytitle_height > 0. {
-            props.y_title_box = Rect::new(
+            props.ytitle_box = Rect::new(
                 Point::new(ytitle_left, ytitle_top),
                 Size::new(ytitle_width, ytitle_height),
             );
-            props.y_title_center = Some(Point::new(
+            props.ytitle_center = Some(Point::new(
                 ytitle_left + (ytitle_width / 2.).trunc(),
                 ytitle_top + (ytitle_height / 2.).trunc(),
             ));
         } else {
-            props.y_title_center = None;
+            props.ytitle_center = None;
         }
     }
 
     fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
         self.base.data = stream;
+        self.create_channels(0, self.base.data.meta.len());
     }
 
     fn draw(&self, ctx: &C) {
-        info!("draw");
-
         self.base.dispose();
         // data_tableSubscriptionTracker
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
         //   ..add(dataTable.onColumnsChange.listen(dataColumnsChanged))
         //   ..add(dataTable.onRowsChange.listen(data_rows_changed));
         // self.easing = get_easing(self.options.animation().easing);
-        self.base.initialize_legend();
-        self.base.initialize_tooltip();
-
-        self.base.draw(ctx);
-
-        self.base.stop_animation();
-        self.data_changed();
-        self.base.position_legend();
+        // self.base.initialize_legend();
+        // self.base.initialize_tooltip();
+        // self.base.position_legend();
 
         // This call is redundant for row and column changes but necessary for
         // cell changes.
         self.calculate_drawing_sizes(ctx);
+        self.calculate_average_y_values(0);
         self.update_channel(0);
 
-        self.calculate_average_y_values(0);
-
-        // self.ctx.clearRect(0, 0, self.width, self.height);
-        self.draw_axes_and_grid(ctx);
-        self.base.start_animation();
         self.draw_frame(ctx, None);
     }
 
@@ -614,35 +634,39 @@ where
     /// Draws the axes and the grid.
     ///
     fn draw_axes_and_grid(&self, ctx: &C) {
-        info!("draw_axes_and_grid");
+        let options = &self.base.options;
         // x-axis title.
         let props = self.props.borrow();
-        if let Some(x_title_center) = props.x_title_center {
-            let opt = &self.base.options.xaxis.title;
+        if let Some(xtitle_center) = props.xtitle_center {
+            let opt = &options.xaxis.title;
+
             if let Some(text) = opt.text {
                 let style = &opt.style;
                 ctx.save();
-                ctx.set_fill_color(opt.style.color);
+                ctx.set_fill_color(style.color);
+
                 ctx.set_font(
                     &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
                     style.fontstyle.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
                     style.fontsize.unwrap_or(12.),
                 );
-                ctx.set_text_align(TextAlign::Center);
+
+                // ctx.set_text_align(TextAlign::Center);
                 ctx.set_text_baseline(BaseLine::Middle);
-                ctx.fill_text(opt.text.unwrap(), x_title_center.x, x_title_center.y);
+                ctx.fill_text(text, xtitle_center.x, xtitle_center.y);
                 ctx.restore();
             }
         }
 
         // y-axis title.
-        if let Some(y_title_center) = props.y_title_center {
-            let opt = &self.base.options.yaxis.title;
+        if let Some(ytitle_center) = props.ytitle_center {
+            let opt = &options.yaxis.title;
             if let Some(text) = opt.text {
                 let style = &opt.style;
                 ctx.save();
                 ctx.set_fill_color(style.color);
+
                 ctx.set_font(
                     &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
                     style.fontstyle.unwrap_or(TextStyle::Normal),
@@ -650,9 +674,9 @@ where
                     style.fontsize.unwrap_or(12.),
                 );
 
-                ctx.translate(y_title_center.x, y_title_center.y);
+                ctx.translate(ytitle_center.x, ytitle_center.y);
                 ctx.rotate(-std::f64::consts::FRAC_PI_2);
-                ctx.set_text_align(TextAlign::Center);
+                // ctx.set_text_align(TextAlign::Center);
                 ctx.set_text_baseline(BaseLine::Middle);
                 ctx.fill_text(text, 0., 0.);
                 ctx.restore();
@@ -660,8 +684,8 @@ where
         }
 
         // x-axis labels.
-        let opt = &self.base.options.xaxis.labels;
-        let style = &opt.style;
+        let xaxis = &options.xaxis;
+        let style = &xaxis.labels.style;
         ctx.set_fill_color(style.color);
 
         ctx.set_font(
@@ -676,21 +700,25 @@ where
         let scaled_label_hop = props.xlabel_step as f64 * props.xlabel_hop;
 
         if props.xlabel_rotation == 0. {
-            ctx.set_text_align(TextAlign::Center);
+            // ctx.set_text_align(TextAlign::Center);
             ctx.set_text_baseline(BaseLine::Alphabetic);
 
             let mut idx = 0;
-            while idx < props.xlabels.len() {
-                ctx.fill_text(props.xlabels.get(idx).unwrap().as_str(), x, y);
+            for xlabel in props.xlabels.iter() {
+                let text = xlabel.as_str();
+                let w = ctx.measure_text(text).width;
+                let offset = (scaled_label_hop - w) / 2.;
+                ctx.fill_text(xlabel.as_str(), x + offset, y);
                 x += scaled_label_hop;
                 idx += props.xlabel_step as usize;
             }
         } else {
-            ctx.set_text_align(if props.xlabel_rotation < 0. {
-                TextAlign::Right
-            } else {
-                TextAlign::Left
-            });
+            // ctx.set_text_align(if props.xlabel_rotation < 0. {
+            //     TextAlign::Right
+            // } else {
+            //     TextAlign::Left
+            // });
+
             ctx.set_text_baseline(BaseLine::Middle);
             if props.xlabel_rotation == 90. {
                 x +=
@@ -700,20 +728,26 @@ where
 
             let mut idx = 0;
             while idx < props.xlabels.len() {
-                ctx.save();
-                ctx.translate(x, y);
-                ctx.rotate(angle);
-                ctx.fill_text(props.xlabels.get(idx).unwrap().as_str(), 0., 0.);
-                ctx.restore();
+                if let Some(text) = props.xlabels.get(idx) {
+                    // info!("XLABEL: [{}] [{}:{}]", text, x.round(), y.round());
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(angle);
+                    ctx.fill_text(text.as_str(), 0., 0.);
+                    ctx.restore();
+                } else {
+                    error!("No xlabel at [{}]", idx)
+                }
+
                 x += scaled_label_hop;
                 idx += props.xlabel_step as usize;
             }
         }
 
         // y-axis labels.
-        let opt = &self.base.options.yaxis.labels;
-        let style = &opt.style;
-        ctx.set_fill_color(opt.style.color);
+        let yaxis = &options.yaxis;
+        let style = &yaxis.labels.style;
+        ctx.set_fill_color(yaxis.labels.style.color);
 
         ctx.set_font(
             &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -722,24 +756,28 @@ where
             style.fontsize.unwrap_or(12.),
         );
 
-        ctx.set_text_align(TextAlign::Right);
-        ctx.set_text_baseline(BaseLine::Middle);
-        x = props.yaxis_left - AXIS_LABEL_MARGIN as f64;
-        y = props.xaxis_top - (style.fontsize.unwrap_or(12.) / 8.).trunc();
-        for label in props.ylabels.iter() {
-            ctx.fill_text(label.as_str(), x, y);
-            y -= props.ylabel_hop;
+        {
+            // seems y-labels
+            // ctx.set_text_align(TextAlign::Right);
+            ctx.set_text_baseline(BaseLine::Middle);
+            x = props.yaxis_left - AXIS_LABEL_MARGIN as f64;
+            y = props.xaxis_top - (style.fontsize.unwrap_or(12.) / 8.).trunc();
+            for label in props.ylabels.iter() {
+                ctx.fill_text(label.as_str(), x, y);
+                y -= props.ylabel_hop;
+            }
         }
 
         // x grid lines - draw bottom up.
-        let opt = &self.base.options.xaxis;
-        if opt.grid_line_width > 0. {
-            ctx.set_line_width(opt.grid_line_width);
-            ctx.set_stroke_color(opt.grid_line_color);
+        let xaxis = &options.xaxis;
+        if xaxis.grid_line_width > 0. {
+            ctx.set_line_width(xaxis.grid_line_width);
+            ctx.set_stroke_color(xaxis.grid_line_color);
             ctx.begin_path();
+
+            // skip zero line
             y = props.xaxis_top - props.ylabel_hop;
-            // TODO: should draw 2 and len - 1 lines
-            for idx in 0..props.ylabels.len() {
+            for idx in 1..props.ylabels.len() {
                 ctx.move_to(props.yaxis_left, y);
                 ctx.line_to(props.yaxis_left + props.xaxis_length, y);
                 y -= props.ylabel_hop;
@@ -748,8 +786,8 @@ where
         }
 
         // y grid lines or x-axis ticks - draw from left to right.
-        let opt = &self.base.options.yaxis;
-        let mut line_width = opt.grid_line_width;
+        let yaxis = &options.yaxis;
+        let mut line_width = yaxis.grid_line_width;
         x = props.yaxis_left;
 
         if props.xlabel_step > 1 {
@@ -763,23 +801,27 @@ where
             y = props.xaxis_top + AXIS_LABEL_MARGIN as f64;
         }
 
-        ctx.set_line_width(line_width);
-        ctx.set_stroke_color(opt.grid_line_color);
-        ctx.begin_path();
-        let mut idx = 0;
-        while idx < props.xlabels.len() {
-            ctx.move_to(x, y);
-            ctx.line_to(x, props.xaxis_top);
-            x += scaled_label_hop;
-            idx += props.xlabel_step as usize;
+        {
+            // seems it ticks
+            ctx.set_line_width(line_width);
+            ctx.set_stroke_color(yaxis.grid_line_color);
+            ctx.begin_path();
+            let mut idx = 0;
+            // draw ticks with final tick
+            while idx < props.xlabels.len() + 1 {
+                ctx.move_to(x, y);
+                ctx.line_to(x, props.xaxis_top);
+                x += scaled_label_hop;
+                idx += props.xlabel_step as usize;
+            }
+            ctx.stroke();
         }
-        ctx.stroke();
 
         // x-axis itself.
-        let opt = &self.base.options.xaxis;
-        if opt.line_width > 0. {
-            ctx.set_line_width(opt.line_width);
-            ctx.set_stroke_color(opt.line_color);
+        if xaxis.line_width > 0. {
+            // warn!("DRAW X-AXIS");
+            ctx.set_line_width(xaxis.line_width);
+            ctx.set_stroke_color(xaxis.line_color);
             ctx.begin_path();
             ctx.move_to(props.yaxis_left, props.xaxis_top);
             ctx.line_to(props.yaxis_left + props.xaxis_length, props.xaxis_top);
@@ -787,10 +829,10 @@ where
         }
 
         // y-axis itself.
-        let opt = &self.base.options.yaxis;
-        if opt.line_width > 0. {
-            ctx.set_line_width(opt.line_width);
-            ctx.set_stroke_color(opt.line_color);
+        if yaxis.line_width > 0. {
+            // warn!("DRAW Y-AXIS");
+            ctx.set_line_width(yaxis.line_width);
+            ctx.set_stroke_color(yaxis.line_color);
             ctx.begin_path();
             ctx.move_to(props.yaxis_left, props.xaxis_top - props.yaxis_length);
             ctx.line_to(props.yaxis_left, props.xaxis_top);
@@ -802,7 +844,10 @@ where
     ///
     /// If [time] is `null`, draws the last frame (i.e. no animation).
     fn draw_frame(&self, ctx: &C, time: Option<i64>) {
+        // clear surface
         self.base.draw_frame(ctx, time);
+
+        self.draw_axes_and_grid(ctx);
 
         let mut percent = self.base.calculate_percent(time);
 
@@ -811,7 +856,6 @@ where
 
             // Update the visibility states of all channel before the last frame.
             let mut channels = self.base.channels.borrow_mut();
-
             for channel in channels.iter_mut() {
                 if channel.state == Visibility::Showing {
                     channel.state = Visibility::Shown;
@@ -827,6 +871,7 @@ where
             Some(val) => val,
             None => get_easing(Easing::Linear),
         };
+
         self.draw_channels(ctx, ease(percent));
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
         // ctx.drawImageScaled(ctx.canvas, 0, 0, width, height);
@@ -840,7 +885,6 @@ where
     }
 
     fn draw_channels(&self, ctx: &C, percent: f64) -> bool {
-        info!("draw_channels");
         let channels = self.base.channels.borrow();
         let channel_count = channels.len();
 
@@ -852,7 +896,8 @@ where
         let marker_options = &options.channel.markers;
         let marker_size = marker_options.size;
 
-        let focused_channel_index = self.base.props.borrow().focused_channel_index;
+        let mut focused_channel_index = self.base.props.borrow().focused_channel_index;
+        focused_channel_index = -1; //FIXME:
         let focused_entity_index = self.base.props.borrow().focused_entity_index as usize;
         let props = self.props.borrow();
         let label_options = &options.channel.labels;
@@ -872,61 +917,59 @@ where
 
             ctx.set_line_join(LineJoin::Round);
 
-            // Draw channel with filling.
-            if fill_opacity > 0.0 {
+            // Draw channel fill's
+            if fill_opacity > 0. {
+                let mut prev: LinePoint<D> = Default::default();
+                ctx.set_line_width(scale * channel_line_width);
                 let color = self.base.change_color_alpha(channel.color, fill_opacity);
                 ctx.set_fill_color(color);
-                ctx.set_stroke_color(color);
-                let mut jdx = 0;
-                loop {
-                    // Skip points with a null value.
-                    while jdx < entity_count && entities[jdx].value.is_none() {
-                        jdx += 1;
-                    }
-
-                    // Stop if we have reached the end of the channel.
-                    if jdx == entity_count {
-                        break;
-                    }
-
-                    // Connect a channel of contiguous points with a non-null value and
-                    // fill the area between them and the x-axis.
-                    let mut entity = entities.get(jdx).unwrap();
-                    ctx.begin_path();
-                    ctx.move_to(entity.x, props.xaxis_top);
-                    ctx.line_to(entity.x, entity.y);
-                    let mut last_point = entity;
-                    let mut count = 1;
-                    while jdx < entity_count && entities[jdx].value.is_some() {
-                        entity = entities.get(jdx).unwrap();
-                        self.curve_to(ctx, Some(last_point.cp2), Some(entity.cp1), entity);
-                        last_point = entity;
-                        count += 1;
-                        jdx += 1;
-                    }
-                    if count >= 2 {
-                        ctx.line_to(last_point.x, props.xaxis_top);
+                let mut closed = false;
+                for entity in entities.iter() {
+                    if entity.value.is_some() {
+                        if prev.value.is_some() {
+                            self.curve_to(ctx, prev.cp2, entity.cp1, entity);
+                        } else {
+                            // prev point is empty
+                            // so open the path 
+                            closed = false;
+                            ctx.begin_path();
+                            ctx.move_to(entity.x, props.xaxis_top);
+                            ctx.line_to(entity.x, entity.y);
+                        }
+                    } else {
+                        // current point is empty
+                        // if it not first so close path
+                        ctx.line_to(prev.x, props.xaxis_top);
                         ctx.close_path();
+                        closed = true;
                         ctx.fill();
                     }
+                    prev = entity.clone();
+                }
+                if !closed {
+                    ctx.line_to(prev.x, props.xaxis_top);
+                    ctx.close_path();
+                    closed = true;
+                    ctx.fill();
                 }
             }
 
-            // Draw channel without filling.
+            // Draw channel strokes
             if channel_line_width > 0. {
-                let mut last_point: LinePoint<D> = Default::default();
+                let mut prev: LinePoint<D> = Default::default();
                 ctx.set_line_width(scale * channel_line_width);
                 ctx.set_stroke_color(channel.color);
                 ctx.begin_path();
                 for entity in entities.iter() {
                     if entity.value.is_some() {
-                        if last_point.value.is_some() {
-                            self.curve_to(ctx, Some(last_point.cp2), Some(entity.cp1), entity);
+                        if prev.value.is_some() {
+                            self.curve_to(ctx, prev.cp2, entity.cp1, entity);
                         } else {
                             ctx.move_to(entity.x, entity.y);
                         }
+                    } else {
                     }
-                    last_point = entity.clone();
+                    prev = entity.clone();
                 }
                 ctx.stroke();
             }
@@ -961,7 +1004,7 @@ where
             idx += 1;
         }
 
-        // Draw labels only on the last frame.
+        // Draw labels only on the last frame
         if let Some(label_options) = label_options {
             if percent == 1.0 {
                 ctx.set_fill_color(label_options.color);
@@ -971,7 +1014,7 @@ where
                     TextWeight::Normal,
                     label_options.fontsize.unwrap_or(12.),
                 );
-                ctx.set_text_align(TextAlign::Center);
+                // ctx.set_text_align(TextAlign::Center);
                 ctx.set_text_baseline(BaseLine::Alphabetic);
                 for channel in channels.iter() {
                     if channel.state != Visibility::Shown {
@@ -999,7 +1042,6 @@ where
     }
 
     fn update_channel(&self, index: usize) {
-        info!("update_channel");
         let entity_count = self.base.data.frames.len();
 
         let marker_size = self.base.options.channel.markers.size;
@@ -1032,7 +1074,7 @@ where
                 entity.index = jdx;
                 entity.color = color;
                 entity.highlight_color = highlight_color;
-                entity.x = self.xlabel_x(jdx);
+                entity.x = self.xlabel_x(jdx) + props.xlabel_hop / 2.;
                 entity.y = if visible {
                     self.value_to_y(entity.value)
                 } else {
@@ -1045,37 +1087,67 @@ where
                 continue;
             }
 
-            // TODO: complete it
-            // let mut e1;
-            // let mut e2 = channel.entities.get_mut(0).unwrap();
-            // let mut e3 = channel.entities.get_mut(1).unwrap();
-            // for jdx in 2..entity_count {
-            //     e1 = e2;
-            //     e2 = e3;
-            //     e3 = channel.entities.get_mut(jdx).unwrap();
+            // curve calculations
+            let mut e1;
+            let mut e2 = {
+                match channel.entities.get(0) {
+                    Some(entity) => match entity.value {
+                        Some(_) => Some(entity.as_point()),
+                        None => None,
+                    },
+                    None => None,
+                }
+            };
 
-            //     if e1.value.is_none() || e2.value.is_none() || e3.value.is_none() {
-            //         continue;
-            //     }
+            let mut e3 = {
+                match channel.entities.get(1) {
+                    Some(entity) => match entity.value {
+                        Some(_) => Some(entity.as_point()),
+                        None => None,
+                    },
+                    None => None,
+                }
+            };
 
-            //     let (cp1, cp2) = utils::calculate_control_points(
-            //         e1.as_point(),
-            //         e2.as_point(),
-            //         e3.as_point(),
-            //         curve_tension,
-            //     );
+            for jdx in 2..entity_count {
+                e1 = e2;
+                e2 = e3;
+                e3 = {
+                    match channel.entities.get(jdx) {
+                        Some(entity) => match entity.value {
+                            Some(_) => Some(entity.as_point()),
+                            None => None,
+                        },
+                        None => None,
+                    }
+                };
 
-            //     e2.cp1 = cp1;
-            //     e2.cp2 = cp2;
+                if e1.is_none() || e2.is_none() || e3.is_none() {
+                    continue;
+                }
 
-            //     if e2.old_cp1.is_none() {
-            //         e2.old_cp1 = Some(Point::new(e2.cp1.x, props.xaxis_top));
-            //     }
+                let (cp1, cp2) = utils::calculate_control_points(
+                    e1.unwrap(),
+                    e2.unwrap(),
+                    e3.unwrap(),
+                    curve_tension,
+                );
 
-            //     if e2.old_cp2.is_none() {
-            //         e2.old_cp2 = Some(Point::new(e2.cp2.x, props.xaxis_top));
-            //     }
-            // }
+                if let Some(entity) = channel.entities.get_mut(jdx - 1) {
+                    entity.cp1 = Some(cp1);
+                    entity.cp2 = Some(cp2);
+
+                    if entity.old_cp1.is_none() {
+                        entity.old_cp1 = Some(Point::new(cp1.x, props.xaxis_top));
+                    }
+
+                    if entity.old_cp2.is_none() {
+                        entity.old_cp2 = Some(Point::new(cp2.x, props.xaxis_top));
+                    }
+                } else {
+                    warn!("no entity at {}", jdx -1);
+                }
+            }
             idx += 1;
         }
     }
@@ -1088,11 +1160,10 @@ where
         color: Color,
         highlight_color: Color,
     ) -> LinePoint<D> {
-        let x = self.xlabel_x(entity_index);
-
         let props = self.props.borrow();
+
+        let x = self.xlabel_x(entity_index) + props.xlabel_hop / 2.;
         let old_y = props.xaxis_top;
-        // oldCp1 and oldCp2 are calculated in [update_channel].
 
         // let formatted_value = if value != 0 {
         //     entity_value_formatter(value)
@@ -1100,6 +1171,7 @@ where
         //     null
         // };
 
+        // old_cp1 and old_cp2 are calculated in `update_channel`
         LinePoint {
             index: entity_index,
             old_value: None,
@@ -1161,7 +1233,6 @@ where
                 None => self.create_entity(channel_index, start, None, color, highlight),
             };
 
-            //   e.chart = this;
             result.push(entity);
             start += 1;
         }

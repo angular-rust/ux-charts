@@ -5,10 +5,13 @@
 
 use animate::easing::{get_easing, Easing};
 use dataflow::*;
-use primitives::{
-    BaseLine, CanvasContext, Color, Point, Rect, Size, TextAlign, TextStyle, TextWeight,
+use primitives::{BaseLine, CanvasContext, Color, Point, Rect, Size, TextAlign, TextStyle, TextWeight, palette};
+use std::{
+    cell::{RefCell, RefMut},
+    collections::HashMap,
+    fmt,
+    rc::Rc,
 };
-use std::{cell::{RefCell, RefMut}, collections::HashMap, fmt, rc::Rc};
 
 use crate::*;
 
@@ -16,7 +19,7 @@ use crate::*;
 pub struct BarEntity<D> {
     color: Color,
     highlight_color: Color,
-    // formatted_value: String,
+    formatted_value: String,
     index: usize,
     old_value: Option<D>,
     value: Option<D>,
@@ -43,10 +46,8 @@ where
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let x = utils::lerp(self.old_left, self.left, percent);
         let h = utils::lerp(self.old_height, self.height, percent);
-        //FIXME:
         let w = utils::lerp(self.old_width, self.width, percent);
         let y = self.bottom - h;
-        // info!("draw entity {}, {}, {}, {}", x.round(), y.round(), w.round(), h.round());
 
         ctx.set_fill_color(self.color);
         ctx.fill_rect(x, y, w, h);
@@ -82,10 +83,10 @@ struct BarChartProperties {
     xlabel_hop: f64,
     /// Distance between two consecutive x-axis labels.
     ylabel_hop: f64,
-    x_title_box: Rect<f64>,
-    y_title_box: Rect<f64>,
-    x_title_center: Option<Point<f64>>,
-    y_title_center: Option<Point<f64>>,
+    xtitle_box: Rect<f64>,
+    ytitle_box: Rect<f64>,
+    xtitle_center: Option<Point<f64>>,
+    ytitle_center: Option<Point<f64>>,
     xlabels: Vec<String>,
     ylabels: Vec<String>,
     yinterval: f64,
@@ -188,7 +189,7 @@ where
 
     fn get_bar_left(&self, channel_index: usize, bar_index: usize) -> f64 {
         let props = self.props.borrow();
-        warn!("BGW {} {} {}", props.bar_group_width, props.bar_width, props.bar_spacing);
+        // warn!("BGW {} {} {}", props.bar_group_width, props.bar_width, props.bar_spacing);
         self.xlabel_x(bar_index) - 0.5 * props.bar_group_width
             + (self.count_visible_channel(Some(channel_index)) as f64)
                 * (props.bar_width + props.bar_spacing)
@@ -304,7 +305,6 @@ where
 {
     // TODO: Separate y-axis stuff into a separate method.
     fn calculate_drawing_sizes(&self, ctx: &C) {
-        info!("calculate_drawing_sizes");
         self.base.calculate_drawing_sizes(ctx);
 
         let mut props = self.props.borrow_mut();
@@ -454,7 +454,7 @@ where
 
         // Axes" size and position
         props.yaxis_left = area.origin.x + props.ylabel_max_width + AXIS_LABEL_MARGIN as f64;
-        
+
         if ytitle_width > 0. {
             props.yaxis_left += ytitle_width + CHART_TITLE_MARGIN;
         } else {
@@ -473,7 +473,7 @@ where
 
         props.xaxis_top -= AXIS_LABEL_MARGIN as f64;
 
-        // x-axis labels and x-axis"s position.
+        // x-axis labels and x-axis"s position
         props.xlabels = Vec::new();
 
         for frame in self.base.data.frames.iter() {
@@ -546,36 +546,36 @@ where
         props.yaxis_length = props.xaxis_top
             - area.origin.y
             - (options.yaxis.labels.style.fontsize.unwrap() / 2.).trunc();
-        props.ylabel_hop = props.yaxis_length / props.ylabels.len() as f64;
+        props.ylabel_hop = props.yaxis_length / (props.ylabels.len() - 1) as f64;
 
         xtitle_left = props.yaxis_left + ((props.xaxis_length - xtitle_width) / 2.).trunc();
 
         let ytitle_top = area.origin.y + ((props.yaxis_length - ytitle_height) / 2.).trunc();
 
         if xtitle_height > 0. {
-            props.x_title_box = Rect::new(
+            props.xtitle_box = Rect::new(
                 Point::new(xtitle_left, xtitle_top),
                 Size::new(xtitle_width, xtitle_height),
             );
-            props.x_title_center = Some(Point::new(
+            props.xtitle_center = Some(Point::new(
                 xtitle_left + (xtitle_width / 2.).trunc(),
                 xtitle_top + (xtitle_height / 2.).trunc(),
             ));
         } else {
-            props.x_title_center = None;
+            props.xtitle_center = None;
         }
 
         if ytitle_height > 0. {
-            props.y_title_box = Rect::new(
+            props.ytitle_box = Rect::new(
                 Point::new(ytitle_left, ytitle_top),
                 Size::new(ytitle_width, ytitle_height),
             );
-            props.y_title_center = Some(Point::new(
+            props.ytitle_center = Some(Point::new(
                 ytitle_left + (ytitle_width / 2.).trunc(),
                 ytitle_top + (ytitle_height / 2.).trunc(),
             ));
         } else {
-            props.y_title_center = None;
+            props.ytitle_center = None;
         }
     }
 
@@ -585,7 +585,6 @@ where
     }
 
     fn draw(&self, ctx: &C) {
-        info!("draw");
         self.base.dispose();
         // data_tableSubscriptionTracker
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
@@ -601,7 +600,7 @@ where
         self.calculate_drawing_sizes(ctx);
         self.calculate_average_y_values(0);
         self.update_channel(0);
-        
+
         self.draw_frame(ctx, None);
     }
 
@@ -612,12 +611,10 @@ where
     /// Draws the axes and the grid.
     ///
     fn draw_axes_and_grid(&self, ctx: &C) {
-        info!("draw_axes_and_grid");
         let options = &self.base.options;
         // x-axis title.
         let props = self.props.borrow();
-        if let Some(x_title_center) = props.x_title_center {
-            info!("== draw x title");
+        if let Some(xtitle_center) = props.xtitle_center {
             let opt = &options.xaxis.title;
 
             if let Some(text) = opt.text {
@@ -632,16 +629,15 @@ where
                     style.fontsize.unwrap_or(12.),
                 );
 
-                ctx.set_text_align(TextAlign::Center);
+                // ctx.set_text_align(TextAlign::Center);
                 ctx.set_text_baseline(BaseLine::Middle);
-                ctx.fill_text(text, x_title_center.x, x_title_center.y);
+                ctx.fill_text(text, xtitle_center.x, xtitle_center.y);
                 ctx.restore();
             }
         }
 
         // y-axis title.
-        if let Some(y_title_center) = props.y_title_center {
-            info!("== draw y title");
+        if let Some(ytitle_center) = props.ytitle_center {
             let opt = &options.yaxis.title;
             if let Some(text) = opt.text {
                 let style = &opt.style;
@@ -655,9 +651,9 @@ where
                     style.fontsize.unwrap_or(12.),
                 );
 
-                ctx.translate(y_title_center.x, y_title_center.y);
+                ctx.translate(ytitle_center.x, ytitle_center.y);
                 ctx.rotate(-std::f64::consts::FRAC_PI_2);
-                ctx.set_text_align(TextAlign::Center);
+                // ctx.set_text_align(TextAlign::Center);
                 ctx.set_text_baseline(BaseLine::Middle);
                 ctx.fill_text(text, 0., 0.);
                 ctx.restore();
@@ -680,16 +676,8 @@ where
         let mut y = props.xaxis_top + AXIS_LABEL_MARGIN as f64 + style.fontsize.unwrap_or(12.);
         let scaled_label_hop = props.xlabel_step as f64 * props.xlabel_hop;
 
-        debug!(
-            "xlabel rotation [{}] and labels is [{}] {} {}",
-            props.xlabel_rotation,
-            props.xlabels.len(),
-            props.xlabel_step,
-            props.xlabel_hop.round()
-        );
-
         if props.xlabel_rotation == 0. {
-            ctx.set_text_align(TextAlign::Center);
+            // ctx.set_text_align(TextAlign::Center);
             ctx.set_text_baseline(BaseLine::Alphabetic);
 
             let mut idx = 0;
@@ -702,19 +690,18 @@ where
                 idx += props.xlabel_step as usize;
             }
         } else {
-            warn!("X for label {}", x);
-            ctx.set_text_align(if props.xlabel_rotation < 0. {
-                TextAlign::Right
-            } else {
-                TextAlign::Left
-            });
+            // ctx.set_text_align(if props.xlabel_rotation < 0. {
+            //     TextAlign::Right
+            // } else {
+            //     TextAlign::Left
+            // });
+
             ctx.set_text_baseline(BaseLine::Middle);
             if props.xlabel_rotation == 90. {
                 x +=
                     props.xlabel_rotation.signum() * ((style.fontsize.unwrap_or(12.) / 8.).trunc());
             }
             let angle = utils::deg2rad(props.xlabel_rotation);
-            warn!("1X for label {}", x);
 
             let mut idx = 0;
             while idx < props.xlabels.len() {
@@ -748,7 +735,7 @@ where
 
         {
             // seems y-labels
-            ctx.set_text_align(TextAlign::Right);
+            // ctx.set_text_align(TextAlign::Right);
             ctx.set_text_baseline(BaseLine::Middle);
             x = props.yaxis_left - AXIS_LABEL_MARGIN as f64;
             y = props.xaxis_top - (style.fontsize.unwrap_or(12.) / 8.).trunc();
@@ -766,6 +753,7 @@ where
             ctx.begin_path();
 
             // skip zero line
+            // props.xaxis_top - props.yaxis_length
             y = props.xaxis_top - props.ylabel_hop;
             for idx in 1..props.ylabels.len() {
                 ctx.move_to(props.yaxis_left, y);
@@ -836,7 +824,6 @@ where
     fn draw_frame(&self, ctx: &C, time: Option<i64>) {
         // clear surface
         self.base.draw_frame(ctx, time);
-
         self.draw_axes_and_grid(ctx);
 
         let mut percent = self.base.calculate_percent(time);
@@ -846,7 +833,6 @@ where
 
             // Update the visibility states of all channel before the last frame.
             let mut channels = self.base.channels.borrow_mut();
-
             for channel in channels.iter_mut() {
                 if channel.state == Visibility::Showing {
                     channel.state = Visibility::Shown;
@@ -876,7 +862,6 @@ where
     }
 
     fn draw_channels(&self, ctx: &C, percent: f64) -> bool {
-        info!("draw_channels");
         let channels = self.base.channels.borrow();
         let focused_entity_index = self.base.props.borrow().focused_entity_index;
 
@@ -889,8 +874,6 @@ where
                 info!("skip draw_channel: {}", channel.name);
                 continue;
             }
-
-            info!("draw channel: {} {}", channel.name, percent);
 
             // Draw the bars.
             for entity in channel.entities.iter() {
@@ -922,7 +905,7 @@ where
                             TextWeight::Normal,
                             labels.fontsize.unwrap_or(12.),
                         );
-                        ctx.set_text_align(TextAlign::Center);
+                        // ctx.set_text_align(TextAlign::Center);
                         ctx.set_text_baseline(BaseLine::Alphabetic);
 
                         for entity in channel.entities.iter() {
@@ -931,9 +914,7 @@ where
                             }
                             let x = entity.left + 0.5 * entity.width;
                             let y = props.xaxis_top - entity.height - 5.;
-                            // TODO: bar.formatted_value
-                            let formatted_value = format!("{}", entity.value.unwrap());
-                            ctx.fill_text(formatted_value.as_str(), x, y);
+                            ctx.fill_text(entity.formatted_value.as_str(), x, y);
                         }
                     }
                 }
@@ -952,7 +933,8 @@ where
         let mut channels = self.base.channels.borrow_mut();
         let mut idx = 0;
         for channel in channels.iter_mut() {
-            let mut left = *lefts.get(idx).unwrap();
+            let mut left = *lefts.get(idx).unwrap() + props.xlabel_hop / 2.;
+
             let mut bar_width = 0.0;
 
             if channel.state == Visibility::Showing || channel.state == Visibility::Shown {
@@ -987,7 +969,11 @@ where
         color: Color,
         highlight_color: Color,
     ) -> BarEntity<D> {
-        let left = self.get_bar_left(channel_index, entity_index);
+        let props = self.props.borrow();
+        let baseprops = self.base.props.borrow();
+        let channels = self.base.channels.borrow();
+        
+        let left = self.get_bar_left(channel_index, entity_index) + props.xlabel_hop / 2.;
         let old_left = left;
         let height = self.value_to_bar_height(value);
 
@@ -995,19 +981,25 @@ where
         let mut old_height = height;
         let mut old_width = 0.;
 
-        let props = self.props.borrow();
-        let channels = self.base.channels.borrow();
         if channels.len() == 0 {
             // Data table changed. Animate height.
             old_height = 0.;
             old_width = props.bar_width;
         }
 
+        let formatted_value = match value {
+            Some(value) => match baseprops.entity_value_formatter {
+                Some(formatter) => formatter(value.into()),
+                None => "".into(),
+            },
+            None => "".into(),
+        };
+
         BarEntity {
             index: entity_index,
             old_value: None,
             value,
-            //   formatted_value: value != null ? entity_value_formatter(value) : null
+            formatted_value,
             color,
             highlight_color,
             bottom: props.xaxis_top,
@@ -1061,7 +1053,6 @@ where
                 None => self.create_entity(channel_index, start, None, color, highlight),
             };
 
-            //   e.chart = this;
             result.push(entity);
             start += 1;
         }

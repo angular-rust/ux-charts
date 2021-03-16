@@ -2,7 +2,12 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use std::{collections::HashMap, f64::consts::PI, fmt};
+use std::{
+    collections::HashMap,
+    f64::consts::PI,
+    fmt,
+    ops::{Add, Mul, Sub},
+};
 
 use crate::DEFAULT_FONT_FAMILY;
 
@@ -24,7 +29,8 @@ pub fn deg2rad(angle: f64) -> f64 {
 /// end value [end], and the interpolation factor [f].
 ///
 /// [start] and [end] can be of any type which defines three operators +, - , *.
-pub fn lerp(start: f64, end: f64, f: f64) -> f64 {
+pub fn lerp(start: f64, end: f64, f: f64) -> f64
+{
     start + (end - start) * f
 }
 
@@ -82,18 +88,14 @@ where
         let channel_index = channel.tag as u64;
         for frame in stream.frames.iter() {
             match frame.data.get(channel_index) {
-                Some(value) => {
-                    match result {
-                        Some(max_value) => {
-                            if *value > max_value {
-                                result = Some(value.clone());
-                            }
-                        }
-                        None => {
-                            result = Some(value.clone())
+                Some(value) => match result {
+                    Some(max_value) => {
+                        if *value > max_value {
+                            result = Some(value.clone());
                         }
                     }
-                }
+                    None => result = Some(value.clone()),
+                },
                 None => {}
             }
         }
@@ -113,19 +115,15 @@ where
         let channel_index = channel.tag as u64;
         for frame in stream.frames.iter() {
             match frame.data.get(channel_index) {
-                Some(value) => {
-                    match result {
-                        Some(min_value) => {
-                            if *value < min_value {
-                                error!("ASSIGN MIN VALUE {}", value);
-                                result = Some(value.clone());
-                            }
-                        }
-                        None => {
-                            result = Some(value.clone())
+                Some(value) => match result {
+                    Some(min_value) => {
+                        if *value < min_value {
+                            error!("ASSIGN MIN VALUE {}", value);
+                            result = Some(value.clone());
                         }
                     }
-                }
+                    None => result = Some(value.clone()),
+                },
                 None => {}
             }
         }
