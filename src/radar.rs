@@ -73,7 +73,7 @@ struct RadarChartProperties {
     angle_interval: f64,
     xlabels: Vec<String>,
     ylabels: Vec<String>,
-    y_max_value: f64,
+    ymax_value: f64,
     ylabel_hop: f64,
     ylabel_formatter: Option<ValueFormatter>,
     /// Each element is the bounding box of each entity group.
@@ -113,7 +113,7 @@ where
         match value {
             Some(value) => {
                 let props = self.props.borrow();
-                value.into() * props.radius / props.y_max_value
+                value.into() * props.radius / props.ymax_value
             }
             None => 0.0,
         }
@@ -180,8 +180,8 @@ where
     fn draw_text(&self, ctx: &C, text: &str, radius: f64, angle: f64, font_size: f64) {
         let props = self.props.borrow();
         let w = ctx.measure_text(text).width;
-        let x = props.center.x + angle.cos() * (props.radius + 0.5 * w);
-        let y = props.center.y + angle.sin() * (props.radius + 0.5 * font_size);
+        let x = props.center.x + angle.cos() * (props.radius + 0.8 * w) - (0.5 * w);
+        let y = props.center.y + angle.sin() * (props.radius + 0.8 * font_size) + (0.5 * font_size);
         ctx.fill_text(text, x, y);
     }
 
@@ -234,12 +234,12 @@ where
         self.calculate_bounding_boxes();
     }
 
-    /// Called when [data_table] has been changed.
-    fn data_changed(&self) {
-        info!("data_changed");
-        // self.calculate_drawing_sizes(ctx);
-        self.create_channels(0, self.base.data.meta.len());
-    }
+    // /// Called when [data_table] has been changed.
+    // fn data_changed(&self) {
+    //     info!("data_changed");
+    //     // self.calculate_drawing_sizes(ctx);
+    //     self.create_channels(0, self.base.data.meta.len());
+    // }
 }
 
 impl<'a, C, M, D> Chart<'a, C, M, D, PolarPoint<D>> for RadarChart<'a, C, M, D>
@@ -249,7 +249,6 @@ where
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     fn calculate_drawing_sizes(&self, ctx: &C) {
-        info!("calculate_drawing_sizes");
         self.base.calculate_drawing_sizes(ctx);
 
         let mut props = self.props.borrow_mut();
@@ -257,9 +256,9 @@ where
         props.xlabels = self
             .base
             .data
-            .meta
+            .frames
             .iter()
-            .map(|item| item.name.to_string())
+            .map(|item| item.metric.to_string())
             .collect();
 
         props.angle_interval = TAU / props.xlabels.len() as f64;
@@ -286,11 +285,11 @@ where
             None => {
                 let ymin_interval = yaxis.min_interval.unwrap_or(0.0);
 
-                props.y_max_value = utils::find_max_value(&self.base.data).into();
+                props.ymax_value = utils::find_max_value(&self.base.data).into();
 
                 let yinterval =
-                    utils::calculate_interval(props.y_max_value, 3, Some(ymin_interval));
-                props.y_max_value = (props.y_max_value / yinterval).ceil() * yinterval;
+                    utils::calculate_interval(props.ymax_value, 3, Some(ymin_interval));
+                props.ymax_value = (props.ymax_value / yinterval).ceil() * yinterval;
                 yinterval
             }
         };
@@ -314,7 +313,7 @@ where
         let ylabel_formatter = props.ylabel_formatter.unwrap();
 
         let mut value = 0.0;
-        while value <= props.y_max_value {
+        while value <= props.ymax_value {
             props.ylabels.push(ylabel_formatter(value));
             value += yinterval;
         }
@@ -332,41 +331,27 @@ where
 
     fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
         self.base.data = stream;
+        self.create_channels(0, self.base.data.meta.len());
     }
 
     fn draw(&self, ctx: &C) {
-        info!("draw");
         self.base.dispose();
         // data_tableSubscriptionTracker
         //   ..add(dataTable.onCellChange.listen(data_cell_changed))
         //   ..add(dataTable.onColumnsChange.listen(dataColumnsChanged))
         //   ..add(dataTable.onRowsChange.listen(data_rows_changed));
         // self.easing = get_easing(self.options.animation().easing);
-        self.base.initialize_legend();
-        self.base.initialize_tooltip();
-
-        self.base.draw(ctx);
-
-        self.base.stop_animation();
-        self.data_changed();
-        self.base.position_legend();
+        // self.base.initialize_legend();
+        // self.base.initialize_tooltip();
+        // self.base.position_legend();
 
         // This call is redundant for row and column changes but necessary for
         // cell changes.
         self.calculate_drawing_sizes(ctx);
-        info!("after calculate_drawing_sizes");
-
         self.update_channel(0);
-        info!("after update_channel");
 
         self.calculate_bounding_boxes();
-        info!("after calculate_bounding_boxes");
-        self.draw_axes_and_grid(ctx);
-        info!("after draw_axes_and_grid");
-        self.base.start_animation();
-        info!("after start_animation");
         self.draw_frame(ctx, None);
-        info!("after draw_frame");
     }
 
     fn resize(&self, w: f64, h: f64) {
@@ -385,7 +370,7 @@ where
             ctx.set_stroke_color(self.base.options.xaxis.grid_line_color);
             ctx.begin_path();
             let mut radius = props.radius;
-            for idx in ylabel_count - 1..1 {
+            for idx in 1..ylabel_count {
                 let mut angle = -PI_2 + props.angle_interval;
                 ctx.move_to(props.center.x, props.center.y - radius);
                 for jdx in 0..xlabel_count {
@@ -416,7 +401,7 @@ where
 
         // y-axis labels - don"t draw the first (at center) and the last ones.
         let style = &self.base.options.yaxis.labels.style;
-        let x = props.center.x - AXIS_LABEL_MARGIN as f64;
+        let x = props.center.x - AXIS_LABEL_MARGIN  as f64;
         let mut y = props.center.y - props.ylabel_hop;
         ctx.set_fill_color(style.color);
 
@@ -429,8 +414,10 @@ where
 
         // ctx.set_text_align(TextAlign::Right);
         ctx.set_text_baseline(BaseLine::Middle);
-        for idx in 1..ylabel_count - 2 {
-            ctx.fill_text(props.ylabels[idx].as_str(), x, y);
+        for idx in 1..ylabel_count - 1 {
+            let text = props.ylabels[idx].as_str();
+            let w = ctx.measure_text(text).width;
+            ctx.fill_text(props.ylabels[idx].as_str(), x - w , y - 4.);
             y -= props.ylabel_hop;
         }
 
@@ -460,7 +447,10 @@ where
     ///
     /// If [time] is `null`, draws the last frame (i.e. no animation).
     fn draw_frame(&self, ctx: &C, time: Option<i64>) {
+        // clear surface
         self.base.draw_frame(ctx, time);
+
+        self.draw_axes_and_grid(ctx);
 
         let mut percent = self.base.calculate_percent(time);
 
@@ -510,7 +500,8 @@ where
         let point_count = props.xlabels.len();
 
         let channels = self.base.channels.borrow();
-        let focused_entity_index = self.base.props.borrow().focused_entity_index;
+        let mut focused_entity_index = self.base.props.borrow().focused_entity_index;
+        focused_entity_index = -1;
 
         let mut idx = 0;
         for channel in channels.iter() {
@@ -523,6 +514,26 @@ where
             idx += 1;
             if channel.state == Visibility::Hidden {
                 continue;
+            }
+
+            // Optionally fill the polygon.
+            if fill_opacity > 0. {
+                ctx.set_fill_color(self.base.change_color_alpha(channel.color, fill_opacity));
+                ctx.begin_path();
+                for jdx in 0..point_count {
+                    let entity = channel.entities.get(jdx).unwrap();
+                    // TODO: Optimize.
+                    let radius = utils::lerp(entity.old_radius, entity.radius, percent);
+                    let angle = utils::lerp(entity.old_angle, entity.angle, percent);
+                    let p = utils::polar2cartesian(&props.center, radius, angle);
+                    if jdx > 0 {
+                        ctx.line_to(p.x, p.y);
+                    } else {
+                        ctx.move_to(p.x, p.y);
+                    }
+                }
+                ctx.close_path();
+                ctx.fill();
             }
 
             // Draw the polygon.
@@ -545,12 +556,6 @@ where
             ctx.close_path();
             ctx.stroke();
 
-            // Optionally fill the polygon.
-            if fill_opacity > 0. {
-                ctx.set_fill_color(self.base.change_color_alpha(channel.color, fill_opacity));
-                ctx.fill();
-            }
-
             // Draw the markers.
             if marker_size > 0. {
                 let fill_color = if let Some(color) = marker_options.fill_color {
@@ -572,7 +577,7 @@ where
                     if marker_options.enabled {
                         p.draw(ctx, percent, p.index as i64 == focused_entity_index);
                     } else if p.index as i64 == focused_entity_index {
-                        // Only draw marker on hover.
+                        // Only draw marker on hover
                         p.draw(ctx, percent, true);
                     }
                 }
@@ -626,6 +631,7 @@ where
         let props = self.props.borrow();
         let angle = self.get_angle(entity_index);
         let point_radius = self.base.options.channel.markers.size as f64;
+        let radius = self.value2radius(value);
 
         PolarPoint {
             index: entity_index,
@@ -637,7 +643,7 @@ where
             old_radius: 0.,
             old_angle: angle,
             old_point_radius: 0.,
-            radius: self.value2radius(value),
+            radius,
             angle,
             point_radius,
         }
