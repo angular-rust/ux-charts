@@ -12,13 +12,15 @@ use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
 
 use crate::*;
 
+const START_ANGLE: f64 = -std::f64::consts::FRAC_PI_2;
+
 /// A pie in a pie chart.
 #[derive(Default, Clone)]
 pub struct PieEntity<D> {
     // Chart chart,
     color: Color,
     highlight_color: Color,
-    // formatted_value: String,
+    formatted_value: String,
     index: usize,
     old_value: Option<D>,
     value: Option<D>,
@@ -113,17 +115,18 @@ where
         ctx.fill();
         ctx.stroke();
 
-        // && chart is PieChart
-        // if !self.formatted_value.is_empty() && a2 - a1 > PI / 36.0 {
-        //     // let labels = self.chart.options.channel.labels;
-        //     // if labels.enabled {
-        //     //     let r = 0.25 * self.inner_radius + 0.75 * self.outer_radius;
-        //     //     let a = 0.5 * (a1 + a2);
-        //     //     let p = utils::polar2cartesian(center, r, a);
-        //     //     ctx.set_fill_color(labels.style.color);
-        //     //     ctx.fill_text(self.formatted_value.as_str(), p.x, p.y);
-        //     // }
-        // }
+        if !self.formatted_value.is_empty() && a2 - a1 > PI / 36.0 {
+            // let labels = self.chart.options.channel.labels;
+            // if labels.enabled {
+            let r = 0.25 * self.inner_radius + 0.65 * self.outer_radius;
+            let a = 0.5 * (a1 + a2);
+            let p = utils::polar2cartesian(center, r, a);
+            ctx.set_fill_color(palette::WHITE); // labels.style.color
+            let w = ctx.measure_text(self.formatted_value.as_str()).width;
+            // TODO: should have a global state in ctx i think
+            ctx.fill_text(self.formatted_value.as_str(), p.x - w / 2., p.y + 4.);
+            // }
+        }
     }
 }
 
@@ -338,7 +341,6 @@ where
     }
 
     fn draw_channels(&self, ctx: &C, percent: f64) -> bool {
-        info!("draw_channels");
         ctx.set_line_width(2.);
         ctx.set_stroke_color(palette::WHITE);
         // ctx.set_text_align(TextAlign::Center);
@@ -365,10 +367,10 @@ where
             if entity.is_empty() && percent == 1.0 {
                 continue;
             }
-            
+
             let highlight = entity.index as i64 == focused_channel_index
                 || entity.index as i64 == focused_entity_index;
-            info!("draw entity");
+
             entity.draw(ctx, percent, highlight);
         }
 
@@ -376,12 +378,9 @@ where
     }
 
     fn update_channel(&self, _: usize) {
-        info!("update_channel");
-
         let props = self.props.borrow();
         let mut channels = self.base.channels.borrow_mut();
 
-        let mut idx = 0;
         for channel in channels.iter_mut() {
             if channel.state == Visibility::Showing || channel.state == Visibility::Shown {
                 let mut sum: f64 = 0.0;
@@ -393,7 +392,8 @@ where
                     }
                 }
 
-                let mut start_angle = props.start_angle;
+                let mut start_angle = START_ANGLE; //props.start_angle;
+                let mut idx = 0;
                 for entity in channel.entities.iter_mut() {
                     match entity.value {
                         Some(value) => {
@@ -406,24 +406,16 @@ where
                             entity.outer_radius = props.outer_radius;
                             entity.start_angle = start_angle;
                             entity.end_angle =
-                                start_angle + props.direction as f64 * value.into() * TAU / sum;
+                                start_angle - props.direction as f64 * value.into() * TAU / sum;
                             start_angle = entity.end_angle;
-
-                            let val:f64 = value.into();
-                            info!(
-                                "update item [{}] {} {}",
-                                entity.name,
-                                val,
-                                props.direction as f64 * value.into() * TAU / sum,                                
-                            );
                         }
                         None => {
                             // hole in channel data
                         }
                     }
+                    idx += 1;
                 }
             }
-            idx += 1;
         }
     }
 
@@ -444,8 +436,9 @@ where
         let name = format!("{}", frame.metric);
 
         let props = self.props.borrow();
+        let baseprops = self.base.props.borrow();
 
-        let start_angle = props.start_angle;
+        let start_angle = START_ANGLE; // props.start_angle;
 
         // FIXME: should be handled in update_channel
         // if entity_index > 0 {
@@ -455,17 +448,19 @@ where
         //     start_angle = prev.end_angle;
         // }
 
-        // let formatted_value = if value != 0. {
-        //     self.entity_value_formatter(value)
-        // } else {
-        //     null
-        // };
+        let formatted_value = match value {
+            Some(value) => match baseprops.entity_value_formatter {
+                Some(formatter) => formatter(value.into()),
+                None => default_value_formatter(value.into()),
+            },
+            None => "".into(),
+        };
 
         PieEntity {
             index: entity_index,
             old_value: None,
             value,
-            // formatted_value,
+            formatted_value,
             name,
             color,
             highlight_color,

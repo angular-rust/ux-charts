@@ -990,7 +990,9 @@ where
         let formatted_value = match value {
             Some(value) => match baseprops.entity_value_formatter {
                 Some(formatter) => formatter(value.into()),
-                None => "".into(),
+                None => {
+                    default_value_formatter(value.into())
+                },
             },
             None => "".into(),
         };
