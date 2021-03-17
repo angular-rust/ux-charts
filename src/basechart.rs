@@ -126,7 +126,7 @@ where
 
         let alpha = (alpha * 0xFF as f64).round() as u8;
         let color: RgbColor = color.into();
-        Color::RGBA(color.red, color.green, color.blue, alpha)
+        Color::RGBA(color.r, color.g, color.b, alpha)
     }
 
     pub fn get_color(&self, index: usize) -> Color {
