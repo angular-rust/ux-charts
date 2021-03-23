@@ -3,7 +3,10 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use animate::easing::{get_easing, Easing};
+use animate::{
+    easing::{get_easing, Easing},
+    interpolate::lerp,
+};
 use dataflow::*;
 use primitives::{BaseLine, CanvasContext, Color, LineJoin, Point, Rect, Size, TextAlign, TextStyle, TextWeight, palette};
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
@@ -56,9 +59,9 @@ where
     C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
-        let cx = utils::lerp(self.old_x, self.x, percent);
-        let cy = utils::lerp(self.old_y, self.y, percent);
-        let pr = utils::lerp(self.old_point_radius, self.point_radius, percent);
+        let cx = lerp(self.old_x, self.x, percent);
+        let cy = lerp(self.old_y, self.y, percent);
+        let pr = lerp(self.old_point_radius, self.point_radius, percent);
         if highlight {
             ctx.set_fill_color(self.highlight_color);
             ctx.begin_path();
@@ -240,12 +243,12 @@ where
         points
             .iter()
             .map(|p| {
-                let x = utils::lerp(p.old_x, p.x, percent);
-                let y = utils::lerp(p.old_y, p.y, percent);
+                let x = lerp(p.old_x, p.x, percent);
+                let y = lerp(p.old_y, p.y, percent);
 
                 let cp1 = match p.cp1 {
                     Some(value) => {
-                        // Some(utils::lerp(p.old_cp1, value, percent))
+                        // Some(lerp(p.old_cp1, value, percent))
                         Some(value)
                     }
                     None => None
@@ -253,7 +256,7 @@ where
 
                 let cp2 = match p.cp2 {
                     Some(value) => {
-                        // Some(utils::lerp(p.old_cp2, value, percent))
+                        // Some(lerp(p.old_cp2, value, percent))
                         Some(value)
                     }
                     None => None

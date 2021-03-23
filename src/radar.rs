@@ -3,7 +3,10 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use animate::easing::{get_easing, Easing};
+use animate::{
+    easing::{get_easing, Easing},
+    interpolate::lerp,
+};
 use dataflow::*;
 use primitives::{
     BaseLine, CanvasContext, Color, Point, Rect, Size, TextAlign, TextStyle, TextWeight,
@@ -37,9 +40,9 @@ where
     C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
-        let r = utils::lerp(self.old_radius, self.radius, percent);
-        let a = utils::lerp(self.old_angle, self.angle, percent);
-        let pr = utils::lerp(self.old_point_radius, self.point_radius, percent);
+        let r = lerp(self.old_radius, self.radius, percent);
+        let a = lerp(self.old_angle, self.angle, percent);
+        let pr = lerp(self.old_point_radius, self.point_radius, percent);
         let p = utils::polar2cartesian(&self.center, r, a);
         if highlight {
             ctx.set_fill_color(self.highlight_color);
@@ -287,8 +290,7 @@ where
 
                 props.ymax_value = utils::find_max_value(&self.base.data).into();
 
-                let yinterval =
-                    utils::calculate_interval(props.ymax_value, 3, Some(ymin_interval));
+                let yinterval = utils::calculate_interval(props.ymax_value, 3, Some(ymin_interval));
                 props.ymax_value = (props.ymax_value / yinterval).ceil() * yinterval;
                 yinterval
             }
@@ -401,7 +403,7 @@ where
 
         // y-axis labels - don"t draw the first (at center) and the last ones.
         let style = &self.base.options.yaxis.labels.style;
-        let x = props.center.x - AXIS_LABEL_MARGIN  as f64;
+        let x = props.center.x - AXIS_LABEL_MARGIN as f64;
         let mut y = props.center.y - props.ylabel_hop;
         ctx.set_fill_color(style.color);
 
@@ -417,7 +419,7 @@ where
         for idx in 1..ylabel_count - 1 {
             let text = props.ylabels[idx].as_str();
             let w = ctx.measure_text(text).width;
-            ctx.fill_text(props.ylabels[idx].as_str(), x - w , y - 4.);
+            ctx.fill_text(props.ylabels[idx].as_str(), x - w, y - 4.);
             y -= props.ylabel_hop;
         }
 
@@ -523,8 +525,8 @@ where
                 for jdx in 0..point_count {
                     let entity = channel.entities.get(jdx).unwrap();
                     // TODO: Optimize.
-                    let radius = utils::lerp(entity.old_radius, entity.radius, percent);
-                    let angle = utils::lerp(entity.old_angle, entity.angle, percent);
+                    let radius = lerp(entity.old_radius, entity.radius, percent);
+                    let angle = lerp(entity.old_angle, entity.angle, percent);
                     let p = utils::polar2cartesian(&props.center, radius, angle);
                     if jdx > 0 {
                         ctx.line_to(p.x, p.y);
@@ -544,8 +546,8 @@ where
             for jdx in 0..point_count {
                 let entity = channel.entities.get(jdx).unwrap();
                 // TODO: Optimize.
-                let radius = utils::lerp(entity.old_radius, entity.radius, percent);
-                let angle = utils::lerp(entity.old_angle, entity.angle, percent);
+                let radius = lerp(entity.old_radius, entity.radius, percent);
+                let angle = lerp(entity.old_angle, entity.angle, percent);
                 let p = utils::polar2cartesian(&props.center, radius, angle);
                 if jdx > 0 {
                     ctx.line_to(p.x, p.y);

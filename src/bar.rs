@@ -3,7 +3,10 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use animate::easing::{get_easing, Easing};
+use animate::{
+    easing::{get_easing, Easing},
+    interpolate::lerp,
+};
 use dataflow::*;
 use primitives::{BaseLine, CanvasContext, Color, Point, Rect, Size, TextAlign, TextStyle, TextWeight, palette};
 use std::{
@@ -44,9 +47,9 @@ where
     C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
-        let x = utils::lerp(self.old_left, self.left, percent);
-        let h = utils::lerp(self.old_height, self.height, percent);
-        let w = utils::lerp(self.old_width, self.width, percent);
+        let x = lerp(self.old_left, self.left, percent);
+        let h = lerp(self.old_height, self.height, percent);
+        let w = lerp(self.old_width, self.width, percent);
         let y = self.bottom - h;
 
         ctx.set_fill_color(self.color);

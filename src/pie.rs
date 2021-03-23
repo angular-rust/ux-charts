@@ -3,7 +3,10 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use animate::easing::{get_easing, Easing};
+use animate::{
+    easing::{get_easing, Easing},
+    interpolate::lerp,
+};
 use dataflow::*;
 use primitives::{
     palette, BaseLine, CanvasContext, Color, Point, TextAlign, TextStyle, TextWeight,
@@ -91,8 +94,8 @@ where
     C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
-        let mut a1 = utils::lerp(self.old_start_angle, self.start_angle, percent);
-        let mut a2 = utils::lerp(self.old_end_angle, self.end_angle, percent);
+        let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
+        let mut a2 = lerp(self.old_end_angle, self.end_angle, percent);
         if a1 > a2 {
             let tmp = a1;
             a1 = a2;

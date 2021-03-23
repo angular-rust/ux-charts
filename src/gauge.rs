@@ -2,7 +2,10 @@
 #![allow(unused_imports)]
 #![allow(dead_code)]
 
-use animate::easing::{get_easing, Easing};
+use animate::{
+    easing::{get_easing, Easing},
+    interpolate::lerp,
+};
 use dataflow::*;
 use primitives::{palette, CanvasContext, Color, Point, TextAlign, TextStyle, TextWeight};
 use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
@@ -73,31 +76,30 @@ impl<D> GaugeEntity<D> {
     fn draw_entity<C: CanvasContext>(&self, ctx: &C, percent: f64, highlight: bool) {
         // Draw the background.
         {
-            let mut a1 = utils::lerp(self.old_start_angle, self.start_angle, percent);
-            let mut a2 = utils::lerp(self.old_end_angle, self.start_angle + TAU, percent);
+            let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
+            let mut a2 = lerp(self.old_end_angle, self.start_angle + TAU, percent);
             if a1 > a2 {
                 let tmp = a1;
                 a1 = a2;
                 a2 = tmp;
             }
             let center = &self.center;
-
             ctx.set_fill_color(self.background_color);
             ctx.begin_path();
             ctx.arc(center.x, center.y, self.outer_radius, a1, a2, false);
             ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
             ctx.fill();
-            ctx.stroke();
         }
 
-        let mut a1 = utils::lerp(self.old_start_angle, self.start_angle, percent);
-        let mut a2 = utils::lerp(self.old_end_angle, self.end_angle, percent);
+        let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
+        let mut a2 = lerp(self.old_end_angle, self.end_angle, percent);
         if a1 > a2 {
             let tmp = a1;
             a1 = a2;
             a2 = tmp;
         }
         let center = &self.center;
+
         if highlight {
             let highlight_outer_radius = HIGHLIGHT_OUTER_RADIUS_FACTOR * self.outer_radius;
             ctx.set_fill_color(self.highlight_color);
@@ -156,7 +158,7 @@ where
         let fs2 = 0.6 * fs1;
         let y = self.center.y + 0.3 * fs1;
 
-        let text1 = utils::lerp(old_value, value, percent).round().to_string();
+        let text1 = lerp(old_value, value, percent).round().to_string();
         ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);
         let w1 = ctx.measure_text(text1.as_str()).width;
         ctx.fill_text(text1.as_str(), self.center.x - 0.5 * w1, y);

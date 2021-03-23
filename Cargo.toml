@@ -1,14 +1,14 @@
 [package]
 name = "ux-charts"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Victor Dudochkin <dudochkin.victor@gmail.com>", "Maksim Makarov <pr0n1x@yandex.ru>"]
 readme = "README.md"
 homepage = "https://angular-rust.github.io/ux-charts"
 repository = "https://github.com/angular-rust/ux-charts"
 documentation = "https://docs.rs/ux-charts"
 description = "Backend and runtime agnostic chart library"
-keywords = ["web", "webassembly", "graphics", "gtk", "cairo"]
-categories = ["multimedia", "wasm", "web-programming", "gui", "gtk"]
+keywords = ["webassembly", "gtk", "cairo", "canvas", "charts", "linechart", "visualization"]
+categories = ["multimedia", "wasm", "web-programming", "gui", "visualization"]
 edition = "2018"
 license = "MPL-2.0"
 
