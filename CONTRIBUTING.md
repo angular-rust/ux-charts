@@ -13,6 +13,10 @@ available for creating polished solutions for your application's target users.
 
 ## How to Contribute
 
+We believe the wider community can create better code. The first tool for improving the community is to tell the developers about the project by giving it a star. More stars - more members.
+
+[![](https://dudochkin-victor.github.io/assets/star-me-wide.svg)](https://github.com/angular-rust/ux-charts)
+
 ### Join the Community
 
 The first step to improving Angular Rust is to join the community and help grow it! You can find the community on:
@@ -22,10 +26,6 @@ The first step to improving Angular Rust is to join the community and help grow 
  [![](https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCBJTkSl_JWShuolUy4JksTQ) 
  [![](https://img.shields.io/badge/Medium-12100E?style=for-the-badge&logo=medium&logoColor=white)](https://medium.com/@angular.rust) 
  [![](https://img.shields.io/gitter/room/angular_rust/angular_rust?style=for-the-badge)](https://gitter.im/angular_rust/community)
-
-We believe the wider community can create better code. The first tool for improving the community is to tell the developers about the project by giving it a star. More stars - more members.
-
- ![Star a repo](https://dudochkin-victor.github.io/assets/star-me-wide.svg)
 
 Once you've joined, there are many ways to contribute to Angular Rust:
 
