@@ -1,6 +1,7 @@
 <div align="center">
 
-![Star a repo](https://dudochkin-victor.github.io/assets/ux-charts/logo-wide.svg)
+[![](https://dudochkin-victor.github.io/assets/ux-charts/logo-wide.svg)](#top)
+
 # UX Charts
 
 [![API Docs][docrs-badge]][docrs-url]
@@ -24,7 +25,7 @@
 [loc-badge]: https://tokei.rs/b1/github/angular-rust/ux-charts?category=code
 [loc-url]: https://github.com/angular-rust/ux-charts
 
-**UX Charts** is a drawing library designed for clean charts. UX Charts supports various types of backend including GTK / Cairo and HTML5 Canvas. UX Charts are designed with the concept - `one code for all`. UX Charts uses the [UX Dataflow](https://github.com/angular-rust/ux-dataflow) library as the data source and the [UX Animate](https://github.com/angular-rust/ux-animate) library as the canvas implementation.
+**UX Charts** is a drawing library designed for clean charts. UX Charts supports various types of backend including GTK/Cairo and HTML5 Canvas. UX Charts are designed with the concept - `one code for all`. UX Charts uses the [UX Dataflow](https://github.com/angular-rust/ux-dataflow) library as the data source and the [UX Animate](https://github.com/angular-rust/ux-animate) library as the canvas implementation.
 
 **UX Charts** is part of the Angular Rust framework.
 
@@ -76,7 +77,7 @@ Install UX Charts:
 
 We believe the wider community can create better code. The first tool for improving the community is to tell the developers about the project by giving it a star. More stars - more members.
 
- ![Star a repo](https://dudochkin-victor.github.io/assets/star-me-wide.svg)
+  [![](https://dudochkin-victor.github.io/assets/star-me-wide.svg)](#top)
  
 Angular Rust is a community effort and we welcome all kinds of contributions, big or small, from developers of all backgrounds. We want the Angular Rust community to be a fun and friendly place, so please review our [Code of Conduct](CODE_OF_CONDUCT.md) to learn what behavior will not be tolerated.
 
