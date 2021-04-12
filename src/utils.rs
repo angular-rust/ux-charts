@@ -1,5 +1,6 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
+#![allow(clippy::needless_lifetimes)]
 
 use std::{
     f64::consts::PI,
@@ -76,21 +77,20 @@ where
     for channel in stream.meta.iter() {
         let channel_index = channel.tag as u64;
         for frame in stream.frames.iter() {
-            match frame.data.get(channel_index) {
-                Some(value) => match result {
+            if let Some(value) = frame.data.get(channel_index) {
+                match result {
                     Some(max_value) => {
                         if *value > max_value {
-                            result = Some(value.clone());
+                            result = Some(*value);
                         }
                     }
-                    None => result = Some(value.clone()),
-                },
-                None => {}
+                    None => result = Some(*value),
+                }
             }
         }
     }
 
-    result.unwrap_or(Default::default())
+    result.unwrap_or_default()
 }
 
 /// Returns the minimum value in a [DataTable].
@@ -103,22 +103,21 @@ where
     for channel in stream.meta.iter() {
         let channel_index = channel.tag as u64;
         for frame in stream.frames.iter() {
-            match frame.data.get(channel_index) {
-                Some(value) => match result {
+            if let Some(value) = frame.data.get(channel_index) {
+                match result {
                     Some(min_value) => {
                         if *value < min_value {
                             error!("ASSIGN MIN VALUE {}", value);
-                            result = Some(value.clone());
+                            result = Some(*value);
                         }
                     }
-                    None => result = Some(value.clone()),
-                },
-                None => {}
+                    None => result = Some(*value),
+                }
             }
         }
     }
 
-    result.unwrap_or(Default::default())
+    result.unwrap_or_default()
 }
 
 /// Calculates a nice axis interval given
@@ -146,7 +145,7 @@ pub fn calculate_interval(range: f64, target_steps: usize, min_interval: Option<
 pub fn calculate_max_text_width<C: CanvasContext>(
     ctx: &C,
     style: &StyleOption,
-    texts: &Vec<String>,
+    texts: &[String],
 ) -> f64 {
     let mut result = 0.0;
     ctx.set_font(
@@ -195,7 +194,7 @@ pub fn get_decimal_places(value: f64) -> usize {
 
     // See https://code.google.com/p/dart/issues/detail?id=1533
     let tmp = format!("{}", value);
-    let split: Vec<&str> = tmp.split(".").collect();
+    let split: Vec<&str> = tmp.split('.').collect();
     split.get(1).unwrap().len()
 }
 

@@ -1,11 +1,9 @@
 #![allow(unused_variables)]
+#![allow(clippy::explicit_counter_loop, clippy::float_cmp)]
 
-use animate::easing::{EasingFunction};
+use animate::easing::EasingFunction;
 use dataflow::*;
-use primitives::{
-    CanvasContext, Color, Point, Rect, RgbColor, Size, TextStyle,
-    TextWeight,
-};
+use primitives::{CanvasContext, Color, Point, Rect, RgbColor, Size, TextStyle, TextWeight};
 use std::{cell::RefCell, collections::HashMap, fmt};
 
 use super::*;
@@ -122,7 +120,7 @@ where
     /// TODO: There are question about set the alpha or change from existing alpha
     ///
     pub fn change_color_alpha(&self, color: Color, alpha: f64) -> Color {
-        if alpha > 1. || alpha < 0. {
+        if !(0. ..=1.).contains(&alpha) {
             panic!("Wrong alpha value {}", alpha);
         }
 
@@ -134,7 +132,7 @@ where
     pub fn get_color(&self, index: usize) -> Color {
         let colors = self.options.colors();
         let color = colors.get(index % colors.len()).unwrap();
-        color.clone()
+        *color
     }
 
     pub fn get_highlight_color(&self, color: Color) -> Color {
@@ -578,7 +576,7 @@ where
         let mut percent = 1.0;
         let mut props = self.props.borrow_mut();
 
-        if let None = props.animation_start_time {
+        if props.animation_start_time.is_none() {
             props.animation_start_time = time
         }
 
@@ -634,9 +632,7 @@ where
                 props.area.size.height -= title_h + CHART_TITLE_MARGIN;
                 true
             }
-            _ => {
-                false
-            }
+            _ => false,
         };
 
         if prepare_title {
@@ -651,17 +647,16 @@ where
                 title_w = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
                 title_x = ((props.width - title_w - 2. * TITLE_PADDING) / 2.).trunc();
             }
-    
+
             // Consider the title.
             props.title_box = Rect {
                 origin: Point::new(title_x, title_y),
                 size: Size::new(title_w, title_h),
             };
         }
-        
 
         // Consider the legend.
-        if let Some(_) = props.legend {
+        if props.legend.is_some() {
             //   let lwm = self.legend.offset_width + legend_margin;
             //   let lhm = self.legend.offset_height + legend_margin;
             let opt = self.options.legend();

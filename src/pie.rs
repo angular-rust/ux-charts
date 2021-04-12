@@ -1,6 +1,7 @@
 #![allow(unused_assignments)]
 #![allow(unused_variables)]
 #![allow(dead_code)]
+#![allow(clippy::explicit_counter_loop, clippy::float_cmp)]
 
 use animate::{
     easing::{get_easing, Easing},
@@ -94,9 +95,7 @@ where
         let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
         let mut a2 = lerp(self.old_end_angle, self.end_angle, percent);
         if a1 > a2 {
-            let tmp = a1;
-            a1 = a2;
-            a2 = tmp;
+            std::mem::swap(&mut a1, &mut a2);
         }
         let center = &self.center;
         if highlight {
@@ -374,7 +373,7 @@ where
             entity.draw(ctx, percent, highlight);
         }
 
-        return false;
+        false
     }
 
     fn update_channel(&self, _: usize) {
@@ -386,9 +385,8 @@ where
                 let mut sum: f64 = 0.0;
                 // Sum the values of all visible pies.
                 for entity in channel.entities.iter() {
-                    match entity.value {
-                        Some(value) => sum += value.into(),
-                        None => {}
+                    if let Some(value) = entity.value {
+                        sum += value.into();
                     }
                 }
 
@@ -410,7 +408,7 @@ where
                             start_angle = entity.end_angle;
                         }
                         None => {
-                            // hole in channel data
+                            println!("hole in channel data");
                         }
                     }
                     idx += 1;
@@ -510,7 +508,7 @@ where
             let value = frame.data.get(channel_index as u64);
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {
-                    let value = value.clone();
+                    let value = *value;
                     self.create_entity(channel_index, start, Some(value), color, highlight)
                 }
                 None => self.create_entity(channel_index, start, None, color, highlight),

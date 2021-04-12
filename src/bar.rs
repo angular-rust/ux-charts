@@ -1,5 +1,6 @@
 #![allow(unused_assignments)]
 #![allow(unused_variables)]
+#![allow(clippy::explicit_counter_loop, clippy::float_cmp)]
 
 use animate::{
     easing::{get_easing, Easing},
@@ -371,7 +372,7 @@ where
         props.ylabels = Vec::new();
         props.ylabel_formatter = options.yaxis.labels.formatter;
 
-        if let None = props.ylabel_formatter {
+        if props.ylabel_formatter.is_none() {
             // let max_decimal_places =
             //     max(utils::get_decimal_places(props.yinterval), utils::get_decimal_places(props.y_min_value));
             // let numberFormat = NumberFormat.decimalPattern()
@@ -917,7 +918,7 @@ where
             }
         }
 
-        return false;
+        false
     }
 
     fn update_channel(&self, _: usize) {
@@ -1043,7 +1044,7 @@ where
             let value = frame.data.get(channel_index as u64);
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {
-                    let value = value.clone();
+                    let value = *value;
                     self.create_entity(channel_index, start, Some(value), color, highlight)
                 }
                 None => self.create_entity(channel_index, start, None, color, highlight),

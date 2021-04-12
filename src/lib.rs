@@ -1,5 +1,5 @@
 // #![allow(unused_imports)]
-// #![allow(unused_variables)]
+#![allow(clippy::needless_return)]
 
 use dataflow::*;
 use primitives::{CanvasContext, Color, Point};
@@ -141,7 +141,7 @@ where
         let mut start = start;
         while start < end {
             //   self.entities[start].free();
-            start = start + 1;
+            start += 1;
         }
         unimplemented!()
     }

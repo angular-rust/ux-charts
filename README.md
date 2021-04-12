@@ -21,7 +21,7 @@
 [license-url]: https://github.com/angular-rust/ux-charts/blob/master/LICENSE
 [gitter-badge]: https://img.shields.io/gitter/room/angular_rust/community.svg?style=flat-square
 [gitter-url]: https://gitter.im/angular_rust/community
-[tests-badge]: https://img.shields.io/github/workflow/status/angular-rust/ux-charts/tests?label=tests&logo=github&style=flat-square
+[tests-badge]: https://img.shields.io/github/workflow/status/angular-rust/ux-charts/Tests?label=tests&logo=github&style=flat-square
 [tests-url]: https://github.com/angular-rust/ux-charts/actions/workflows/tests.yml
 [codecov-badge]: https://img.shields.io/codecov/c/github/angular-rust/ux-charts?logo=codecov&style=flat-square&token=B8OVKMLHDS
 [codecov-url]: https://codecov.io/gh/angular-rust/ux-charts

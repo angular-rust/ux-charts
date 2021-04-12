@@ -5,11 +5,11 @@ pub enum Position {
     Above,
     Middle,
     Below,
-    Left, 
-    Top, 
-    Bottom, 
+    Left,
+    Top,
+    Bottom,
     Right,
-    None, 
+    None,
 }
 
 pub trait BaseOption<'a> {

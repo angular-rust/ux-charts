@@ -1,4 +1,6 @@
 #![allow(unused_variables)]
+#![allow(clippy::explicit_counter_loop, clippy::float_cmp)]
+
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
@@ -76,9 +78,7 @@ impl<D> GaugeEntity<D> {
             let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
             let mut a2 = lerp(self.old_end_angle, self.start_angle + TAU, percent);
             if a1 > a2 {
-                let tmp = a1;
-                a1 = a2;
-                a2 = tmp;
+                std::mem::swap(&mut a1, &mut a2);
             }
             let center = &self.center;
             ctx.set_fill_color(self.background_color);
@@ -91,9 +91,7 @@ impl<D> GaugeEntity<D> {
         let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
         let mut a2 = lerp(self.old_end_angle, self.end_angle, percent);
         if a1 > a2 {
-            let tmp = a1;
-            a1 = a2;
-            a2 = tmp;
+            std::mem::swap(&mut a1, &mut a2);
         }
         let center = &self.center;
 
@@ -352,37 +350,35 @@ where
         let labels = &self.base.options.labels;
         // let mut focused_entity_index = self.base.props.borrow().focused_entity_index;
         let focused_entity_index = -1;
-        match channels.first() {
-            Some(channel) => {
-                if channel.state == Visibility::Showing || channel.state == Visibility::Shown {
-                    for entity in channel.entities.iter() {
-                        let highlight = entity.index as i64 == focused_entity_index;
-                        entity.draw(ctx, percent, highlight);
+        if let Some(channel) = channels.first() {
+            if channel.state == Visibility::Showing || channel.state == Visibility::Shown {
+                for entity in channel.entities.iter() {
+                    let highlight = entity.index as i64 == focused_entity_index;
+                    entity.draw(ctx, percent, highlight);
 
-                        if let Some(style) = labels {
-                            let x = entity.center.x;
-                            let y = entity.center.y
-                                + entity.outer_radius
-                                + style.fontsize.unwrap_or(12.)
-                                + AXIS_LABEL_MARGIN as f64;
-                            ctx.set_fill_color(style.color);
+                    if let Some(style) = labels {
+                        let x = entity.center.x;
+                        let y = entity.center.y
+                            + entity.outer_radius
+                            + style.fontsize.unwrap_or(12.)
+                            + AXIS_LABEL_MARGIN as f64;
+                        ctx.set_fill_color(style.color);
 
-                            ctx.set_font(
-                                &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
-                                style.fontstyle.unwrap_or(TextStyle::Normal),
-                                TextWeight::Normal,
-                                style.fontsize.unwrap_or(12.),
-                            );
-                            // ctx.set_text_align(TextAlign::Center);
-                            let w = ctx.measure_text(&entity.name).width;
-                            ctx.fill_text(&entity.name, x - 0.5 * w, y);
-                        }
+                        ctx.set_font(
+                            &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                            style.fontstyle.unwrap_or(TextStyle::Normal),
+                            TextWeight::Normal,
+                            style.fontsize.unwrap_or(12.),
+                        );
+                        // ctx.set_text_align(TextAlign::Center);
+                        let w = ctx.measure_text(&entity.name).width;
+                        ctx.fill_text(&entity.name, x - 0.5 * w, y);
                     }
                 }
             }
-            None => {}
         }
-        return false;
+
+        false
     }
 
     fn update_channel(&self, _: usize) {
@@ -391,30 +387,24 @@ where
         let mut channels = self.base.channels.borrow_mut();
         let mut idx = 0;
 
-        match channels.first_mut() {
-            Some(channel) => {
-                for entity in channel.entities.iter_mut() {
-                    match entity.value {
-                        Some(_) => {
-                            let color = self.base.get_color(idx);
-                            let highlight_color = self.base.change_color_alpha(color, 0.5);
+        if let Some(channel) = channels.first_mut() {
+            for entity in channel.entities.iter_mut() {
+                if entity.value.is_some() {
+                    let color = self.base.get_color(idx);
+                    let highlight_color = self.base.change_color_alpha(color, 0.5);
 
-                            entity.index = idx;
-                            entity.color = color;
-                            entity.highlight_color = highlight_color;
+                    entity.index = idx;
+                    entity.color = color;
+                    entity.highlight_color = highlight_color;
 
-                            // here focus
-                            entity.center = self.get_gauge_center(idx);
-                            entity.inner_radius = props.gauge_inner_radius;
-                            entity.outer_radius = props.gauge_outer_radius;
-                            entity.end_angle = START_ANGLE + self.value_to_angle(entity.value);
-                        }
-                        None => {}
-                    }
-                    idx += 1;
+                    // here focus
+                    entity.center = self.get_gauge_center(idx);
+                    entity.inner_radius = props.gauge_inner_radius;
+                    entity.outer_radius = props.gauge_outer_radius;
+                    entity.end_angle = START_ANGLE + self.value_to_angle(entity.value);
                 }
+                idx += 1;
             }
-            None => {}
         }
     }
 
@@ -491,7 +481,7 @@ where
             // let value = frame.data.get(channel_index as u64);
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {
-                    let value = value.clone();
+                    let value = *value;
                     self.create_entity(channel_index, start, Some(value), color, highlight)
                 }
                 None => self.create_entity(channel_index, start, None, color, highlight),

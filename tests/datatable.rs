@@ -5,7 +5,6 @@
 //       ["Firefox", 20]
 //     ]);
 
-
 //   test("columns", || {
 //     let table = createDataTable();
 //     expect(table.columns.len(), equals(2));
