@@ -1,6 +1,5 @@
 #![allow(unused_assignments)]
 #![allow(unused_variables)]
-#![allow(unused_imports)]
 #![allow(dead_code)]
 
 use animate::{
@@ -8,8 +7,8 @@ use animate::{
     interpolate::lerp,
 };
 use dataflow::*;
-use primitives::{BaseLine, CanvasContext, Color, LineJoin, Point, Rect, Size, TextAlign, TextStyle, TextWeight, palette};
-use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use primitives::{BaseLine, CanvasContext, Color, LineJoin, Point, Rect, Size, TextStyle, TextWeight};
+use std::{cell::RefCell, fmt};
 
 use crate::*;
 

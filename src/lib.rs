@@ -1,15 +1,12 @@
-#![allow(unused_imports)]
-#![allow(unused_variables)]
+// #![allow(unused_imports)]
+// #![allow(unused_variables)]
 
 use dataflow::*;
 use primitives::{CanvasContext, Color, Point};
-use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use std::fmt;
 
 #[macro_use]
 extern crate log;
-
-#[macro_use]
-extern crate lazy_static;
 
 mod basechart;
 pub use basechart::*;

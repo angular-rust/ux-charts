@@ -1,10 +1,12 @@
-use animate::easing::{Easing, EasingFunction};
+#![allow(unused_variables)]
+
+use animate::easing::{EasingFunction};
 use dataflow::*;
 use primitives::{
-    palette, CanvasContext, Color, Point, Rect, RgbColor, RgbaColor, Size, TextAlign, TextStyle,
+    CanvasContext, Color, Point, Rect, RgbColor, Size, TextStyle,
     TextWeight,
 };
-use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt};
 
 use super::*;
 

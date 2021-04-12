@@ -1,9 +1,7 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
-#![allow(dead_code)]
 
 use std::{
-    collections::HashMap,
     f64::consts::PI,
     fmt,
     ops::{Add, Mul, Sub},

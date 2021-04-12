@@ -1,20 +1,13 @@
 #![allow(unused_assignments)]
 #![allow(unused_variables)]
-#![allow(unused_imports)]
-#![allow(dead_code)]
 
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
 };
 use dataflow::*;
-use primitives::{BaseLine, CanvasContext, Color, Point, Rect, Size, TextAlign, TextStyle, TextWeight, palette};
-use std::{
-    cell::{RefCell, RefMut},
-    collections::HashMap,
-    fmt,
-    rc::Rc,
-};
+use primitives::{BaseLine, CanvasContext, Color, Point, Rect, Size, TextStyle, TextWeight};
+use std::{cell::RefCell, fmt};
 
 use crate::*;
 
@@ -153,32 +146,32 @@ where
         }
     }
 
-    fn data_cell_changed(&self, record: DataCellChangeRecord<D>) {
-        let mut props = self.props.borrow_mut();
-        if record.column_index == 0 {
-            props.xlabels[record.row_index] = format!("{}", record.new_value);
-        } else {
-            self.base.data_cell_changed(record);
-        }
-    }
+    // fn data_cell_changed(&self, record: DataCellChangeRecord<D>) {
+    //     let mut props = self.props.borrow_mut();
+    //     if record.column_index == 0 {
+    //         props.xlabels[record.row_index] = format!("{}", record.new_value);
+    //     } else {
+    //         self.base.data_cell_changed(record);
+    //     }
+    // }
 
-    fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
-        let props = self.props.borrow();
-        let dx = x - props.yaxis_left;
-        // If (x, y) is inside the rectangle defined by the two axes.
-        if y > props.xaxis_top - props.yaxis_length
-            && y < props.xaxis_top
-            && dx > 0.
-            && dx < props.xaxis_length
-        {
-            let index = (dx / props.xlabel_hop - props.xlabel_offset_factor).round() as usize;
-            // If there is at least one visible point in the current point group...
-            if let Some(_) = props.average_y_values.get(index) {
-                return index as i64;
-            }
-        }
-        return -1;
-    }
+    // fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
+    //     let props = self.props.borrow();
+    //     let dx = x - props.yaxis_left;
+    //     // If (x, y) is inside the rectangle defined by the two axes.
+    //     if y > props.xaxis_top - props.yaxis_length
+    //         && y < props.xaxis_top
+    //         && dx > 0.
+    //         && dx < props.xaxis_length
+    //     {
+    //         let index = (dx / props.xlabel_hop - props.xlabel_offset_factor).round() as usize;
+    //         // If there is at least one visible point in the current point group...
+    //         if let Some(_) = props.average_y_values.get(index) {
+    //             return index as i64;
+    //         }
+    //     }
+    //     return -1;
+    // }
 
     fn update_bar_width(&self, props: &mut BarChartProperties) {
         let count = self.count_visible_channel(None);
@@ -975,7 +968,7 @@ where
         let props = self.props.borrow();
         let baseprops = self.base.props.borrow();
         let channels = self.base.channels.borrow();
-        
+
         let left = self.get_bar_left(channel_index, entity_index) + props.xlabel_hop / 2.;
         let old_left = left;
         let height = self.value_to_bar_height(value);
@@ -993,9 +986,7 @@ where
         let formatted_value = match value {
             Some(value) => match baseprops.entity_value_formatter {
                 Some(formatter) => formatter(value.into()),
-                None => {
-                    default_value_formatter(value.into())
-                },
+                None => default_value_formatter(value.into()),
             },
             None => "".into(),
         };

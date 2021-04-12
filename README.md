@@ -6,9 +6,10 @@
 
 [![API Docs][docrs-badge]][docrs-url]
 [![Crates.io][crates-badge]][crates-url]
+[![Code coverage][codecov-badge]][codecov-url]
+[![Tests][tests-badge]][tests-url]
 [![MPL-2.0 licensed][license-badge]][license-url]
 [![Gitter chat][gitter-badge]][gitter-url]
-[![Rustc Version 1.45+][rust-badge]][rust-url]
 [![loc][loc-badge]][loc-url]
 </div>
 
@@ -18,11 +19,13 @@
 [crates-url]: https://crates.io/crates/ux-charts
 [license-badge]: https://img.shields.io/badge/license-MPL--2.0-blue.svg?style=flat-square
 [license-url]: https://github.com/angular-rust/ux-charts/blob/master/LICENSE
-[gitter-badge]: https://img.shields.io/gitter/room/angular_rust/angular_rust.svg?style=flat-square
+[gitter-badge]: https://img.shields.io/gitter/room/angular_rust/community.svg?style=flat-square
 [gitter-url]: https://gitter.im/angular_rust/community
-[rust-badge]: https://img.shields.io/badge/rustc-1.45-lightgrey.svg?style=flat-square
-[rust-url]: https://blog.rust-lang.org/2020/07/16/Rust-1.45.0.html
-[loc-badge]: https://tokei.rs/b1/github/angular-rust/ux-charts?category=code
+[tests-badge]: https://img.shields.io/github/workflow/status/angular-rust/ux-charts/tests?label=tests&logo=github&style=flat-square
+[tests-url]: https://github.com/angular-rust/ux-charts/actions/workflows/tests.yml
+[codecov-badge]: https://img.shields.io/codecov/c/github/angular-rust/ux-charts?logo=codecov&style=flat-square&token=B8OVKMLHDS
+[codecov-url]: https://codecov.io/gh/angular-rust/ux-charts
+[loc-badge]: https://img.shields.io/tokei/lines/github/angular-rust/ux-charts?style=flat-square
 [loc-url]: https://github.com/angular-rust/ux-charts
 
 **UX Charts** is a drawing library designed for clean charts. UX Charts supports various types of backend including GTK/Cairo and HTML5 Canvas. UX Charts are designed with the concept - `one code for all`. UX Charts uses the [UX Dataflow](https://github.com/angular-rust/ux-dataflow) library as the data source and the [UX Animate](https://github.com/angular-rust/ux-animate) library as the canvas implementation.

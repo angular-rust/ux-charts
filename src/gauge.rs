@@ -1,14 +1,11 @@
 #![allow(unused_variables)]
-#![allow(unused_imports)]
-#![allow(dead_code)]
-
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
 };
 use dataflow::*;
-use primitives::{palette, CanvasContext, Color, Point, TextAlign, TextStyle, TextWeight};
-use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use primitives::{color, CanvasContext, Color, Point, TextStyle, TextWeight};
+use std::cell::RefCell;
 
 use crate::*;
 
@@ -51,7 +48,7 @@ impl<D> GaugeEntity<D> {
             return false;
         }
 
-        let angle = f64::atan2(p.y, p.x);
+        // let angle = f64::atan2(p.y, p.x);
         // let chartStartAngle = (chart as dynamic).start_angle;
 
         // Make sure [angle] is in range [chartStartAngle]..[chartStartAngle] + TAU.
@@ -136,8 +133,8 @@ where
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
-        let tmp_color = &self.color;
-        let tmp_end_angle = self.end_angle;
+        // let tmp_color = &self.color;
+        // let tmp_end_angle = self.end_angle;
 
         self.draw_entity(ctx, percent, highlight);
 
@@ -165,7 +162,7 @@ where
 
         let text2 = "%";
         ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs2);
-        let w2 = ctx.measure_text(text2).width;
+        // let w2 = ctx.measure_text(text2).width;
         ctx.fill_text(text2, self.center.x + 0.5 * w1 + 5., y);
     }
 }
@@ -214,24 +211,24 @@ where
         }
     }
 
-    fn update_tooltip_content(&self) {
-        // let gauge = channels[0].entities[focused_entity_index] as Gauge;
-        // tooltip.style
-        //   ..borderColor = gauge.color
-        //   ..padding = "4px 12px";
-        // let label = tooltip_label_formatter(gauge.name);
-        // let value = tooltip_value_formatter(gauge.value);
-        // tooltip.innerHtml = "$label: <strong>$value%</strong>";
-    }
+    // fn update_tooltip_content(&self) {
+    //     // let gauge = channels[0].entities[focused_entity_index] as Gauge;
+    //     // tooltip.style
+    //     //   ..borderColor = gauge.color
+    //     //   ..padding = "4px 12px";
+    //     // let label = tooltip_label_formatter(gauge.name);
+    //     // let value = tooltip_value_formatter(gauge.value);
+    //     // tooltip.innerHtml = "$label: <strong>$value%</strong>";
+    // }
 
-    fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
-        // let p = Point(x, y);
-        // for (Gauge g in channels[0].entities) {
-        //   if (g.containsPoint(p)) return g.index;
-        // }
-        // return -1;
-        unimplemented!()
-    }
+    // fn get_entity_group_index(&self, x: f64, y: f64) -> i64 {
+    //     // let p = Point(x, y);
+    //     // for (Gauge g in channels[0].entities) {
+    //     //   if (g.containsPoint(p)) return g.index;
+    //     // }
+    //     // return -1;
+    //     unimplemented!()
+    // }
 
     // /// Called when [data_table] has been changed.
     // fn data_changed(&self) {
@@ -348,7 +345,7 @@ where
     }
 
     fn draw_channels(&self, ctx: &C, percent: f64) -> bool {
-        ctx.set_stroke_color(palette::WHITE);
+        ctx.set_stroke_color(color::WHITE);
         // ctx.set_text_align(TextAlign::Center);
 
         let channels = self.base.channels.borrow();
@@ -389,7 +386,7 @@ where
     }
 
     fn update_channel(&self, _: usize) {
-        let len = self.base.data.frames.len();
+        // let len = self.base.data.frames.len();
         let props = self.props.borrow();
         let mut channels = self.base.channels.borrow_mut();
         let mut idx = 0;
@@ -398,7 +395,7 @@ where
             Some(channel) => {
                 for entity in channel.entities.iter_mut() {
                     match entity.value {
-                        Some(value) => {
+                        Some(_) => {
                             let color = self.base.get_color(idx);
                             let highlight_color = self.base.change_color_alpha(color, 0.5);
 
@@ -491,7 +488,7 @@ where
         let mut result = Vec::new();
         while start < end {
             let frame = self.base.data.frames.get(start).unwrap();
-            let value = frame.data.get(channel_index as u64);
+            // let value = frame.data.get(channel_index as u64);
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {
                     let value = value.clone();

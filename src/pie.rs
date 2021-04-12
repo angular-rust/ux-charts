@@ -1,6 +1,5 @@
 #![allow(unused_assignments)]
 #![allow(unused_variables)]
-#![allow(unused_imports)]
 #![allow(dead_code)]
 
 use animate::{
@@ -8,10 +7,8 @@ use animate::{
     interpolate::lerp,
 };
 use dataflow::*;
-use primitives::{
-    palette, BaseLine, CanvasContext, Color, Point, TextAlign, TextStyle, TextWeight,
-};
-use std::{borrow::Borrow, cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use primitives::{color, BaseLine, CanvasContext, Color, Point, TextStyle, TextWeight};
+use std::{cell::RefCell, fmt};
 
 use crate::*;
 
@@ -124,7 +121,7 @@ where
             let r = 0.25 * self.inner_radius + 0.65 * self.outer_radius;
             let a = 0.5 * (a1 + a2);
             let p = utils::polar2cartesian(center, r, a);
-            ctx.set_fill_color(palette::WHITE); // labels.style.color
+            ctx.set_fill_color(color::WHITE); // labels.style.color
             let w = ctx.measure_text(self.formatted_value.as_str()).width;
             // TODO: should have a global state in ctx i think
             ctx.fill_text(self.formatted_value.as_str(), p.x - w / 2., p.y + 4.);
@@ -345,7 +342,7 @@ where
 
     fn draw_channels(&self, ctx: &C, percent: f64) -> bool {
         ctx.set_line_width(2.);
-        ctx.set_stroke_color(palette::WHITE);
+        ctx.set_stroke_color(color::WHITE);
         // ctx.set_text_align(TextAlign::Center);
         ctx.set_text_baseline(BaseLine::Middle);
 
