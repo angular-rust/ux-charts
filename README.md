@@ -28,11 +28,11 @@
 [loc-badge]: https://img.shields.io/tokei/lines/github/angular-rust/ux-charts?style=flat-square
 [loc-url]: https://github.com/angular-rust/ux-charts
 
-**UX Charts** is a drawing library designed for clean charts. UX Charts supports various types of backend including GTK/Cairo and HTML5 Canvas. UX Charts are designed with the concept - `one code for all`. UX Charts uses the [UX Dataflow](https://github.com/angular-rust/ux-dataflow) library as the data source and the [UX Animate](https://github.com/angular-rust/ux-animate) library as the canvas implementation.
+**UX Charts** is a drawing library designed for clean charts. UX Charts supports various types of backend including Clutter/Cairo and HTML5 Canvas. UX Charts are designed with the concept - `one code for all`. UX Charts uses the [UX Dataflow](https://github.com/angular-rust/ux-dataflow) library as the data source and the [UX Animate](https://github.com/angular-rust/ux-animate) library as the canvas implementation.
 
 **UX Charts** is part of the Angular Rust framework.
 
-**Angular Rust** is a high productivity, `platform-agnostic` frontend framework for the [Rust language](https://www.rust-lang.org/). It now supports desktop and web development. Angular Rust currently uses GTK for desktop development and WebAssembly for web development. We are planning to add support for mobile development.
+**Angular Rust** is a high productivity, `platform-agnostic` frontend framework for the [Rust language](https://www.rust-lang.org/). It now supports desktop and web development. Angular Rust currently uses Clutter for desktop development and WebAssembly for web development. We are planning to add support for mobile development.
 
 ![Angular Rust structure](https://dudochkin-victor.github.io/assets/angular-rust/structure.svg)
 
