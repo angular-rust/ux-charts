@@ -1,9 +1,8 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
-#![allow(dead_code)]
+#![allow(clippy::needless_lifetimes)]
 
 use std::{
-    collections::HashMap,
     f64::consts::PI,
     fmt,
     ops::{Add, Mul, Sub},
@@ -13,6 +12,7 @@ use crate::DEFAULT_FONT_FAMILY;
 
 use super::StyleOption;
 use dataflow::*;
+use animate::Pattern;
 use primitives::{CanvasContext, Point, TextStyle, TextWeight};
 
 /// Converts [angle] in radians to degrees.
@@ -78,21 +78,20 @@ where
     for channel in stream.meta.iter() {
         let channel_index = channel.tag as u64;
         for frame in stream.frames.iter() {
-            match frame.data.get(channel_index) {
-                Some(value) => match result {
+            if let Some(value) = frame.data.get(channel_index) {
+                match result {
                     Some(max_value) => {
                         if *value > max_value {
-                            result = Some(value.clone());
+                            result = Some(*value);
                         }
                     }
-                    None => result = Some(value.clone()),
-                },
-                None => {}
+                    None => result = Some(*value),
+                }
             }
         }
     }
 
-    result.unwrap_or(Default::default())
+    result.unwrap_or_default()
 }
 
 /// Returns the minimum value in a [DataTable].
@@ -105,22 +104,21 @@ where
     for channel in stream.meta.iter() {
         let channel_index = channel.tag as u64;
         for frame in stream.frames.iter() {
-            match frame.data.get(channel_index) {
-                Some(value) => match result {
+            if let Some(value) = frame.data.get(channel_index) {
+                match result {
                     Some(min_value) => {
                         if *value < min_value {
                             error!("ASSIGN MIN VALUE {}", value);
-                            result = Some(value.clone());
+                            result = Some(*value);
                         }
                     }
-                    None => result = Some(value.clone()),
-                },
-                None => {}
+                    None => result = Some(*value),
+                }
             }
         }
     }
 
-    result.unwrap_or(Default::default())
+    result.unwrap_or_default()
 }
 
 /// Calculates a nice axis interval given
@@ -145,11 +143,14 @@ pub fn calculate_interval(range: f64, target_steps: usize, min_interval: Option<
     msd * mag_pow
 }
 
-pub fn calculate_max_text_width<C: CanvasContext>(
+pub fn calculate_max_text_width<C>(
     ctx: &C,
     style: &StyleOption,
-    texts: &Vec<String>,
-) -> f64 {
+    texts: &[String],
+) -> f64 
+where
+    C: CanvasContext<Pattern>
+{
     let mut result = 0.0;
     ctx.set_font(
         style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
@@ -197,7 +198,7 @@ pub fn get_decimal_places(value: f64) -> usize {
 
     // See https://code.google.com/p/dart/issues/detail?id=1533
     let tmp = format!("{}", value);
-    let split: Vec<&str> = tmp.split(".").collect();
+    let split: Vec<&str> = tmp.split('.').collect();
     split.get(1).unwrap().len()
 }
 

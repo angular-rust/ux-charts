@@ -1,15 +1,13 @@
-#![allow(unused_imports)]
-#![allow(unused_variables)]
+// #![allow(unused_imports)]
+#![allow(clippy::needless_return)]
 
 use dataflow::*;
 use primitives::{CanvasContext, Color, Point};
-use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use animate::Pattern;
+use std::fmt;
 
 #[macro_use]
 extern crate log;
-
-#[macro_use]
-extern crate lazy_static;
 
 mod basechart;
 pub use basechart::*;
@@ -104,7 +102,7 @@ pub trait Entity {
 
 pub trait Drawable<C>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool);
 }
@@ -144,7 +142,7 @@ where
         let mut start = start;
         while start < end {
             //   self.entities[start].free();
-            start = start + 1;
+            start += 1;
         }
         unimplemented!()
     }
@@ -153,7 +151,7 @@ where
 pub trait Chart<'a, C, M, D, E>
 where
     E: Entity,
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {

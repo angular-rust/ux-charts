@@ -1,17 +1,15 @@
 #![allow(unused_assignments)]
 #![allow(unused_variables)]
-#![allow(unused_imports)]
 #![allow(dead_code)]
+#![allow(clippy::explicit_counter_loop, clippy::needless_range_loop)]
 
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
 };
 use dataflow::*;
-use primitives::{
-    BaseLine, CanvasContext, Color, Point, Rect, Size, TextAlign, TextStyle, TextWeight,
-};
-use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use primitives::{BaseLine, CanvasContext, Color, Point, Rect, Size, TextStyle, TextWeight};
+use std::{cell::RefCell, fmt};
 
 use crate::*;
 
@@ -37,7 +35,7 @@ pub struct PolarPoint<D> {
 
 impl<C, D> Drawable<C> for PolarPoint<D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let r = lerp(self.old_radius, self.radius, percent);
@@ -86,7 +84,7 @@ struct RadarChartProperties {
 
 pub struct RadarChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {
@@ -96,7 +94,7 @@ where
 
 impl<'a, C, M, D> RadarChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -214,7 +212,7 @@ where
                 return idx as i64;
             }
         }
-        return -1;
+        -1
     }
 
     fn channel_visibility_changed(&self, index: usize) {
@@ -247,7 +245,7 @@ where
 
 impl<'a, C, M, D> Chart<'a, C, M, D, PolarPoint<D>> for RadarChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -586,7 +584,7 @@ where
             }
         }
 
-        return false;
+        false
     }
 
     // param should be Option
@@ -685,7 +683,7 @@ where
             let value = frame.data.get(channel_index as u64);
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {
-                    let value = value.clone();
+                    let value = *value;
                     self.create_entity(channel_index, start, Some(value), color, highlight)
                 }
                 None => self.create_entity(channel_index, start, None, color, highlight),

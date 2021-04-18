@@ -1,15 +1,15 @@
 use super::{LabelFormatter, ValueFormatter};
-use primitives::{palette, Color, TextStyle};
+use primitives::{color, Color, TextStyle};
 
 pub enum Position {
     Above,
     Middle,
     Below,
-    Left, 
-    Top, 
-    Bottom, 
+    Left,
+    Top,
+    Bottom,
     Right,
-    None, 
+    None,
 }
 
 pub trait BaseOption<'a> {
@@ -240,9 +240,9 @@ impl<'a> Default for BarChartOptions<'a> {
             channel: BarChartSeriesOptions { labels: None },
             xaxis: BarChartXAxisOptions {
                 crosshair: None,
-                grid_line_color: palette::GRAY_5,
+                grid_line_color: color::GRAY_5,
                 grid_line_width: 1.,
-                line_color: palette::GRAY_5,
+                line_color: color::GRAY_5,
                 line_width: 1.,
                 labels: BarChartXAxisLabelsOptions {
                     max_rotation: 0,
@@ -256,9 +256,9 @@ impl<'a> Default for BarChartOptions<'a> {
                 },
             },
             yaxis: BarChartYAxisOptions {
-                grid_line_color: palette::GRAY_5,
+                grid_line_color: color::GRAY_5,
                 grid_line_width: 0.,
-                line_color: palette::GRAY_5,
+                line_color: color::GRAY_5,
                 line_width: 0.,
                 interval: None,
                 labels: BarChartYAxisLabelsOptions {
@@ -279,7 +279,7 @@ impl<'a> Default for BarChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background: palette::WHITE,
+            background: color::WHITE,
             colors: vec![
                 Color::RGB(0x7c, 0xb5, 0xec),
                 Color::RGB(0x43, 0x43, 0x48),
@@ -330,10 +330,10 @@ pub struct StyleOption<'a> {
 impl<'a> Default for StyleOption<'a> {
     fn default() -> Self {
         Self {
-            background: palette::WHITE,
-            border_color: palette::GRAY_4,
+            background: color::WHITE,
+            border_color: color::GRAY_4,
             border_width: 0_f64,
-            color: palette::GRAY_9,
+            color: color::GRAY_9,
             fontfamily: Some("Roboto"),
             fontsize: Some(12_f64),
             fontstyle: Some(TextStyle::Normal),
@@ -405,8 +405,8 @@ impl<'a> Default for GaugeChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background: palette::WHITE,
-            gauge_background: palette::GRAY_3,
+            background: color::WHITE,
+            gauge_background: color::GRAY_3,
             colors: vec![
                 Color::RGB(0x7c, 0xb5, 0xec),
                 Color::RGB(0x43, 0x43, 0x48),
@@ -626,14 +626,14 @@ impl<'a> Default for LineChartOptions<'a> {
                     enabled: true,
                     fill_color: None,
                     line_width: 1,
-                    stroke_color: Some(palette::WHITE),
+                    stroke_color: Some(color::WHITE),
                     size: 4.,
                 },
             },
             xaxis: LineChartXAxisOptions {
-                grid_line_color: palette::GRAY_5,
+                grid_line_color: color::GRAY_5,
                 grid_line_width: 1.,
-                line_color: palette::GRAY_5,
+                line_color: color::GRAY_5,
                 line_width: 1.,
                 labels: LineChartXAxisLabelsOptions {
                     max_rotation: 0,
@@ -647,9 +647,9 @@ impl<'a> Default for LineChartOptions<'a> {
                 },
             },
             yaxis: LineChartYAxisOptions {
-                grid_line_color: palette::GRAY_5,
+                grid_line_color: color::GRAY_5,
                 grid_line_width: 0.,
-                line_color: palette::GRAY_5,
+                line_color: color::GRAY_5,
                 line_width: 0.,
                 interval: None,
                 labels: LineChartYAxisLabelsOptions {
@@ -670,7 +670,7 @@ impl<'a> Default for LineChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background: palette::WHITE,
+            background: color::WHITE,
             colors: vec![
                 Color::RGB(0x7c, 0xb5, 0xec),
                 Color::RGB(0x43, 0x43, 0x48),
@@ -796,7 +796,7 @@ impl<'a> Default for PieChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background: palette::WHITE,
+            background: color::WHITE,
             colors: vec![
                 Color::RGB(0x7c, 0xb5, 0xec),
                 Color::RGB(0x43, 0x43, 0x48),
@@ -976,12 +976,12 @@ impl<'a> Default for RadarChartOptions<'a> {
                     enabled: true,
                     fill_color: None,
                     line_width: 1.,
-                    stroke_color: Some(palette::WHITE),
+                    stroke_color: Some(color::WHITE),
                     size: 4.,
                 },
             },
             xaxis: RadarChartXAxisOptions {
-                grid_line_color: palette::GRAY_5,
+                grid_line_color: color::GRAY_5,
                 grid_line_width: 1_f64,
                 labels: RadarChartXAxisLabelsOptions {
                     formatter: None,
@@ -989,7 +989,7 @@ impl<'a> Default for RadarChartOptions<'a> {
                 },
             },
             yaxis: RadarChartYAxisOptions {
-                grid_line_color: palette::GRAY_5,
+                grid_line_color: color::GRAY_5,
                 grid_line_width: 1_f64,
                 interval: None,
                 labels: RadarChartYAxisLabelsOptions {
@@ -1003,7 +1003,7 @@ impl<'a> Default for RadarChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background_color: palette::WHITE,
+            background_color: color::WHITE,
             colors: vec![
                 Color::RGB(0x7c, 0xb5, 0xec),
                 Color::RGB(0x43, 0x43, 0x48),

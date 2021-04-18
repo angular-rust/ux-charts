@@ -1,15 +1,21 @@
 #![allow(unused_assignments)]
 #![allow(unused_variables)]
-#![allow(unused_imports)]
 #![allow(dead_code)]
+#![allow(
+    clippy::explicit_counter_loop,
+    clippy::float_cmp,
+    clippy::unnecessary_unwrap
+)]
 
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
 };
 use dataflow::*;
-use primitives::{BaseLine, CanvasContext, Color, LineJoin, Point, Rect, Size, TextAlign, TextStyle, TextWeight, palette};
-use std::{cell::RefCell, collections::HashMap, fmt, rc::Rc};
+use primitives::{
+    BaseLine, CanvasContext, Color, LineJoin, Point, Rect, Size, TextStyle, TextWeight,
+};
+use std::{cell::RefCell, fmt};
 
 use crate::*;
 
@@ -49,14 +55,20 @@ impl<D> LinePoint<D> {
             info!("EMPTY {:?} [None] {:?}", self.cp1, self.cp2);
             return;
         }
-        info!("EMPTY {:?} [{}x{}] {:?}", self.cp1, self.x.round(), self.y.round(), self.cp2);        
+        info!(
+            "EMPTY {:?} [{}x{}] {:?}",
+            self.cp1,
+            self.x.round(),
+            self.y.round(),
+            self.cp2
+        );
     }
 }
 
 /// A point in a line chart.
 impl<C, D> Drawable<C> for LinePoint<D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let cx = lerp(self.old_x, self.x, percent);
@@ -126,7 +138,7 @@ struct LineChartProperties {
 
 pub struct LineChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {
@@ -136,7 +148,7 @@ where
 
 impl<'a, C, M, D> LineChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -239,7 +251,7 @@ where
         // }
     }
 
-    fn lerp_points(&self, points: &Vec<LinePoint<D>>, percent: f64) -> Vec<LinePoint<D>> {
+    fn lerp_points(&self, points: &[LinePoint<D>], percent: f64) -> Vec<LinePoint<D>> {
         points
             .iter()
             .map(|p| {
@@ -251,7 +263,7 @@ where
                         // Some(lerp(p.old_cp1, value, percent))
                         Some(value)
                     }
-                    None => None
+                    None => None,
                 };
 
                 let cp2 = match p.cp2 {
@@ -259,7 +271,7 @@ where
                         // Some(lerp(p.old_cp2, value, percent))
                         Some(value)
                     }
-                    None => None
+                    None => None,
                 };
 
                 LinePoint {
@@ -324,7 +336,7 @@ where
 
 impl<'a, C, M, D> Chart<'a, C, M, D, LinePoint<D>> for LineChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -402,7 +414,7 @@ where
         props.ylabels = Vec::new();
         props.ylabel_formatter = options.yaxis.labels.formatter;
 
-        if let None = props.ylabel_formatter {
+        if props.ylabel_formatter.is_none() {
             // let max_decimal_places =
             //     max(utils::get_decimal_places(props.yinterval), utils::get_decimal_places(props.y_min_value));
             // let numberFormat = NumberFormat.decimalPattern()
@@ -933,7 +945,7 @@ where
                             self.curve_to(ctx, prev.cp2, entity.cp1, entity);
                         } else {
                             // prev point is empty
-                            // so open the path 
+                            // so open the path
                             closed = false;
                             ctx.begin_path();
                             ctx.move_to(entity.x, props.xaxis_top);
@@ -1026,15 +1038,12 @@ where
 
                     let entities = &channel.entities;
                     for entity in entities.iter() {
-                        match entity.value {
-                            Some(value) => {
-                                let y = entity.y - marker_size - 5.;
-                                // TODO: bar.formatted_value
-                                let value: f64 = value.into();
-                                let formatted_value = format!("{}", value);
-                                ctx.fill_text(formatted_value.as_str(), entity.x, y);
-                            }
-                            None => {}
+                        if let Some(value) = entity.value {
+                            let y = entity.y - marker_size - 5.;
+                            // TODO: bar.formatted_value
+                            let value: f64 = value.into();
+                            let formatted_value = format!("{}", value);
+                            ctx.fill_text(formatted_value.as_str(), entity.x, y);
                         }
                     }
                 }
@@ -1148,7 +1157,7 @@ where
                         entity.old_cp2 = Some(Point::new(cp2.x, props.xaxis_top));
                     }
                 } else {
-                    warn!("no entity at {}", jdx -1);
+                    warn!("no entity at {}", jdx - 1);
                 }
             }
             idx += 1;
@@ -1230,7 +1239,7 @@ where
             let value = frame.data.get(channel_index as u64);
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {
-                    let value = value.clone();
+                    let value = *value;
                     self.create_entity(channel_index, start, Some(value), color, highlight)
                 }
                 None => self.create_entity(channel_index, start, None, color, highlight),
