@@ -9,6 +9,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - name: Install Clutter
+      run: sudo apt-get update && sudo apt-get install libclutter-1.0-dev libpango1.0-dev
     - name: Build
       run: cargo build --verbose
     - name: Run tests
@@ -21,6 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - run: rustup component add clippy
+      - name: Install Clutter
+        run: sudo apt-get update && sudo apt-get install libclutter-1.0-dev libpango1.0-dev
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
