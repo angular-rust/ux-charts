@@ -68,7 +68,7 @@ impl<D> LinePoint<D> {
 /// A point in a line chart.
 impl<C, D> Drawable<C> for LinePoint<D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let cx = lerp(self.old_x, self.x, percent);
@@ -138,7 +138,7 @@ struct LineChartProperties {
 
 pub struct LineChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {
@@ -148,7 +148,7 @@ where
 
 impl<'a, C, M, D> LineChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -336,7 +336,7 @@ where
 
 impl<'a, C, M, D> Chart<'a, C, M, D, LinePoint<D>> for LineChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {

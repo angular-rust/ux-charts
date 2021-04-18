@@ -3,6 +3,7 @@
 
 use dataflow::*;
 use primitives::{CanvasContext, Color, Point};
+use animate::Pattern;
 use std::fmt;
 
 #[macro_use]
@@ -101,7 +102,7 @@ pub trait Entity {
 
 pub trait Drawable<C>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool);
 }
@@ -150,7 +151,7 @@ where
 pub trait Chart<'a, C, M, D, E>
 where
     E: Entity,
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {

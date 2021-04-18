@@ -89,7 +89,7 @@ impl<D> Entity for PieEntity<D> {
 
 impl<C, D> Drawable<C> for PieEntity<D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
@@ -144,7 +144,7 @@ struct PieChartProperties {
 
 pub struct PieChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {
@@ -154,7 +154,7 @@ where
 
 impl<'a, C, M, D> PieChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -213,7 +213,7 @@ where
 
 impl<'a, C, M, D> Chart<'a, C, M, D, PieEntity<D>> for PieChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {

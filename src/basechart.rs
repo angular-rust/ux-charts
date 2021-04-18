@@ -60,7 +60,7 @@ pub struct BaseChartProperties {
 #[derive(Default, Clone)]
 pub struct BaseChart<'a, C, E, M, D, O>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     E: Entity,
     M: fmt::Display,
     D: fmt::Display + Copy,
@@ -92,7 +92,7 @@ where
 
 impl<'a, C, E, M, D, O> BaseChart<'a, C, E, M, D, O>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     E: Entity,
     M: fmt::Display,
     D: fmt::Display + Copy,
@@ -126,7 +126,7 @@ where
 
         let alpha = (alpha * 0xFF as f64).round() as u8;
         let color: RgbColor = color.into();
-        Color::RGBA(color.r, color.g, color.b, alpha)
+        Color::RGBA(color.red, color.green, color.blue, alpha)
     }
 
     pub fn get_color(&self, index: usize) -> Color {
@@ -592,7 +592,7 @@ where
 
 impl<'a, C, E, M, D, O> Chart<'a, C, M, D, E> for BaseChart<'a, C, E, M, D, O>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     E: Entity,
     M: fmt::Display,
     D: fmt::Display + Copy,

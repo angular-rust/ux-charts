@@ -5,6 +5,7 @@
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
+    Pattern,
 };
 use dataflow::*;
 use primitives::{BaseLine, CanvasContext, Color, Point, Rect, Size, TextStyle, TextWeight};
@@ -38,7 +39,7 @@ impl<D> BarEntity<D> {
 
 impl<C, D> Drawable<C> for BarEntity<D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let x = lerp(self.old_left, self.left, percent);
@@ -107,7 +108,7 @@ struct BarChartProperties {
 
 pub struct BarChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {
@@ -117,7 +118,7 @@ where
 
 impl<'a, C, M, D> BarChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -296,7 +297,7 @@ where
 
 impl<'a, C, M, D> Chart<'a, C, M, D, BarEntity<D>> for BarChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {

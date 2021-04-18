@@ -34,6 +34,8 @@
 
 **Angular Rust** is a high productivity, `platform-agnostic` frontend framework for the [Rust language](https://www.rust-lang.org/). It now supports desktop and web development. Angular Rust currently uses GTK for desktop development and WebAssembly for web development. We are planning to add support for mobile development.
 
+![Angular Rust structure](https://dudochkin-victor.github.io/assets/angular-rust/structure.svg)
+
 ## Gallery 
 
 <img src="https://dudochkin-victor.github.io/assets/ux-charts/linechart-gtk.png" width="802" />
@@ -42,8 +44,6 @@
 <img src="https://dudochkin-victor.github.io/assets/ux-charts/barchart-gtk.png" width="401" /><img src="https://dudochkin-victor.github.io/assets/ux-charts/gaugechart-gtk.png" width="401"/>
 
 <img src="https://dudochkin-victor.github.io/assets/ux-charts/piechart-gtk.png" width="401" /><img src="https://dudochkin-victor.github.io/assets/ux-charts/radarchart-gtk.png" width="401" />
-
-
 
 ## Features
 

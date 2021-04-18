@@ -72,7 +72,7 @@ impl<D> GaugeEntity<D> {
         unimplemented!()
     }
 
-    fn draw_entity<C: CanvasContext>(&self, ctx: &C, percent: f64, highlight: bool) {
+    fn draw_entity<C: CanvasContext<Pattern>>(&self, ctx: &C, percent: f64, highlight: bool) {
         // Draw the background.
         {
             let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
@@ -127,7 +127,7 @@ impl<D> Entity for GaugeEntity<D> {
 
 impl<C, D> Drawable<C> for GaugeEntity<D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
@@ -176,7 +176,7 @@ struct GaugeChartProperties {
 
 pub struct GaugeChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {
@@ -186,7 +186,7 @@ where
 
 impl<'a, C, M, D> GaugeChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -238,7 +238,7 @@ where
 
 impl<'a, C, M, D> Chart<'a, C, M, D, GaugeEntity<D>> for GaugeChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {

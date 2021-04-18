@@ -12,6 +12,7 @@ use crate::DEFAULT_FONT_FAMILY;
 
 use super::StyleOption;
 use dataflow::*;
+use animate::Pattern;
 use primitives::{CanvasContext, Point, TextStyle, TextWeight};
 
 /// Converts [angle] in radians to degrees.
@@ -142,11 +143,14 @@ pub fn calculate_interval(range: f64, target_steps: usize, min_interval: Option<
     msd * mag_pow
 }
 
-pub fn calculate_max_text_width<C: CanvasContext>(
+pub fn calculate_max_text_width<C>(
     ctx: &C,
     style: &StyleOption,
     texts: &[String],
-) -> f64 {
+) -> f64 
+where
+    C: CanvasContext<Pattern>
+{
     let mut result = 0.0;
     ctx.set_font(
         style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),

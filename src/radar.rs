@@ -35,7 +35,7 @@ pub struct PolarPoint<D> {
 
 impl<C, D> Drawable<C> for PolarPoint<D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let r = lerp(self.old_radius, self.radius, percent);
@@ -84,7 +84,7 @@ struct RadarChartProperties {
 
 pub struct RadarChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {
@@ -94,7 +94,7 @@ where
 
 impl<'a, C, M, D> RadarChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -245,7 +245,7 @@ where
 
 impl<'a, C, M, D> Chart<'a, C, M, D, PolarPoint<D>> for RadarChart<'a, C, M, D>
 where
-    C: CanvasContext,
+    C: CanvasContext<Pattern>,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
