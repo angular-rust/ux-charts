@@ -6,17 +6,17 @@
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
+    BaseLine, CanvasContext, Point, Rect, Size, TextStyle, TextWeight,
 };
 use dataflow::*;
-use primitives::{BaseLine, CanvasContext, Color, Point, Rect, Size, TextStyle, TextWeight};
 use std::{cell::RefCell, fmt};
 
 use crate::*;
 
 #[derive(Default, Clone)]
 pub struct PolarPoint<D> {
-    color: Color,
-    highlight_color: Color,
+    color: Fill,
+    highlight_color: Fill,
     // formatted_value: String,
     index: usize,
     old_value: Option<D>,
@@ -35,7 +35,7 @@ pub struct PolarPoint<D> {
 
 impl<C, D> Drawable<C> for PolarPoint<D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let r = lerp(self.old_radius, self.radius, percent);
@@ -43,16 +43,40 @@ where
         let pr = lerp(self.old_point_radius, self.point_radius, percent);
         let p = utils::polar2cartesian(&self.center, r, a);
         if highlight {
-            ctx.set_fill_color(self.highlight_color);
-            ctx.begin_path();
-            ctx.arc(p.x, p.y, 2. * pr, 0., TAU, false);
-            ctx.fill();
+            match &self.highlight_color {
+                Fill::Solid(color) => {
+                    ctx.set_fill_color(*color);
+                    ctx.begin_path();
+                    ctx.arc(p.x, p.y, 2. * pr, 0., TAU, false);
+                    ctx.fill();
+                }
+                Fill::Gradient(gradient) => {
+                    ctx.set_fill_gradient(gradient);
+                    ctx.begin_path();
+                    ctx.arc(p.x, p.y, 2. * pr, 0., TAU, false);
+                    ctx.fill();
+                }
+                Fill::None => {}
+            }
         }
-        ctx.set_fill_color(self.color);
-        ctx.begin_path();
-        ctx.arc(p.x, p.y, pr, 0., TAU, false);
-        ctx.fill();
-        ctx.stroke();
+
+        match &self.color {
+            Fill::Solid(color) => {
+                ctx.set_fill_color(*color);
+                ctx.begin_path();
+                ctx.arc(p.x, p.y, pr, 0., TAU, false);
+                ctx.fill();
+                ctx.stroke();
+            }
+            Fill::Gradient(gradient) => {
+                ctx.set_fill_gradient(gradient);
+                ctx.begin_path();
+                ctx.arc(p.x, p.y, pr, 0., TAU, false);
+                ctx.fill();
+                ctx.stroke();
+            }
+            Fill::None => {}
+        }
     }
 }
 
@@ -82,23 +106,23 @@ struct RadarChartProperties {
     bounding_boxes: Vec<Rect<f64>>,
 }
 
-pub struct RadarChart<'a, C, M, D>
+pub struct RadarChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {
     props: RefCell<RadarChartProperties>,
-    base: BaseChart<'a, C, PolarPoint<D>, M, D, RadarChartOptions<'a>>,
+    base: BaseChart<C, PolarPoint<D>, M, D, RadarChartOptions>,
 }
 
-impl<'a, C, M, D> RadarChart<'a, C, M, D>
+impl<C, M, D> RadarChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
-    pub fn new(options: RadarChartOptions<'a>) -> Self {
+    pub fn new(options: RadarChartOptions) -> Self {
         Self {
             props: Default::default(),
             base: BaseChart::new(options),
@@ -243,9 +267,9 @@ where
     // }
 }
 
-impl<'a, C, M, D> Chart<'a, C, M, D, PolarPoint<D>> for RadarChart<'a, C, M, D>
+impl<C, M, D> Chart<C, M, D, PolarPoint<D>> for RadarChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -329,7 +353,7 @@ where
             }
     }
 
-    fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
+    fn set_stream(&mut self, stream: DataStream<M, D>) {
         self.base.data = stream;
         self.create_channels(0, self.base.data.meta.len());
     }
@@ -405,8 +429,13 @@ where
         let mut y = props.center.y - props.ylabel_hop;
         ctx.set_fill_color(style.color);
 
+        let fontfamily = match &style.fontfamily {
+            Some(val) => val.as_str(),
+            None => DEFAULT_FONT_FAMILY,
+        };
+
         ctx.set_font(
-            &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+            fontfamily,
             style.fontstyle.unwrap_or(TextStyle::Normal),
             TextWeight::Normal,
             style.fontsize.unwrap_or(12.),
@@ -425,8 +454,13 @@ where
         let style = &self.base.options.xaxis.labels.style;
         ctx.set_fill_color(style.color);
 
+        let fontfamily = match &style.fontfamily {
+            Some(val) => val.as_str(),
+            None => DEFAULT_FONT_FAMILY,
+        };
+
         ctx.set_font(
-            &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+            fontfamily,
             style.fontstyle.unwrap_or(TextStyle::Normal),
             TextWeight::Normal,
             style.fontsize.unwrap_or(12.),
@@ -518,7 +552,54 @@ where
 
             // Optionally fill the polygon.
             if fill_opacity > 0. {
-                ctx.set_fill_color(self.base.change_color_alpha(channel.color, fill_opacity));
+                let chennel_fill = self.base.change_fill_alpha(&channel.fill, fill_opacity);
+                let should_fill = match &chennel_fill {
+                    Fill::Solid(color) => {
+                        ctx.set_fill_color(*color);
+                        true
+                    }
+                    Fill::Gradient(gradient) => {
+                        ctx.set_fill_gradient(gradient);
+                        true
+                    }
+                    Fill::None => false,
+                };
+
+                if should_fill {
+                    ctx.begin_path();
+                    for jdx in 0..point_count {
+                        let entity = channel.entities.get(jdx).unwrap();
+                        // TODO: Optimize.
+                        let radius = lerp(entity.old_radius, entity.radius, percent);
+                        let angle = lerp(entity.old_angle, entity.angle, percent);
+                        let p = utils::polar2cartesian(&props.center, radius, angle);
+                        if jdx > 0 {
+                            ctx.line_to(p.x, p.y);
+                        } else {
+                            ctx.move_to(p.x, p.y);
+                        }
+                    }
+                    ctx.close_path();
+                    ctx.fill();
+                }
+            }
+
+            // Draw the polygon.
+            ctx.set_line_width(scale * channel_line_width);
+
+            let should_stroke = match &channel.fill {
+                Fill::Solid(color) => {
+                    ctx.set_stroke_color(*color);
+                    true
+                }
+                Fill::Gradient(gradient) => {
+                    ctx.set_stroke_gradient(gradient);
+                    true
+                }
+                Fill::None => false,
+            };
+
+            if should_stroke {
                 ctx.begin_path();
                 for jdx in 0..point_count {
                     let entity = channel.entities.get(jdx).unwrap();
@@ -533,46 +614,45 @@ where
                     }
                 }
                 ctx.close_path();
-                ctx.fill();
+                ctx.stroke();
             }
-
-            // Draw the polygon.
-            ctx.set_line_width(scale * channel_line_width);
-            ctx.set_stroke_color(channel.color);
-            ctx.begin_path();
-
-            for jdx in 0..point_count {
-                let entity = channel.entities.get(jdx).unwrap();
-                // TODO: Optimize.
-                let radius = lerp(entity.old_radius, entity.radius, percent);
-                let angle = lerp(entity.old_angle, entity.angle, percent);
-                let p = utils::polar2cartesian(&props.center, radius, angle);
-                if jdx > 0 {
-                    ctx.line_to(p.x, p.y);
-                } else {
-                    ctx.move_to(p.x, p.y);
-                }
-            }
-            ctx.close_path();
-            ctx.stroke();
 
             // Draw the markers.
             if marker_size > 0. {
-                let fill_color = if let Some(color) = marker_options.fill_color {
+                let fill_color = if let Some(color) = &marker_options.fill_color {
                     color
                 } else {
-                    channel.color
+                    &channel.fill
                 };
 
-                let stroke_color = if let Some(color) = marker_options.stroke_color {
+                let stroke_color = if let Some(color) = &marker_options.stroke_color {
                     color
                 } else {
-                    channel.color
+                    &channel.fill
                 };
 
-                ctx.set_fill_color(fill_color);
+                match fill_color {
+                    Fill::Solid(color) => {
+                        ctx.set_fill_color(*color);
+                    }
+                    Fill::Gradient(gradient) => {
+                        ctx.set_fill_gradient(gradient);
+                    }
+                    Fill::None => {}
+                }
+
+                match stroke_color {
+                    Fill::Solid(color) => {
+                        ctx.set_stroke_color(*color);
+                    }
+                    Fill::Gradient(gradient) => {
+                        ctx.set_stroke_gradient(gradient);
+                    }
+                    Fill::None => {}
+                }
+
                 ctx.set_line_width(scale * marker_options.line_width);
-                ctx.set_stroke_color(stroke_color);
+
                 for p in channel.entities.iter() {
                     if marker_options.enabled {
                         p.draw(ctx, percent, p.index as i64 == focused_entity_index);
@@ -595,10 +675,10 @@ where
 
         let mut idx = 0;
         for channel in channels.iter_mut() {
-            let color = self.base.get_color(idx);
-            let highlight_color = self.base.get_highlight_color(color);
-            channel.color = color;
-            channel.highlight = highlight_color;
+            let color = self.base.get_fill(idx);
+            let highlight_color = self.base.get_highlight_color(&color);
+            channel.fill = color.clone();
+            channel.highlight = highlight_color.clone();
 
             let visible =
                 channel.state == Visibility::Showing || channel.state == Visibility::Shown;
@@ -613,8 +693,8 @@ where
                     0.0
                 };
                 entity.angle = self.get_angle(jdx);
-                entity.color = color;
-                entity.highlight_color = highlight_color;
+                entity.color = color.clone();
+                entity.highlight_color = highlight_color.clone();
             }
             idx += 1;
         }
@@ -625,8 +705,8 @@ where
         channel_index: usize,
         entity_index: usize,
         value: Option<D>,
-        color: Color,
-        highlight_color: Color,
+        color: Fill,
+        highlight_color: Fill,
     ) -> PolarPoint<D> {
         let props = self.props.borrow();
         let angle = self.get_angle(entity_index);
@@ -656,11 +736,11 @@ where
         let meta = &self.base.data.meta;
         while start < end {
             let channel = meta.get(start).unwrap();
-            let name = channel.name;
-            let color = self.base.get_color(start);
-            let highlight = self.base.get_highlight_color(color);
+            let name = channel.name.as_str();
+            let color = self.base.get_fill(start);
+            let highlight = self.base.get_highlight_color(&color);
 
-            let entities = self.create_entities(start, 0, count, color, highlight);
+            let entities = self.create_entities(start, 0, count, color.clone(), highlight.clone());
             result.push(ChartChannel::new(name, color, highlight, entities));
             start += 1;
         }
@@ -673,8 +753,8 @@ where
         channel_index: usize,
         start: usize,
         end: usize,
-        color: Color,
-        highlight: Color,
+        color: Fill,
+        highlight: Fill,
     ) -> Vec<PolarPoint<D>> {
         let mut start = start;
         let mut result = Vec::new();
@@ -684,9 +764,17 @@ where
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {
                     let value = *value;
-                    self.create_entity(channel_index, start, Some(value), color, highlight)
+                    self.create_entity(
+                        channel_index,
+                        start,
+                        Some(value),
+                        color.clone(),
+                        highlight.clone(),
+                    )
                 }
-                None => self.create_entity(channel_index, start, None, color, highlight),
+                None => {
+                    self.create_entity(channel_index, start, None, color.clone(), highlight.clone())
+                }
             };
 
             result.push(entity);

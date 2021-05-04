@@ -48,8 +48,8 @@
 ## Features
 
 - [x] Various charts: barchart, linechart, piechart, gaugechart, and radarchart.
+- [x] Gradient fills
 - [ ] Animation support
-- [ ] Gradient fills
 - [ ] User interaction
 
 > The unimplemented features depend on `User-Experience` during the development of the [UX Animate](https://github.com/angular-rust/ux-animate) crate. So far, we have implemented basic features to visualize your data streams.

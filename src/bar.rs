@@ -5,18 +5,17 @@
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
-    Pattern,
+    BaseLine, CanvasContext, Color, Point, Rect, Size, TextStyle, TextWeight,
 };
 use dataflow::*;
-use primitives::{BaseLine, CanvasContext, Color, Point, Rect, Size, TextStyle, TextWeight};
 use std::{cell::RefCell, fmt};
 
 use crate::*;
 
 #[derive(Default, Clone)]
 pub struct BarEntity<D> {
-    color: Color,
-    highlight_color: Color,
+    color: Fill,
+    highlight_color: Fill,
     formatted_value: String,
     index: usize,
     old_value: Option<D>,
@@ -39,7 +38,7 @@ impl<D> BarEntity<D> {
 
 impl<C, D> Drawable<C> for BarEntity<D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let x = lerp(self.old_left, self.left, percent);
@@ -47,11 +46,24 @@ where
         let w = lerp(self.old_width, self.width, percent);
         let y = self.bottom - h;
 
-        ctx.set_fill_color(self.color);
-        ctx.fill_rect(x, y, w, h);
-        if highlight {
-            ctx.set_fill_color(Color::RGBA(255, 255, 255, 25));
-            ctx.fill_rect(x, y, w, h);
+        match &self.color {
+            Fill::Solid(color) => {
+                ctx.set_fill_color(*color);
+                ctx.fill_rect(x, y, w, h);
+                if highlight {
+                    ctx.set_fill_color(Color::rgba(255, 255, 255, 25));
+                    ctx.fill_rect(x, y, w, h);
+                }
+            }
+            Fill::Gradient(gradient) => {
+                ctx.set_fill_gradient(gradient);
+                ctx.fill_rect(x, y, w, h);
+                if highlight {
+                    ctx.set_fill_color(Color::rgba(255, 255, 255, 25));
+                    ctx.fill_rect(x, y, w, h);
+                }
+            }
+            Fill::None => {}
         }
     }
 }
@@ -106,23 +118,23 @@ struct BarChartProperties {
     bar_group_width: f64,
 }
 
-pub struct BarChart<'a, C, M, D>
+pub struct BarChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {
     props: RefCell<BarChartProperties>,
-    base: BaseChart<'a, C, BarEntity<D>, M, D, BarChartOptions<'a>>,
+    base: BaseChart<C, BarEntity<D>, M, D, BarChartOptions>,
 }
 
-impl<'a, C, M, D> BarChart<'a, C, M, D>
+impl<'a, C, M, D> BarChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
-    pub fn new(options: BarChartOptions<'a>) -> Self {
+    pub fn new(options: BarChartOptions) -> Self {
         Self {
             props: Default::default(),
             base: BaseChart::new(options),
@@ -295,9 +307,9 @@ where
     }
 }
 
-impl<'a, C, M, D> Chart<'a, C, M, D, BarEntity<D>> for BarChart<'a, C, M, D>
+impl<C, M, D> Chart<C, M, D, BarEntity<D>> for BarChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -417,15 +429,21 @@ where
         let mut xtitle_height = 0.;
         let xtitle = &options.xaxis.title;
 
-        if let Some(text) = xtitle.text {
+        if let Some(text) = &xtitle.text {
             let style = &xtitle.style;
+
+            let fontfamily = match &style.fontfamily {
+                Some(val) => val.as_str(),
+                None => DEFAULT_FONT_FAMILY,
+            };
+
             ctx.set_font(
-                style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                fontfamily,
                 style.fontstyle.unwrap_or(TextStyle::Normal),
                 TextWeight::Normal,
                 style.fontsize.unwrap_or(12.),
             );
-            xtitle_width = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
+            xtitle_width = ctx.measure_text(text.as_str()).width.round() + 2. * TITLE_PADDING;
             xtitle_height = xtitle.style.fontsize.unwrap_or(12.) + 2. * TITLE_PADDING;
             xtitle_top = area.origin.y + area.size.height - xtitle_height;
         }
@@ -437,15 +455,21 @@ where
         let mut ytitle_height = 0.;
         let ytitle = &options.yaxis.title;
 
-        if let Some(text) = ytitle.text {
+        if let Some(text) = &ytitle.text {
             let style = &ytitle.style;
+
+            let fontfamily = match &style.fontfamily {
+                Some(val) => val.as_str(),
+                None => DEFAULT_FONT_FAMILY,
+            };
+
             ctx.set_font(
-                style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                fontfamily,
                 style.fontstyle.unwrap_or(TextStyle::Normal),
                 TextWeight::Normal,
                 style.fontsize.unwrap_or(12.),
             );
-            ytitle_height = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
+            ytitle_height = ctx.measure_text(text.as_str()).width.round() + 2. * TITLE_PADDING;
             ytitle_width = ytitle.style.fontsize.unwrap_or(12.) + 2. * TITLE_PADDING;
             ytitle_left = area.origin.x;
         }
@@ -577,7 +601,7 @@ where
         }
     }
 
-    fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
+    fn set_stream(&mut self, stream: DataStream<M, D>) {
         self.base.data = stream;
         self.create_channels(0, self.base.data.meta.len());
     }
@@ -615,13 +639,18 @@ where
         if let Some(xtitle_center) = props.xtitle_center {
             let opt = &options.xaxis.title;
 
-            if let Some(text) = opt.text {
+            if let Some(text) = &opt.text {
                 let style = &opt.style;
                 ctx.save();
                 ctx.set_fill_color(style.color);
 
+                let fontfamily = match &style.fontfamily {
+                    Some(val) => val.as_str(),
+                    None => DEFAULT_FONT_FAMILY,
+                };
+
                 ctx.set_font(
-                    &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                    fontfamily,
                     style.fontstyle.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
                     style.fontsize.unwrap_or(12.),
@@ -629,7 +658,7 @@ where
 
                 // ctx.set_text_align(TextAlign::Center);
                 ctx.set_text_baseline(BaseLine::Middle);
-                ctx.fill_text(text, xtitle_center.x, xtitle_center.y);
+                ctx.fill_text(text.as_str(), xtitle_center.x, xtitle_center.y);
                 ctx.restore();
             }
         }
@@ -637,13 +666,18 @@ where
         // y-axis title.
         if let Some(ytitle_center) = props.ytitle_center {
             let opt = &options.yaxis.title;
-            if let Some(text) = opt.text {
+            if let Some(text) = &opt.text {
                 let style = &opt.style;
                 ctx.save();
                 ctx.set_fill_color(style.color);
 
+                let fontfamily = match &style.fontfamily {
+                    Some(val) => val.as_str(),
+                    None => DEFAULT_FONT_FAMILY,
+                };
+
                 ctx.set_font(
-                    &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                    fontfamily,
                     style.fontstyle.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
                     style.fontsize.unwrap_or(12.),
@@ -653,7 +687,7 @@ where
                 ctx.rotate(-std::f64::consts::FRAC_PI_2);
                 // ctx.set_text_align(TextAlign::Center);
                 ctx.set_text_baseline(BaseLine::Middle);
-                ctx.fill_text(text, 0., 0.);
+                ctx.fill_text(text.as_str(), 0., 0.);
                 ctx.restore();
             }
         }
@@ -663,8 +697,13 @@ where
         let style = &xaxis.labels.style;
         ctx.set_fill_color(style.color);
 
+        let fontfamily = match &style.fontfamily {
+            Some(val) => val.as_str(),
+            None => DEFAULT_FONT_FAMILY,
+        };
+
         ctx.set_font(
-            &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+            fontfamily,
             style.fontstyle.unwrap_or(TextStyle::Normal),
             TextWeight::Normal,
             style.fontsize.unwrap_or(12.),
@@ -724,8 +763,13 @@ where
         let style = &yaxis.labels.style;
         ctx.set_fill_color(yaxis.labels.style.color);
 
+        let fontfamily = match &style.fontfamily {
+            Some(val) => val.as_str(),
+            None => DEFAULT_FONT_FAMILY,
+        };
+
         ctx.set_font(
-            &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+            fontfamily,
             style.fontstyle.unwrap_or(TextStyle::Normal),
             TextWeight::Normal,
             style.fontsize.unwrap_or(12.),
@@ -897,8 +941,14 @@ where
                     info!("Draw the labels");
                     if let Some(labels) = labels {
                         ctx.set_fill_color(labels.color);
+
+                        let fontfamily = match &labels.fontfamily {
+                            Some(val) => val.as_str(),
+                            None => DEFAULT_FONT_FAMILY,
+                        };
+
                         ctx.set_font(
-                            labels.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                            fontfamily,
                             labels.fontstyle.unwrap_or(TextStyle::Normal),
                             TextWeight::Normal,
                             labels.fontsize.unwrap_or(12.),
@@ -939,16 +989,16 @@ where
                 bar_width = props.bar_width;
             }
 
-            let color = self.base.get_color(idx);
-            let highlight_color = self.base.get_highlight_color(color);
-            channel.color = color;
-            channel.highlight = highlight_color;
+            let color = self.base.get_fill(idx);
+            let highlight_color = self.base.get_highlight_color(&color);
+            channel.fill = color.clone();
+            channel.highlight = highlight_color.clone();
 
             for jdx in 0..entity_count {
                 let mut entity = channel.entities.get_mut(jdx).unwrap();
                 entity.index = jdx;
-                entity.color = color;
-                entity.highlight_color = highlight_color;
+                entity.color = color.clone();
+                entity.highlight_color = highlight_color.clone();
                 entity.left = left;
                 entity.bottom = props.xaxis_top;
                 entity.height = self.value_to_bar_height(entity.value);
@@ -964,8 +1014,8 @@ where
         channel_index: usize,
         entity_index: usize,
         value: Option<D>,
-        color: Color,
-        highlight_color: Color,
+        color: Fill,
+        highlight_color: Fill,
     ) -> BarEntity<D> {
         let props = self.props.borrow();
         let baseprops = self.base.props.borrow();
@@ -1017,12 +1067,12 @@ where
         let meta = &self.base.data.meta;
         while start < end {
             let channel = meta.get(start).unwrap();
-            let name = channel.name;
-            let color = self.base.get_color(start);
-            let highlight = self.base.get_highlight_color(color);
+            let name = channel.name.as_str();
+            let fill = self.base.get_fill(start);
+            let highlight = self.base.get_highlight_color(&fill);
 
-            let entities = self.create_entities(start, 0, count, color, highlight);
-            result.push(ChartChannel::new(name, color, highlight, entities));
+            let entities = self.create_entities(start, 0, count, fill.clone(), highlight.clone());
+            result.push(ChartChannel::new(name, fill, highlight, entities));
             start += 1;
         }
 
@@ -1035,20 +1085,29 @@ where
         channel_index: usize,
         start: usize,
         end: usize,
-        color: Color,
-        highlight: Color,
+        color: Fill,
+        highlight: Fill,
     ) -> Vec<BarEntity<D>> {
         let mut start = start;
         let mut result = Vec::new();
         while start < end {
             let frame = self.base.data.frames.get(start).unwrap();
             let value = frame.data.get(channel_index as u64);
+
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {
                     let value = *value;
-                    self.create_entity(channel_index, start, Some(value), color, highlight)
+                    self.create_entity(
+                        channel_index,
+                        start,
+                        Some(value),
+                        color.clone(),
+                        highlight.clone(),
+                    )
                 }
-                None => self.create_entity(channel_index, start, None, color, highlight),
+                None => {
+                    self.create_entity(channel_index, start, None, color.clone(), highlight.clone())
+                }
             };
 
             result.push(entity);

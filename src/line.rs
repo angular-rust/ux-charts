@@ -4,25 +4,24 @@
 #![allow(
     clippy::explicit_counter_loop,
     clippy::float_cmp,
-    clippy::unnecessary_unwrap
+    clippy::unnecessary_unwrap,
+    clippy::manual_map
 )]
 
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
+    BaseLine, CanvasContext, LineJoin, Point, Rect, Size, TextStyle, TextWeight,
 };
 use dataflow::*;
-use primitives::{
-    BaseLine, CanvasContext, Color, LineJoin, Point, Rect, Size, TextStyle, TextWeight,
-};
 use std::{cell::RefCell, fmt};
 
 use crate::*;
 
 #[derive(Default, Clone)]
 pub struct LinePoint<D> {
-    color: Color,
-    highlight_color: Color,
+    color: Fill,
+    highlight_color: Fill,
     // formatted_value: String,
     index: usize,
     old_value: Option<D>,
@@ -68,25 +67,47 @@ impl<D> LinePoint<D> {
 /// A point in a line chart.
 impl<C, D> Drawable<C> for LinePoint<D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let cx = lerp(self.old_x, self.x, percent);
         let cy = lerp(self.old_y, self.y, percent);
         let pr = lerp(self.old_point_radius, self.point_radius, percent);
         if highlight {
-            ctx.set_fill_color(self.highlight_color);
-            ctx.begin_path();
-            ctx.arc(cx, cy, 2. * pr, 0., TAU, false);
-            ctx.fill();
+            match &self.highlight_color {
+                Fill::Solid(color) => {
+                    ctx.set_fill_color(*color);
+                    ctx.begin_path();
+                    ctx.arc(cx, cy, 2. * pr, 0., TAU, false);
+                    ctx.fill();
+                }
+                Fill::Gradient(gradient) => {
+                    ctx.set_fill_gradient(gradient);
+                    ctx.begin_path();
+                    ctx.arc(cx, cy, 2. * pr, 0., TAU, false);
+                    ctx.fill();
+                }
+                Fill::None => {}
+            }
         }
 
-        ctx.set_fill_color(self.color);
-
-        ctx.begin_path();
-        ctx.arc(cx, cy, pr, 0., TAU, false);
-        ctx.fill();
-        ctx.stroke();
+        match &self.color {
+            Fill::Solid(color) => {
+                ctx.set_fill_color(*color);
+                ctx.begin_path();
+                ctx.arc(cx, cy, pr, 0., TAU, false);
+                ctx.fill();
+                ctx.stroke();
+            }
+            Fill::Gradient(gradient) => {
+                ctx.set_fill_gradient(gradient);
+                ctx.begin_path();
+                ctx.arc(cx, cy, pr, 0., TAU, false);
+                ctx.fill();
+                ctx.stroke();
+            }
+            Fill::None => {}
+        }
     }
 }
 
@@ -136,23 +157,23 @@ struct LineChartProperties {
     xlabel_offset_factor: f64, // = .5;
 }
 
-pub struct LineChart<'a, C, M, D>
+pub struct LineChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {
     props: RefCell<LineChartProperties>,
-    base: BaseChart<'a, C, LinePoint<D>, M, D, LineChartOptions<'a>>,
+    base: BaseChart<C, LinePoint<D>, M, D, LineChartOptions>,
 }
 
-impl<'a, C, M, D> LineChart<'a, C, M, D>
+impl<C, M, D> LineChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
-    pub fn new(options: LineChartOptions<'a>) -> Self {
+    pub fn new(options: LineChartOptions) -> Self {
         Self {
             props: Default::default(),
             base: BaseChart::new(options),
@@ -233,7 +254,6 @@ where
         // for idx in start..end {
         //     let mut sum = 0.0;
         //     let mut count = 0;
-        //     // TODO: check it
         //     for jdx in channels.len()..0 {
         //         let channel_state = channel_states.get(jdx).unwrap();
         //         if *channel_state == Visibility::Hidden || *channel_state == Visibility::Hiding {
@@ -278,8 +298,8 @@ where
                     index: p.index,
                     old_value: None,
                     value: p.value,
-                    color: p.color,
-                    highlight_color: p.highlight_color,
+                    color: p.color.clone(),
+                    highlight_color: p.highlight_color.clone(),
                     old_point_radius: p.old_point_radius,
                     old_cp1: Default::default(),
                     old_cp2: Default::default(),
@@ -334,9 +354,9 @@ where
     // }
 }
 
-impl<'a, C, M, D> Chart<'a, C, M, D, LinePoint<D>> for LineChart<'a, C, M, D>
+impl<C, M, D> Chart<C, M, D, LinePoint<D>> for LineChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -457,15 +477,21 @@ where
         let mut xtitle_height = 0.;
         let xtitle = &options.xaxis.title;
 
-        if let Some(text) = xtitle.text {
+        if let Some(text) = &xtitle.text {
             let style = &xtitle.style;
+
+            let fontfamily = match &style.fontfamily {
+                Some(val) => val.as_str(),
+                None => DEFAULT_FONT_FAMILY,
+            };
+
             ctx.set_font(
-                style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                fontfamily,
                 style.fontstyle.unwrap_or(TextStyle::Normal),
                 TextWeight::Normal,
                 style.fontsize.unwrap_or(12.),
             );
-            xtitle_width = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
+            xtitle_width = ctx.measure_text(text.as_str()).width.round() + 2. * TITLE_PADDING;
             xtitle_height = xtitle.style.fontsize.unwrap_or(12.) + 2. * TITLE_PADDING;
             xtitle_top = area.origin.y + area.size.height - xtitle_height;
         }
@@ -477,15 +503,21 @@ where
         let mut ytitle_height = 0.;
         let ytitle = &options.yaxis.title;
 
-        if let Some(text) = ytitle.text {
+        if let Some(text) = &ytitle.text {
             let style = &ytitle.style;
+
+            let fontfamily = match &style.fontfamily {
+                Some(val) => val.as_str(),
+                None => DEFAULT_FONT_FAMILY,
+            };
+
             ctx.set_font(
-                style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                fontfamily,
                 style.fontstyle.unwrap_or(TextStyle::Normal),
                 TextWeight::Normal,
                 style.fontsize.unwrap_or(12.),
             );
-            ytitle_height = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
+            ytitle_height = ctx.measure_text(text.as_str()).width.round() + 2. * TITLE_PADDING;
             ytitle_width = ytitle.style.fontsize.unwrap_or(12.) + 2. * TITLE_PADDING;
             ytitle_left = area.origin.x;
         }
@@ -617,7 +649,7 @@ where
         }
     }
 
-    fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
+    fn set_stream(&mut self, stream: DataStream<M, D>) {
         self.base.data = stream;
         self.create_channels(0, self.base.data.meta.len());
     }
@@ -655,13 +687,18 @@ where
         if let Some(xtitle_center) = props.xtitle_center {
             let opt = &options.xaxis.title;
 
-            if let Some(text) = opt.text {
+            if let Some(text) = &opt.text {
                 let style = &opt.style;
                 ctx.save();
                 ctx.set_fill_color(style.color);
 
+                let fontfamily = match &style.fontfamily {
+                    Some(val) => val.as_str(),
+                    None => DEFAULT_FONT_FAMILY,
+                };
+
                 ctx.set_font(
-                    &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                    fontfamily,
                     style.fontstyle.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
                     style.fontsize.unwrap_or(12.),
@@ -669,7 +706,7 @@ where
 
                 // ctx.set_text_align(TextAlign::Center);
                 ctx.set_text_baseline(BaseLine::Middle);
-                ctx.fill_text(text, xtitle_center.x, xtitle_center.y);
+                ctx.fill_text(text.as_str(), xtitle_center.x, xtitle_center.y);
                 ctx.restore();
             }
         }
@@ -677,13 +714,18 @@ where
         // y-axis title.
         if let Some(ytitle_center) = props.ytitle_center {
             let opt = &options.yaxis.title;
-            if let Some(text) = opt.text {
+            if let Some(text) = &opt.text {
                 let style = &opt.style;
                 ctx.save();
                 ctx.set_fill_color(style.color);
 
+                let fontfamily = match &style.fontfamily {
+                    Some(val) => val.as_str(),
+                    None => DEFAULT_FONT_FAMILY,
+                };
+
                 ctx.set_font(
-                    &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                    fontfamily,
                     style.fontstyle.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
                     style.fontsize.unwrap_or(12.),
@@ -693,7 +735,7 @@ where
                 ctx.rotate(-std::f64::consts::FRAC_PI_2);
                 // ctx.set_text_align(TextAlign::Center);
                 ctx.set_text_baseline(BaseLine::Middle);
-                ctx.fill_text(text, 0., 0.);
+                ctx.fill_text(text.as_str(), 0., 0.);
                 ctx.restore();
             }
         }
@@ -703,8 +745,13 @@ where
         let style = &xaxis.labels.style;
         ctx.set_fill_color(style.color);
 
+        let fontfamily = match &style.fontfamily {
+            Some(val) => val.as_str(),
+            None => DEFAULT_FONT_FAMILY,
+        };
+
         ctx.set_font(
-            &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+            fontfamily,
             style.fontstyle.unwrap_or(TextStyle::Normal),
             TextWeight::Normal,
             style.fontsize.unwrap_or(12.),
@@ -764,8 +811,13 @@ where
         let style = &yaxis.labels.style;
         ctx.set_fill_color(yaxis.labels.style.color);
 
+        let fontfamily = match &style.fontfamily {
+            Some(val) => val.as_str(),
+            None => DEFAULT_FONT_FAMILY,
+        };
+
         ctx.set_font(
-            &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+            fontfamily,
             style.fontstyle.unwrap_or(TextStyle::Normal),
             TextWeight::Normal,
             style.fontsize.unwrap_or(12.),
@@ -936,36 +988,49 @@ where
             if fill_opacity > 0. {
                 let mut prev: LinePoint<D> = Default::default();
                 ctx.set_line_width(scale * channel_line_width);
-                let color = self.base.change_color_alpha(channel.color, fill_opacity);
-                ctx.set_fill_color(color);
-                let mut closed = false;
-                for entity in entities.iter() {
-                    if entity.value.is_some() {
-                        if prev.value.is_some() {
-                            self.curve_to(ctx, prev.cp2, entity.cp1, entity);
+                let color = self.base.change_fill_alpha(&channel.fill, fill_opacity);
+                let should_fill = match &color {
+                    Fill::Solid(color) => {
+                        ctx.set_fill_color(*color);
+                        true
+                    }
+                    Fill::Gradient(gradient) => {
+                        ctx.set_fill_gradient(gradient);
+                        true
+                    }
+                    Fill::None => false,
+                };
+
+                if should_fill {
+                    let mut closed = false;
+                    for entity in entities.iter() {
+                        if entity.value.is_some() {
+                            if prev.value.is_some() {
+                                self.curve_to(ctx, prev.cp2, entity.cp1, entity);
+                            } else {
+                                // prev point is empty
+                                // so open the path
+                                closed = false;
+                                ctx.begin_path();
+                                ctx.move_to(entity.x, props.xaxis_top);
+                                ctx.line_to(entity.x, entity.y);
+                            }
                         } else {
-                            // prev point is empty
-                            // so open the path
-                            closed = false;
-                            ctx.begin_path();
-                            ctx.move_to(entity.x, props.xaxis_top);
-                            ctx.line_to(entity.x, entity.y);
+                            // current point is empty
+                            // if it not first so close path
+                            ctx.line_to(prev.x, props.xaxis_top);
+                            ctx.close_path();
+                            closed = true;
+                            ctx.fill();
                         }
-                    } else {
-                        // current point is empty
-                        // if it not first so close path
+                        prev = entity.clone();
+                    }
+                    if !closed {
                         ctx.line_to(prev.x, props.xaxis_top);
                         ctx.close_path();
                         closed = true;
                         ctx.fill();
                     }
-                    prev = entity.clone();
-                }
-                if !closed {
-                    ctx.line_to(prev.x, props.xaxis_top);
-                    ctx.close_path();
-                    closed = true;
-                    ctx.fill();
                 }
             }
 
@@ -973,38 +1038,71 @@ where
             if channel_line_width > 0. {
                 let mut prev: LinePoint<D> = Default::default();
                 ctx.set_line_width(scale * channel_line_width);
-                ctx.set_stroke_color(channel.color);
-                ctx.begin_path();
-                for entity in entities.iter() {
-                    if entity.value.is_some() {
-                        if prev.value.is_some() {
-                            self.curve_to(ctx, prev.cp2, entity.cp1, entity);
-                        } else {
-                            ctx.move_to(entity.x, entity.y);
-                        }
-                    } else {
+                let should_stroke = match &channel.fill {
+                    Fill::Solid(color) => {
+                        ctx.set_stroke_color(*color);
+                        true
                     }
-                    prev = entity.clone();
+                    Fill::Gradient(gradient) => {
+                        ctx.set_stroke_gradient(gradient);
+                        true
+                    }
+                    Fill::None => false,
+                };
+
+                if should_stroke {
+                    ctx.begin_path();
+                    for entity in entities.iter() {
+                        if entity.value.is_some() {
+                            if prev.value.is_some() {
+                                self.curve_to(ctx, prev.cp2, entity.cp1, entity);
+                            } else {
+                                ctx.move_to(entity.x, entity.y);
+                            }
+                        } else {
+                        }
+                        prev = entity.clone();
+                    }
+                    ctx.stroke();
                 }
-                ctx.stroke();
             }
 
             // Draw markers.
             if marker_size > 0. {
-                let fill_color = if let Some(color) = marker_options.fill_color {
+                let fill_color = if let Some(color) = &marker_options.fill_color {
                     color
                 } else {
-                    channel.color
+                    &channel.fill
                 };
 
-                let stroke_color = if let Some(color) = marker_options.stroke_color {
+                let stroke_color = if let Some(color) = &marker_options.stroke_color {
                     color
                 } else {
-                    channel.color
+                    &channel.fill
                 };
-                ctx.set_fill_color(fill_color);
+
+                match &fill_color {
+                    Fill::Solid(color) => {
+                        ctx.set_fill_color(*color);
+                    }
+                    Fill::Gradient(gradient) => {
+                        ctx.set_fill_gradient(gradient);
+                    }
+                    Fill::None => {}
+                }
+
+                match &stroke_color {
+                    Fill::Solid(color) => {
+                        ctx.set_stroke_color(*color);
+                    }
+                    Fill::Gradient(gradient) => {
+                        ctx.set_stroke_gradient(gradient);
+                    }
+                    Fill::None => {}
+                }
+
                 ctx.set_line_width(scale * marker_options.line_width as f64);
-                ctx.set_stroke_color(stroke_color);
+
                 for entity in entities.iter() {
                     if entity.value.is_some() {
                         if marker_options.enabled {
@@ -1023,8 +1121,14 @@ where
         if let Some(label_options) = label_options {
             if percent == 1.0 {
                 ctx.set_fill_color(label_options.color);
+
+                let fontfamily = match &label_options.fontfamily {
+                    Some(val) => val.as_str(),
+                    None => DEFAULT_FONT_FAMILY,
+                };
+
                 ctx.set_font(
-                    label_options.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                    fontfamily,
                     label_options.fontstyle.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
                     label_options.fontsize.unwrap_or(12.),
@@ -1076,16 +1180,16 @@ where
             let visible =
                 channel.state == Visibility::Showing || channel.state == Visibility::Shown;
 
-            let color = self.base.get_color(idx);
-            let highlight_color = self.base.get_highlight_color(color);
-            channel.color = color;
-            channel.highlight = highlight_color;
+            let color = self.base.get_fill(idx);
+            let highlight_color = self.base.get_highlight_color(&color);
+            channel.fill = color.clone();
+            channel.highlight = highlight_color.clone();
 
             for jdx in 0..entity_count {
                 let entity = channel.entities.get_mut(jdx).unwrap();
                 entity.index = jdx;
-                entity.color = color;
-                entity.highlight_color = highlight_color;
+                entity.color = color.clone();
+                entity.highlight_color = highlight_color.clone();
                 entity.x = self.xlabel_x(jdx) + props.xlabel_hop / 2.;
                 entity.y = if visible {
                     self.value_to_y(entity.value)
@@ -1103,20 +1207,14 @@ where
             let mut e1;
             let mut e2 = {
                 match channel.entities.get(0) {
-                    Some(entity) => match entity.value {
-                        Some(_) => Some(entity.as_point()),
-                        None => None,
-                    },
+                    Some(entity) => entity.value.map(|_| entity.as_point()),
                     None => None,
                 }
             };
 
             let mut e3 = {
                 match channel.entities.get(1) {
-                    Some(entity) => match entity.value {
-                        Some(_) => Some(entity.as_point()),
-                        None => None,
-                    },
+                    Some(entity) => entity.value.map(|_| entity.as_point()),
                     None => None,
                 }
             };
@@ -1126,10 +1224,7 @@ where
                 e2 = e3;
                 e3 = {
                     match channel.entities.get(jdx) {
-                        Some(entity) => match entity.value {
-                            Some(_) => Some(entity.as_point()),
-                            None => None,
-                        },
+                        Some(entity) => entity.value.map(|_| entity.as_point()),
                         None => None,
                     }
                 };
@@ -1169,8 +1264,8 @@ where
         channel_index: usize,
         entity_index: usize,
         value: Option<D>,
-        color: Color,
-        highlight_color: Color,
+        color: Fill,
+        highlight_color: Fill,
     ) -> LinePoint<D> {
         let props = self.props.borrow();
 
@@ -1211,12 +1306,17 @@ where
         let meta = &self.base.data.meta;
         while start < end {
             let channel = meta.get(start).unwrap();
-            let name = channel.name;
-            let color = self.base.get_color(start);
-            let highlight = self.base.get_highlight_color(color);
+            let name = channel.name.as_str();
+            let color = self.base.get_fill(start);
+            let highlight = self.base.get_highlight_color(&color);
 
-            let entities = self.create_entities(start, 0, count, color, highlight);
-            result.push(ChartChannel::new(name, color, highlight, entities));
+            let entities = self.create_entities(start, 0, count, color.clone(), highlight.clone());
+            result.push(ChartChannel::new(
+                name,
+                color.clone(),
+                highlight.clone(),
+                entities,
+            ));
             start += 1;
         }
 
@@ -1229,8 +1329,8 @@ where
         channel_index: usize,
         start: usize,
         end: usize,
-        color: Color,
-        highlight: Color,
+        color: Fill,
+        highlight: Fill,
     ) -> Vec<LinePoint<D>> {
         let mut start = start;
         let mut result = Vec::new();
@@ -1240,9 +1340,17 @@ where
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {
                     let value = *value;
-                    self.create_entity(channel_index, start, Some(value), color, highlight)
+                    self.create_entity(
+                        channel_index,
+                        start,
+                        Some(value),
+                        color.clone(),
+                        highlight.clone(),
+                    )
                 }
-                None => self.create_entity(channel_index, start, None, color, highlight),
+                None => {
+                    self.create_entity(channel_index, start, None, color.clone(), highlight.clone())
+                }
             };
 
             result.push(entity);

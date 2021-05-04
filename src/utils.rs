@@ -2,18 +2,15 @@
 #![allow(unused_imports)]
 #![allow(clippy::needless_lifetimes)]
 
+use super::StyleOptions;
+use crate::DEFAULT_FONT_FAMILY;
+use animate::{CanvasContext, Point, TextStyle, TextWeight};
+use dataflow::*;
 use std::{
     f64::consts::PI,
     fmt,
     ops::{Add, Mul, Sub},
 };
-
-use crate::DEFAULT_FONT_FAMILY;
-
-use super::StyleOption;
-use dataflow::*;
-use animate::Pattern;
-use primitives::{CanvasContext, Point, TextStyle, TextWeight};
 
 /// Converts [angle] in radians to degrees.
 pub fn rad2deg(angle: f64) -> f64 {
@@ -69,7 +66,7 @@ pub fn hyphenate(s: &str) -> String {
 }
 
 /// Returns the maximum value in a [DataTable].
-pub fn find_max_value<'a, M, D>(stream: &DataStream<'a, M, D>) -> D
+pub fn find_max_value<'a, M, D>(stream: &DataStream<M, D>) -> D
 where
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
@@ -95,7 +92,7 @@ where
 }
 
 /// Returns the minimum value in a [DataTable].
-pub fn find_min_value<'a, M, D>(stream: &DataStream<'a, M, D>) -> D
+pub fn find_min_value<'a, M, D>(stream: &DataStream<M, D>) -> D
 where
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
@@ -143,17 +140,18 @@ pub fn calculate_interval(range: f64, target_steps: usize, min_interval: Option<
     msd * mag_pow
 }
 
-pub fn calculate_max_text_width<C>(
-    ctx: &C,
-    style: &StyleOption,
-    texts: &[String],
-) -> f64 
+pub fn calculate_max_text_width<C>(ctx: &C, style: &StyleOptions, texts: &[String]) -> f64
 where
-    C: CanvasContext<Pattern>
+    C: CanvasContext,
 {
     let mut result = 0.0;
+    let fontfamily = match &style.fontfamily {
+        Some(val) => val.as_str(),
+        None => DEFAULT_FONT_FAMILY,
+    };
+
     ctx.set_font(
-        style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+        fontfamily,
         style.fontstyle.unwrap_or(TextStyle::Normal),
         TextWeight::Normal,
         style.fontsize.unwrap_or(12.),

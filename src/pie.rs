@@ -3,12 +3,13 @@
 #![allow(dead_code)]
 #![allow(clippy::explicit_counter_loop, clippy::float_cmp)]
 
+use animate::prelude::*;
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
+    BaseLine, CanvasContext, Point, TextStyle, TextWeight,
 };
 use dataflow::*;
-use primitives::{color, BaseLine, CanvasContext, Color, Point, TextStyle, TextWeight};
 use std::{cell::RefCell, fmt};
 
 use crate::*;
@@ -19,8 +20,8 @@ const START_ANGLE: f64 = -std::f64::consts::FRAC_PI_2;
 #[derive(Default, Clone)]
 pub struct PieEntity<D> {
     // Chart chart,
-    color: Color,
-    highlight_color: Color,
+    color: Fill,
+    highlight_color: Fill,
     formatted_value: String,
     index: usize,
     old_value: Option<D>,
@@ -89,7 +90,7 @@ impl<D> Entity for PieEntity<D> {
 
 impl<C, D> Drawable<C> for PieEntity<D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
         let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
@@ -100,19 +101,44 @@ where
         let center = &self.center;
         if highlight {
             let highlight_outer_radius = HIGHLIGHT_OUTER_RADIUS_FACTOR * self.outer_radius;
-            ctx.set_fill_color(self.highlight_color);
-            ctx.begin_path();
-            ctx.arc(center.x, center.y, highlight_outer_radius, a1, a2, false);
-            ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
-            ctx.fill();
+            match &self.highlight_color {
+                Fill::Solid(color) => {
+                    ctx.set_fill_color(*color);
+                    ctx.begin_path();
+                    ctx.arc(center.x, center.y, highlight_outer_radius, a1, a2, false);
+                    ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
+                    ctx.fill();
+                }
+                Fill::Gradient(gradient) => {
+                    ctx.set_fill_gradient(gradient);
+                    ctx.begin_path();
+                    ctx.arc(center.x, center.y, highlight_outer_radius, a1, a2, false);
+                    ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
+                    ctx.fill();
+                }
+                Fill::None => {}
+            }
         }
 
-        ctx.set_fill_color(self.color);
-        ctx.begin_path();
-        ctx.arc(center.x, center.y, self.outer_radius, a1, a2, false);
-        ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
-        ctx.fill();
-        ctx.stroke();
+        match &self.color {
+            Fill::Solid(color) => {
+                ctx.set_fill_color(*color);
+                ctx.begin_path();
+                ctx.arc(center.x, center.y, self.outer_radius, a1, a2, false);
+                ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
+                ctx.fill();
+                ctx.stroke();
+            }
+            Fill::Gradient(gradient) => {
+                ctx.set_fill_gradient(gradient);
+                ctx.begin_path();
+                ctx.arc(center.x, center.y, self.outer_radius, a1, a2, false);
+                ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
+                ctx.fill();
+                ctx.stroke();
+            }
+            Fill::None => {}
+        }
 
         if !self.formatted_value.is_empty() && a2 - a1 > PI / 36.0 {
             // let labels = self.chart.options.channel.labels;
@@ -142,23 +168,23 @@ struct PieChartProperties {
     direction: i64,
 }
 
-pub struct PieChart<'a, C, M, D>
+pub struct PieChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {
     props: RefCell<PieChartProperties>,
-    base: BaseChart<'a, C, PieEntity<D>, M, D, PieChartOptions<'a>>,
+    base: BaseChart<C, PieEntity<D>, M, D, PieChartOptions>,
 }
 
-impl<'a, C, M, D> PieChart<'a, C, M, D>
+impl<C, M, D> PieChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
-    pub fn new(options: PieChartOptions<'a>) -> Self {
+    pub fn new(options: PieChartOptions) -> Self {
         Self {
             props: Default::default(),
             base: BaseChart::new(options),
@@ -211,9 +237,9 @@ where
     // }
 }
 
-impl<'a, C, M, D> Chart<'a, C, M, D, PieEntity<D>> for PieChart<'a, C, M, D>
+impl<C, M, D> Chart<C, M, D, PieEntity<D>> for PieChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -262,7 +288,7 @@ where
         props.start_angle = utils::deg2rad(opt.start_angle);
     }
 
-    fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
+    fn set_stream(&mut self, stream: DataStream<M, D>) {
         self.base.data = stream;
         self.create_channels(0, self.base.data.meta.len());
     }
@@ -349,8 +375,13 @@ where
         let channel = channels.first().unwrap();
         let labels = &self.base.options.channel.labels.style;
 
+        let fontfamily = match &labels.fontfamily {
+            Some(val) => val.as_str(),
+            None => DEFAULT_FONT_FAMILY,
+        };
+
         ctx.set_font(
-            labels.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+            fontfamily,
             labels.fontstyle.unwrap_or(TextStyle::Normal),
             TextWeight::Normal,
             labels.fontsize.unwrap_or(12.),
@@ -395,10 +426,10 @@ where
                 for entity in channel.entities.iter_mut() {
                     match entity.value {
                         Some(value) => {
-                            let color = self.base.get_color(idx);
+                            let color = self.base.get_fill(idx);
                             entity.index = idx;
-                            entity.color = color;
-                            entity.highlight_color = self.base.get_highlight_color(color);
+                            entity.color = color.clone();
+                            entity.highlight_color = self.base.get_highlight_color(&color);
                             entity.center = props.center;
                             entity.inner_radius = props.inner_radius;
                             entity.outer_radius = props.outer_radius;
@@ -422,12 +453,12 @@ where
         channel_index: usize,
         entity_index: usize,
         value: Option<D>,
-        color: Color,
-        highlight_color: Color,
+        color: Fill,
+        highlight_color: Fill,
     ) -> PieEntity<D> {
         // Override the colors.
-        let color = self.base.get_color(entity_index);
-        let highlight_color = self.base.change_color_alpha(color, 0.5);
+        let color = self.base.get_fill(entity_index);
+        let highlight_color = self.base.change_fill_alpha(&color, 0.5);
 
         let stream = &self.base.data;
         let frame = stream.frames.get(entity_index).unwrap();
@@ -480,11 +511,11 @@ where
 
         while start < end {
             let channel = meta.get(start).unwrap();
-            let name = channel.name;
-            let color = self.base.get_color(start);
-            let highlight = self.base.get_highlight_color(color);
+            let name = channel.name.as_str();
+            let color = self.base.get_fill(start);
+            let highlight = self.base.get_highlight_color(&color);
 
-            let entities = self.create_entities(start, 0, count, color, highlight);
+            let entities = self.create_entities(start, 0, count, color.clone(), highlight.clone());
             result.push(ChartChannel::new(name, color, highlight, entities));
             start += 1;
         }
@@ -498,8 +529,8 @@ where
         channel_index: usize,
         start: usize,
         end: usize,
-        color: Color,
-        highlight: Color,
+        color: Fill,
+        highlight: Fill,
     ) -> Vec<PieEntity<D>> {
         let mut start = start;
         let mut result = Vec::new();
@@ -509,9 +540,17 @@ where
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {
                     let value = *value;
-                    self.create_entity(channel_index, start, Some(value), color, highlight)
+                    self.create_entity(
+                        channel_index,
+                        start,
+                        Some(value),
+                        color.clone(),
+                        highlight.clone(),
+                    )
                 }
-                None => self.create_entity(channel_index, start, None, color, highlight),
+                None => {
+                    self.create_entity(channel_index, start, None, color.clone(), highlight.clone())
+                }
             };
 
             result.push(entity);

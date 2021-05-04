@@ -2,8 +2,8 @@
 #![allow(clippy::explicit_counter_loop, clippy::float_cmp)]
 
 use animate::easing::EasingFunction;
+use animate::{CanvasContext, Color, Point, Rect, RgbColor, Size, TextStyle, TextWeight};
 use dataflow::*;
-use primitives::{CanvasContext, Color, Point, Rect, RgbColor, Size, TextStyle, TextWeight};
 use std::{cell::RefCell, collections::HashMap, fmt};
 
 use super::*;
@@ -58,20 +58,20 @@ pub struct BaseChartProperties {
 
 /// Base class for all charts.
 #[derive(Default, Clone)]
-pub struct BaseChart<'a, C, E, M, D, O>
+pub struct BaseChart<C, E, M, D, O>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     E: Entity,
     M: fmt::Display,
     D: fmt::Display + Copy,
-    O: BaseOption<'a>,
+    O: BaseOption,
 {
     pub props: RefCell<BaseChartProperties>,
     /// The data table that stores chart data
     /// Row 0 contains column names.
     /// Column 0 contains x-axis/pie labels.
     /// Column 1..n - 1 contain channel data.
-    pub data: DataStream<'a, M, D>,
+    pub data: DataStream<M, D>,
 
     /// The drawing options initialized in the constructor.
     pub options: O,
@@ -90,13 +90,13 @@ where
     pub channels: RefCell<Vec<ChartChannel<E>>>,
 }
 
-impl<'a, C, E, M, D, O> BaseChart<'a, C, E, M, D, O>
+impl<C, E, M, D, O> BaseChart<C, E, M, D, O>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     E: Entity,
     M: fmt::Display,
     D: fmt::Display + Copy,
-    O: BaseOption<'a>,
+    O: BaseOption,
 {
     // /// The element that contains this chart.
     // container: Element;
@@ -119,24 +119,41 @@ where
     /// [alpha] from 0 to 1.
     /// TODO: There are question about set the alpha or change from existing alpha
     ///
-    pub fn change_color_alpha(&self, color: Color, alpha: f64) -> Color {
+    pub fn change_fill_alpha(&self, value: &Fill, alpha: f64) -> Fill {
         if !(0. ..=1.).contains(&alpha) {
             panic!("Wrong alpha value {}", alpha);
         }
 
-        let alpha = (alpha * 0xFF as f64).round() as u8;
-        let color: RgbColor = color.into();
-        Color::RGBA(color.red, color.green, color.blue, alpha)
+        match value {
+            Fill::Solid(value) => {
+                let alpha = (alpha * 0xFF as f64).round() as u8;
+                let color: RgbColor = (*value).into();
+                Fill::Solid(Color::rgba(color.red, color.green, color.blue, alpha))
+            }
+            Fill::Gradient(gradient) => {
+                let gradient = gradient.clone();
+                {
+                    let mut stops = gradient.stops.borrow_mut();
+                    let alpha = (alpha * 0xFF as f64).round() as u8;
+                    for stop in stops.iter_mut() {
+                        let color: RgbColor = (stop.color).into();
+                        stop.color = Color::rgba(color.red, color.green, color.blue, alpha);
+                    }
+                }
+                Fill::Gradient(gradient)
+            },
+            Fill::None => Fill::None,
+        }
     }
 
-    pub fn get_color(&self, index: usize) -> Color {
+    pub fn get_fill(&self, index: usize) -> Fill {
         let colors = self.options.colors();
         let color = colors.get(index % colors.len()).unwrap();
-        *color
+        color.clone()
     }
 
-    pub fn get_highlight_color(&self, color: Color) -> Color {
-        self.change_color_alpha(color, 0.5)
+    pub fn get_highlight_color(&self, value: &Fill) -> Fill {
+        self.change_fill_alpha(value, 0.5)
     }
 
     /// Called when the animation ends.
@@ -238,21 +255,27 @@ where
     /// Draws the chart title using the main rendering context.
     pub fn draw_title(&self, ctx: &C) {
         let title = self.options.title();
-        if let Some(text) = title.text {
+        if let Some(text) = &title.text {
             let props = self.props.borrow();
             // let x = ((props.title_box.origin.x + props.title_box.size.width) / 2.).trunc();
             let x = props.title_box.origin.x;
             let y = (props.title_box.origin.y + props.title_box.size.height) - TITLE_PADDING;
             let style = &title.style;
+
+            let fontfamily = match &style.fontfamily {
+                Some(val) => val.as_str(),
+                None => DEFAULT_FONT_FAMILY,
+            };
+
             ctx.set_font(
-                style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                fontfamily,
                 style.fontstyle.unwrap_or(TextStyle::Normal),
                 TextWeight::Normal,
                 style.fontsize.unwrap_or(12.),
             );
             ctx.set_fill_color(title.style.color);
             // ctx.set_text_align(TextAlign::Center);
-            ctx.fill_text(text, x, y);
+            ctx.fill_text(text.as_str(), x, y);
         }
     }
 
@@ -590,13 +613,13 @@ where
     }
 }
 
-impl<'a, C, E, M, D, O> Chart<'a, C, M, D, E> for BaseChart<'a, C, E, M, D, O>
+impl<C, E, M, D, O> Chart<C, M, D, E> for BaseChart<C, E, M, D, O>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     E: Entity,
     M: fmt::Display,
     D: fmt::Display + Copy,
-    O: BaseOption<'a>,
+    O: BaseOption,
 {
     /// Calculates various drawing sizes.
     ///
@@ -636,15 +659,21 @@ where
         };
 
         if prepare_title {
-            if let Some(text) = title.text {
+            if let Some(text) = &title.text {
                 let style = &title.style;
+
+                let fontfamily = match &style.fontfamily {
+                    Some(val) => val.as_str(),
+                    None => DEFAULT_FONT_FAMILY,
+                };
+
                 ctx.set_font(
-                    style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                    fontfamily,
                     style.fontstyle.unwrap_or(TextStyle::Normal),
                     TextWeight::Normal,
                     style.fontsize.unwrap_or(12.),
                 );
-                title_w = ctx.measure_text(text).width.round() + 2. * TITLE_PADDING;
+                title_w = ctx.measure_text(text.as_str()).width.round() + 2. * TITLE_PADDING;
                 title_x = ((props.width - title_w - 2. * TITLE_PADDING) / 2.).trunc();
             }
 
@@ -680,7 +709,7 @@ where
         }
     }
 
-    fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
+    fn set_stream(&mut self, stream: DataStream<M, D>) {
         error!("set stream");
     }
 
@@ -746,9 +775,19 @@ where
         let width = props.width;
         let height = props.height;
 
-        ctx.set_fill_color(*self.options.background());
-        // just fill instead clear
-        ctx.fill_rect(0., 0., width, height);
+        ctx.clear_rect(0.0, 0.0, width, height);
+
+        match self.options.background() {
+            Fill::Solid(color) => {
+                ctx.set_fill_color(*color);
+                ctx.fill_rect(0., 0., width, height);
+            }
+            Fill::Gradient(gradient) => {
+                ctx.set_fill_gradient(gradient);
+                ctx.fill_rect(0., 0., width, height);
+            }
+            Fill::None => {}
+        }
     }
 
     /// Draws the channel given the current animation percent [percent].
@@ -771,8 +810,8 @@ where
         channel_index: usize,
         entity_index: usize,
         value: Option<D>,
-        color: Color,
-        highlight_color: Color,
+        color: Fill,
+        highlight_color: Fill,
     ) -> E {
         todo!()
     }
@@ -782,8 +821,8 @@ where
         channel_index: usize,
         start: usize,
         end: usize,
-        color: Color,
-        highlight: Color,
+        color: Fill,
+        highlight: Fill,
     ) -> Vec<E> {
         error!("create_entities");
         Vec::new()

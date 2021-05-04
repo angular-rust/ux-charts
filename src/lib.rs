@@ -1,9 +1,8 @@
 // #![allow(unused_imports)]
 #![allow(clippy::needless_return)]
 
+use animate::{CanvasContext, Point};
 use dataflow::*;
-use primitives::{CanvasContext, Color, Point};
-use animate::Pattern;
 use std::fmt;
 
 #[macro_use]
@@ -102,7 +101,7 @@ pub trait Entity {
 
 pub trait Drawable<C>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool);
 }
@@ -113,8 +112,8 @@ where
     E: Entity,
 {
     name: String,
-    color: Color,
-    highlight: Color,
+    fill: Fill,
+    highlight: Fill,
     state: Visibility,
     entities: Vec<E>,
 }
@@ -123,10 +122,10 @@ impl<E> ChartChannel<E>
 where
     E: Entity,
 {
-    pub fn new(name: &str, color: Color, highlight: Color, entities: Vec<E>) -> Self {
+    pub fn new(name: &str, fill: Fill, highlight: Fill, entities: Vec<E>) -> Self {
         Self {
             name: name.into(),
-            color,
+            fill,
             highlight,
             state: Visibility::Shown,
             entities,
@@ -148,10 +147,10 @@ where
     }
 }
 
-pub trait Chart<'a, C, M, D, E>
+pub trait Chart<C, M, D, E>
 where
     E: Entity,
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {
@@ -194,8 +193,8 @@ where
         channel_index: usize,
         start: usize,
         end: usize,
-        color: Color,
-        highlight_color: Color,
+        color: Fill,
+        highlight_color: Fill,
     ) -> Vec<E>;
 
     fn create_entity(
@@ -203,8 +202,8 @@ where
         channel_index: usize,
         entity_index: usize,
         value: Option<D>,
-        color: Color,
-        highlight_color: Color,
+        color: Fill,
+        highlight_color: Fill,
     ) -> E;
 
     fn create_channels(&self, start: usize, end: usize);
@@ -215,7 +214,7 @@ where
     // tooltip_height - tooltip.offset_height
     fn get_tooltip_position(&self, tooltip_width: f64, tooltip_height: f64) -> Point<f64>;
 
-    fn set_stream(&mut self, stream: DataStream<'a, M, D>);
+    fn set_stream(&mut self, stream: DataStream<M, D>);
 
     /// called to redraw using non_eq pattern
     fn draw(&self, ctx: &C);

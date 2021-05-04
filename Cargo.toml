@@ -1,6 +1,6 @@
 [package]
 name = "ux-charts"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Victor Dudochkin <dudochkin.victor@gmail.com>"]
 readme = "README.md"
 homepage = "https://angular-rust.github.io/ux-charts"
@@ -27,12 +27,8 @@ dox = ["ux-animate/dox", "cairo-rs/dox"]
 [dependencies]
 log = "0.4"
 lazy_static = "1.4"
-ux-dataflow = "0.1.1"
-ux-animate = "0.1.2"
-
-[dependencies.ux-primitives]
-version = "0.1.3"
-features = [ "canvas" ]
+ux-dataflow = "0.1.2"
+ux-animate = "0.1.5"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 cairo-rs = "0.9"

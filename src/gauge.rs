@@ -1,12 +1,13 @@
 #![allow(unused_variables)]
 #![allow(clippy::explicit_counter_loop, clippy::float_cmp)]
 
+use animate::prelude::*;
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
+    CanvasContext, Color, Point, TextStyle, TextWeight,
 };
 use dataflow::*;
-use primitives::{color, CanvasContext, Color, Point, TextStyle, TextWeight};
 use std::cell::RefCell;
 
 use crate::*;
@@ -16,8 +17,8 @@ const START_ANGLE: f64 = -std::f64::consts::FRAC_PI_2;
 #[derive(Default, Clone)]
 pub struct GaugeEntity<D> {
     // Chart chart,
-    color: Color,
-    highlight_color: Color,
+    color: Fill,
+    highlight_color: Fill,
     // formatted_value: String,
     index: usize,
     old_value: Option<D>,
@@ -72,7 +73,7 @@ impl<D> GaugeEntity<D> {
         unimplemented!()
     }
 
-    fn draw_entity<C: CanvasContext<Pattern>>(&self, ctx: &C, percent: f64, highlight: bool) {
+    fn draw_entity<C: CanvasContext>(&self, ctx: &C, percent: f64, highlight: bool) {
         // Draw the background.
         {
             let mut a1 = lerp(self.old_start_angle, self.start_angle, percent);
@@ -97,19 +98,45 @@ impl<D> GaugeEntity<D> {
 
         if highlight {
             let highlight_outer_radius = HIGHLIGHT_OUTER_RADIUS_FACTOR * self.outer_radius;
-            ctx.set_fill_color(self.highlight_color);
-            ctx.begin_path();
-            ctx.arc(center.x, center.y, highlight_outer_radius, a1, a2, false);
-            ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
-            ctx.fill();
+            match &self.highlight_color {
+                Fill::Solid(color) => {
+                    ctx.set_fill_color(*color);
+                    ctx.begin_path();
+                    ctx.arc(center.x, center.y, highlight_outer_radius, a1, a2, false);
+                    ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
+                    ctx.fill();
+                }
+                Fill::Gradient(gradient) => {
+                    ctx.set_fill_gradient(gradient);
+                    ctx.begin_path();
+                    ctx.arc(center.x, center.y, self.outer_radius, a1, a2, false);
+                    ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                Fill::None => {}
+            }
         }
 
-        ctx.set_fill_color(self.color);
-        ctx.begin_path();
-        ctx.arc(center.x, center.y, self.outer_radius, a1, a2, false);
-        ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
-        ctx.fill();
-        ctx.stroke();
+        match &self.color {
+            Fill::Solid(color) => {
+                ctx.set_fill_color(*color);
+                ctx.begin_path();
+                ctx.arc(center.x, center.y, self.outer_radius, a1, a2, false);
+                ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
+                ctx.fill();
+                ctx.stroke();
+            }
+            Fill::Gradient(gradient) => {
+                ctx.set_fill_gradient(gradient);
+                ctx.begin_path();
+                ctx.arc(center.x, center.y, self.outer_radius, a1, a2, false);
+                ctx.arc(center.x, center.y, self.inner_radius, a2, a1, true);
+                ctx.fill();
+                ctx.stroke();
+            }
+            Fill::None => {}
+        }
     }
 }
 
@@ -127,7 +154,7 @@ impl<D> Entity for GaugeEntity<D> {
 
 impl<C, D> Drawable<C> for GaugeEntity<D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
     fn draw(&self, ctx: &C, percent: f64, highlight: bool) {
@@ -174,23 +201,23 @@ struct GaugeChartProperties {
     // start_angle: f64,
 }
 
-pub struct GaugeChart<'a, C, M, D>
+pub struct GaugeChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy,
 {
     props: RefCell<GaugeChartProperties>,
-    base: BaseChart<'a, C, GaugeEntity<D>, M, D, GaugeChartOptions<'a>>,
+    base: BaseChart<C, GaugeEntity<D>, M, D, GaugeChartOptions>,
 }
 
-impl<'a, C, M, D> GaugeChart<'a, C, M, D>
+impl<C, M, D> GaugeChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
-    pub fn new(options: GaugeChartOptions<'a>) -> Self {
+    pub fn new(options: GaugeChartOptions) -> Self {
         Self {
             props: Default::default(),
             base: BaseChart::new(options),
@@ -236,9 +263,9 @@ where
     // }
 }
 
-impl<'a, C, M, D> Chart<'a, C, M, D, GaugeEntity<D>> for GaugeChart<'a, C, M, D>
+impl<C, M, D> Chart<C, M, D, GaugeEntity<D>> for GaugeChart<C, M, D>
 where
-    C: CanvasContext<Pattern>,
+    C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
 {
@@ -264,7 +291,7 @@ where
         props.gauge_inner_radius = 0.5 * props.gauge_outer_radius;
     }
 
-    fn set_stream(&mut self, stream: DataStream<'a, M, D>) {
+    fn set_stream(&mut self, stream: DataStream<M, D>) {
         self.base.data = stream;
         self.create_channels(0, self.base.data.meta.len());
     }
@@ -364,8 +391,13 @@ where
                             + AXIS_LABEL_MARGIN as f64;
                         ctx.set_fill_color(style.color);
 
+                        let fontfamily = match &style.fontfamily {
+                            Some(val) => val.as_str(),
+                            None => DEFAULT_FONT_FAMILY,
+                        };
+
                         ctx.set_font(
-                            &style.fontfamily.unwrap_or(DEFAULT_FONT_FAMILY),
+                            fontfamily,
                             style.fontstyle.unwrap_or(TextStyle::Normal),
                             TextWeight::Normal,
                             style.fontsize.unwrap_or(12.),
@@ -390,8 +422,8 @@ where
         if let Some(channel) = channels.first_mut() {
             for entity in channel.entities.iter_mut() {
                 if entity.value.is_some() {
-                    let color = self.base.get_color(idx);
-                    let highlight_color = self.base.change_color_alpha(color, 0.5);
+                    let color = self.base.get_fill(idx);
+                    let highlight_color = self.base.get_highlight_color(&color);
 
                     entity.index = idx;
                     entity.color = color;
@@ -413,12 +445,12 @@ where
         channel_index: usize,
         entity_index: usize,
         value: Option<D>,
-        color: Color,
-        highlight_color: Color,
+        color: Fill,
+        highlight_color: Fill,
     ) -> GaugeEntity<D> {
         // Override the colors.
-        let color = self.base.get_color(entity_index);
-        let highlight_color = self.base.change_color_alpha(color, 0.5);
+        let color = self.base.get_fill(entity_index);
+        let highlight_color = self.base.get_highlight_color(&color);
 
         let stream = &self.base.data;
         let frame = stream.frames.get(entity_index).unwrap();
@@ -453,11 +485,11 @@ where
         let meta = &self.base.data.meta;
         while start < end {
             let channel = meta.get(start).unwrap();
-            let name = channel.name;
-            let color = self.base.get_color(start);
-            let highlight = self.base.get_highlight_color(color);
+            let name = channel.name.as_str();
+            let color = self.base.get_fill(start);
+            let highlight = self.base.get_highlight_color(&color);
 
-            let entities = self.create_entities(start, 0, count, color, highlight);
+            let entities = self.create_entities(start, 0, count, color.clone(), highlight.clone());
             result.push(ChartChannel::new(name, color, highlight, entities));
             start += 1;
         }
@@ -471,20 +503,29 @@ where
         channel_index: usize,
         start: usize,
         end: usize,
-        color: Color,
-        highlight: Color,
+        color: Fill,
+        highlight: Fill,
     ) -> Vec<GaugeEntity<D>> {
         let mut start = start;
         let mut result = Vec::new();
         while start < end {
             let frame = self.base.data.frames.get(start).unwrap();
             // let value = frame.data.get(channel_index as u64);
+
             let entity = match frame.data.get(channel_index as u64) {
                 Some(value) => {
                     let value = *value;
-                    self.create_entity(channel_index, start, Some(value), color, highlight)
+                    self.create_entity(
+                        channel_index,
+                        start,
+                        Some(value),
+                        color.clone(),
+                        highlight.clone(),
+                    )
                 }
-                None => self.create_entity(channel_index, start, None, color, highlight),
+                None => {
+                    self.create_entity(channel_index, start, None, color.clone(), highlight.clone())
+                }
             };
 
             result.push(entity);

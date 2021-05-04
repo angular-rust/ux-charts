@@ -1,5 +1,19 @@
 use super::{LabelFormatter, ValueFormatter};
-use primitives::{color, Color, TextStyle};
+use animate::{prelude::*, Gradient};
+use animate::{Color, TextStyle};
+
+#[derive(Debug, Clone)]
+pub enum Fill {
+    None,
+    Solid(Color),
+    Gradient(Gradient),
+}
+
+impl Default for Fill {
+    fn default() -> Self {
+        Self::None
+    }
+}
 
 pub enum Position {
     Above,
@@ -12,13 +26,13 @@ pub enum Position {
     None,
 }
 
-pub trait BaseOption<'a> {
+pub trait BaseOption {
     fn animation(&self) -> &AnimationOptions;
-    fn colors(&self) -> &Vec<Color>;
-    fn title(&self) -> &TitleOptions<'a>;
-    fn legend(&self) -> &LegendOptions<'a>;
-    fn tooltip(&self) -> &TooltipOptions<'a>;
-    fn background(&self) -> &Color;
+    fn colors(&self) -> &Vec<Fill>;
+    fn title(&self) -> &TitleOptions;
+    fn legend(&self) -> &LegendOptions;
+    fn tooltip(&self) -> &TooltipOptions;
+    fn background(&self) -> &Fill;
 }
 
 pub struct AnimationOptions {
@@ -35,7 +49,7 @@ pub struct AnimationOptions {
     pub on_end: Option<fn()>,
 }
 
-pub struct LegendOptions<'a> {
+pub struct LegendOptions {
     /// (String label) -> String - A function that format the labels.
     pub label_formatter: Option<LabelFormatter>,
 
@@ -44,22 +58,22 @@ pub struct LegendOptions<'a> {
     pub position: Position,
 
     /// An object that controls the styling of the legend.
-    pub style: StyleOption<'a>,
+    pub style: StyleOptions,
 }
 
-pub struct TitleOptions<'a> {
+pub struct TitleOptions {
     /// The position of the title relative to the chart area.
     /// Supported values: "above", "below", "middle", "none";
     pub position: Position,
 
     /// An object that controls the styling of the chart title.
-    pub style: StyleOption<'a>,
+    pub style: StyleOptions,
 
     /// The title text. A `null` value means the title is hidden.
-    pub text: Option<&'a str>,
+    pub text: Option<String>,
 }
 
-pub struct TooltipOptions<'a> {
+pub struct TooltipOptions {
     /// bool - Whether to show the tooltip.
     pub enabled: bool,
 
@@ -67,17 +81,17 @@ pub struct TooltipOptions<'a> {
     pub label_formatter: Option<LabelFormatter>,
 
     /// An object that controls the styling of the tooltip.
-    pub style: StyleOption<'a>,
+    pub style: StyleOptions,
 
     /// (num value) -> String - A function that formats the values.
     pub value_formatter: Option<ValueFormatter>,
 }
 
 #[derive(Debug, Clone)]
-pub struct BarChartSeriesOptions<'a> {
+pub struct BarChartSeriesOptions {
     /// An object that controls the channel labels.
     /// bool - Whether to show the labels.
-    pub labels: Option<StyleOption<'a>>,
+    pub labels: Option<StyleOptions>,
 }
 
 pub struct BarChartCrosshairOptions {
@@ -85,17 +99,17 @@ pub struct BarChartCrosshairOptions {
     pub color: Color,
 }
 
-pub struct BarChartXAxisLabelsOptions<'a> {
+pub struct BarChartXAxisLabelsOptions {
     /// The maximum rotation angle in degrees. Must be <= 90.
     pub max_rotation: i64,
 
     /// The minimum rotation angle in degrees. Must be >= -90.
     pub min_rotation: i64,
 
-    pub style: StyleOption<'a>,
+    pub style: StyleOptions,
 }
 
-pub struct BarChartXAxisOptions<'a> {
+pub struct BarChartXAxisOptions {
     /// An object that controls the crosshair.
     pub crosshair: Option<BarChartCrosshairOptions>,
 
@@ -112,25 +126,25 @@ pub struct BarChartXAxisOptions<'a> {
     pub line_width: f64,
 
     /// An object that controls the axis labels.
-    pub labels: BarChartXAxisLabelsOptions<'a>,
+    pub labels: BarChartXAxisLabelsOptions,
 
     /// The position of the axis relative to the chart area.
     /// Supported values: "bottom".
     pub position: Position,
 
     /// An object that controls the axis title.
-    pub title: TitleOption<'a>,
+    pub title: TitleOption,
 }
 
-pub struct BarChartYAxisLabelsOptions<'a> {
+pub struct BarChartYAxisLabelsOptions {
     /// (num value) -> String - A function that formats the labels.
     pub formatter: Option<ValueFormatter>,
 
     /// An object that controls the styling of the axis labels.
-    pub style: StyleOption<'a>,
+    pub style: StyleOptions,
 }
 
-pub struct BarChartYAxisOptions<'a> {
+pub struct BarChartYAxisOptions {
     /// The color of the vertical grid lines.
     pub grid_line_color: Color,
 
@@ -148,7 +162,7 @@ pub struct BarChartYAxisOptions<'a> {
     pub interval: Option<f64>,
 
     /// An object that controls the axis labels.
-    pub labels: BarChartYAxisLabelsOptions<'a>,
+    pub labels: BarChartYAxisLabelsOptions,
 
     /// The desired maximum value on the axis. If set, the calculated value
     /// is guaranteed to be >= this value.
@@ -167,74 +181,74 @@ pub struct BarChartYAxisOptions<'a> {
     pub position: Position,
 
     /// An object that controls the axis title.
-    pub title: TitleOption<'a>,
+    pub title: TitleOption,
 }
 
-pub struct BarChartOptions<'a> {
+pub struct BarChartOptions {
     /// An object that controls the channel.
-    pub channel: BarChartSeriesOptions<'a>,
+    pub channel: BarChartSeriesOptions,
 
     /// An object that controls the x-axis.
-    pub xaxis: BarChartXAxisOptions<'a>,
+    pub xaxis: BarChartXAxisOptions,
 
     /// An object that controls the y-axis.
-    pub yaxis: BarChartYAxisOptions<'a>,
+    pub yaxis: BarChartYAxisOptions,
 
     /// An object that controls the animation.
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background: Color,
+    pub background: Fill,
 
     /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
-    pub colors: Vec<Color>,
+    pub colors: Vec<Fill>,
 
     /// An object that controls the legend.
-    pub legend: LegendOptions<'a>,
+    pub legend: LegendOptions,
 
     /// An object that controls the chart title.
-    pub title: TitleOptions<'a>,
+    pub title: TitleOptions,
 
     /// An object that controls the tooltip.
-    pub tooltip: TooltipOptions<'a>,
+    pub tooltip: TooltipOptions,
 }
 
-impl<'a> BaseOption<'a> for BarChartOptions<'a> {
+impl BaseOption for BarChartOptions {
     fn animation(&self) -> &AnimationOptions {
         &self.animation
     }
 
-    fn colors(&self) -> &Vec<Color> {
+    fn colors(&self) -> &Vec<Fill> {
         &self.colors
     }
 
-    fn title(&self) -> &TitleOptions<'a> {
+    fn title(&self) -> &TitleOptions {
         &self.title
     }
 
-    fn legend(&self) -> &LegendOptions<'a> {
+    fn legend(&self) -> &LegendOptions {
         &self.legend
     }
 
-    fn tooltip(&self) -> &TooltipOptions<'a> {
+    fn tooltip(&self) -> &TooltipOptions {
         &self.tooltip
     }
 
-    fn background(&self) -> &Color {
+    fn background(&self) -> &Fill {
         &self.background
     }
 }
 
-pub struct TitleOption<'a> {
+pub struct TitleOption {
     /// An object that controls the styling of the axis title.
-    pub style: StyleOption<'a>,
+    pub style: StyleOptions,
 
     /// The title text. A `null` value means the title is hidden.
-    pub text: Option<&'a str>,
+    pub text: Option<String>,
 }
 
-impl<'a> Default for BarChartOptions<'a> {
+impl Default for BarChartOptions {
     fn default() -> Self {
         Self {
             channel: BarChartSeriesOptions { labels: None },
@@ -279,18 +293,18 @@ impl<'a> Default for BarChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background: color::WHITE,
+            background: Fill::Solid(color::WHITE),
             colors: vec![
-                Color::RGB(0x7c, 0xb5, 0xec),
-                Color::RGB(0x43, 0x43, 0x48),
-                Color::RGB(0x90, 0xed, 0x7d),
-                Color::RGB(0xf7, 0xa3, 0x5c),
-                Color::RGB(0x80, 0x85, 0xe9),
-                Color::RGB(0xf1, 0x5c, 0x80),
-                Color::RGB(0xe4, 0xd3, 0x54),
-                Color::RGB(0x80, 0x85, 0xe8),
-                Color::RGB(0x8d, 0x46, 0x53),
-                Color::RGB(0x91, 0xe8, 0xe1),
+                Fill::Solid(Color::rgb(0x7c, 0xb5, 0xec)),
+                Fill::Solid(Color::rgb(0x43, 0x43, 0x48)),
+                Fill::Solid(Color::rgb(0x90, 0xed, 0x7d)),
+                Fill::Solid(Color::rgb(0xf7, 0xa3, 0x5c)),
+                Fill::Solid(Color::rgb(0x80, 0x85, 0xe9)),
+                Fill::Solid(Color::rgb(0xf1, 0x5c, 0x80)),
+                Fill::Solid(Color::rgb(0xe4, 0xd3, 0x54)),
+                Fill::Solid(Color::rgb(0x80, 0x85, 0xe8)),
+                Fill::Solid(Color::rgb(0x8d, 0x46, 0x53)),
+                Fill::Solid(Color::rgb(0x91, 0xe8, 0xe1)),
             ],
             legend: LegendOptions {
                 label_formatter: None,
@@ -313,90 +327,90 @@ impl<'a> Default for BarChartOptions<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct StyleOption<'a> {
+pub struct StyleOptions {
     pub background: Color,
     pub border_color: Color,
     pub border_width: f64, // i32?
     /// The title"s color
     pub color: Color,
     /// The title"s font family.
-    pub fontfamily: Option<&'a str>,
+    pub fontfamily: Option<String>,
     /// The title"s font size.
     pub fontsize: Option<f64>,
     /// The title"s font style.
     pub fontstyle: Option<TextStyle>,
 }
 
-impl<'a> Default for StyleOption<'a> {
+impl Default for StyleOptions {
     fn default() -> Self {
         Self {
             background: color::WHITE,
             border_color: color::GRAY_4,
             border_width: 0_f64,
             color: color::GRAY_9,
-            fontfamily: Some("Roboto"),
+            fontfamily: Some("Roboto".into()),
             fontsize: Some(12_f64),
             fontstyle: Some(TextStyle::Normal),
         }
     }
 }
 
-pub struct GaugeChartOptions<'a> {
+pub struct GaugeChartOptions {
     /// An object that controls the gauge labels.
     /// Whether to show the labels
     /// An object that controls the styling of the gauge labels
-    pub labels: Option<StyleOption<'a>>,
+    pub labels: Option<StyleOptions>,
 
     /// An object that controls the animation.
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background: Color,
+    pub background: Fill,
 
     /// The background color of the gauge.
     pub gauge_background: Color,
 
     /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
-    pub colors: Vec<Color>,
+    pub colors: Vec<Fill>,
 
     /// An object that controls the legend.
-    pub legend: LegendOptions<'a>,
+    pub legend: LegendOptions,
 
     /// An object that controls the chart title.
-    pub title: TitleOptions<'a>,
+    pub title: TitleOptions,
 
     /// An object that controls the tooltip.
-    pub tooltip: TooltipOptions<'a>,
+    pub tooltip: TooltipOptions,
 }
 
-impl<'a> BaseOption<'a> for GaugeChartOptions<'a> {
+impl BaseOption for GaugeChartOptions {
     fn animation(&self) -> &AnimationOptions {
         &self.animation
     }
 
-    fn colors(&self) -> &Vec<Color> {
+    fn colors(&self) -> &Vec<Fill> {
         &self.colors
     }
 
-    fn title(&self) -> &TitleOptions<'a> {
+    fn title(&self) -> &TitleOptions {
         &self.title
     }
 
-    fn legend(&self) -> &LegendOptions<'a> {
+    fn legend(&self) -> &LegendOptions {
         &self.legend
     }
 
-    fn tooltip(&self) -> &TooltipOptions<'a> {
+    fn tooltip(&self) -> &TooltipOptions {
         &self.tooltip
     }
 
-    fn background(&self) -> &Color {
+    fn background(&self) -> &Fill {
         &self.background
     }
 }
 
-impl<'a> Default for GaugeChartOptions<'a> {
+impl Default for GaugeChartOptions {
     fn default() -> Self {
         Self {
             labels: Default::default(),
@@ -405,19 +419,19 @@ impl<'a> Default for GaugeChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background: color::WHITE,
+            background: Fill::Solid(color::WHITE),
             gauge_background: color::GRAY_3,
             colors: vec![
-                Color::RGB(0x7c, 0xb5, 0xec),
-                Color::RGB(0x43, 0x43, 0x48),
-                Color::RGB(0x90, 0xed, 0x7d),
-                Color::RGB(0xf7, 0xa3, 0x5c),
-                Color::RGB(0x80, 0x85, 0xe9),
-                Color::RGB(0xf1, 0x5c, 0x80),
-                Color::RGB(0xe4, 0xd3, 0x54),
-                Color::RGB(0x80, 0x85, 0xe8),
-                Color::RGB(0x8d, 0x46, 0x53),
-                Color::RGB(0x91, 0xe8, 0xe1),
+                Fill::Solid(Color::rgb(0x7c, 0xb5, 0xec)),
+                Fill::Solid(Color::rgb(0x43, 0x43, 0x48)),
+                Fill::Solid(Color::rgb(0x90, 0xed, 0x7d)),
+                Fill::Solid(Color::rgb(0xf7, 0xa3, 0x5c)),
+                Fill::Solid(Color::rgb(0x80, 0x85, 0xe9)),
+                Fill::Solid(Color::rgb(0xf1, 0x5c, 0x80)),
+                Fill::Solid(Color::rgb(0xe4, 0xd3, 0x54)),
+                Fill::Solid(Color::rgb(0x80, 0x85, 0xe8)),
+                Fill::Solid(Color::rgb(0x8d, 0x46, 0x53)),
+                Fill::Solid(Color::rgb(0x91, 0xe8, 0xe1)),
             ],
             legend: LegendOptions {
                 label_formatter: None,
@@ -445,20 +459,20 @@ pub struct LineChartSeriesMarkersOptions {
 
     /// The fill color. If `null`, the stroke color of the channel
     /// will be used.
-    pub fill_color: Option<Color>,
+    pub fill_color: Option<Fill>,
 
     /// The line width of the markers.
     pub line_width: usize,
 
     /// The stroke color. If `null`, the stroke color of the channel
     /// will be used.
-    pub stroke_color: Option<Color>,
+    pub stroke_color: Option<Fill>,
 
     /// Size of the markers.
     pub size: f64,
 }
 
-pub struct LineChartSeriesOptions<'a> {
+pub struct LineChartSeriesOptions {
     /// The curve tension. The typical value is from 0.3 to 0.5.
     /// To draw straight lines, set this to zero.
     pub curve_tension: f64,
@@ -471,23 +485,23 @@ pub struct LineChartSeriesOptions<'a> {
 
     /// An object that controls the channel labels.
     /// Whether to show the labels
-    pub labels: Option<StyleOption<'a>>,
+    pub labels: Option<StyleOptions>,
 
     /// An object that controls the markers.
     pub markers: LineChartSeriesMarkersOptions,
 }
 
-pub struct LineChartXAxisLabelsOptions<'a> {
+pub struct LineChartXAxisLabelsOptions {
     /// The maximum rotation angle in degrees. Must be <= 90.
     pub max_rotation: i64,
 
     /// The minimum rotation angle in degrees. Must be >= -90.
     pub min_rotation: i64,
 
-    pub style: StyleOption<'a>,
+    pub style: StyleOptions,
 }
 
-pub struct LineChartXAxisOptions<'a> {
+pub struct LineChartXAxisOptions {
     /// The color of the horizontal grid lines.
     pub grid_line_color: Color,
 
@@ -501,24 +515,24 @@ pub struct LineChartXAxisOptions<'a> {
     pub line_width: f64,
 
     /// An object that controls the axis labels.
-    pub labels: LineChartXAxisLabelsOptions<'a>,
+    pub labels: LineChartXAxisLabelsOptions,
 
     /// The position of the axis relative to the chart area.
     /// Supported values: "bottom".
     pub position: Position,
 
     /// An object that controls the axis title.
-    pub title: TitleOption<'a>,
+    pub title: TitleOption,
 }
 
-pub struct LineChartYAxisLabelsOptions<'a> {
+pub struct LineChartYAxisLabelsOptions {
     /// (num value) -> String - A function that formats the labels.
     pub formatter: Option<ValueFormatter>,
 
     /// An object that controls the styling of the axis labels.
-    pub style: StyleOption<'a>,
+    pub style: StyleOptions,
 }
-pub struct LineChartYAxisOptions<'a> {
+pub struct LineChartYAxisOptions {
     /// The color of the vertical grid lines.
     pub grid_line_color: Color,
 
@@ -536,7 +550,7 @@ pub struct LineChartYAxisOptions<'a> {
     pub interval: Option<f64>,
 
     /// An object that controls the axis labels.
-    pub labels: LineChartYAxisLabelsOptions<'a>,
+    pub labels: LineChartYAxisLabelsOptions,
 
     /// The desired maximum value on the axis. If set, the calculated value
     /// is guaranteed to be >= this value.
@@ -555,66 +569,66 @@ pub struct LineChartYAxisOptions<'a> {
     pub position: Position,
 
     /// An object that controls the axis title.
-    pub title: TitleOption<'a>,
+    pub title: TitleOption,
 }
 
-pub struct LineChartOptions<'a> {
+pub struct LineChartOptions {
     /// An object that controls the channel.
-    pub channel: LineChartSeriesOptions<'a>,
+    pub channel: LineChartSeriesOptions,
 
     /// An object that controls the x-axis.
-    pub xaxis: LineChartXAxisOptions<'a>,
+    pub xaxis: LineChartXAxisOptions,
 
     /// An object that controls the y-axis.
-    pub yaxis: LineChartYAxisOptions<'a>,
+    pub yaxis: LineChartYAxisOptions,
 
     /// An object that controls the animation.
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background: Color,
+    pub background: Fill,
 
     /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
-    pub colors: Vec<Color>,
+    pub colors: Vec<Fill>,
 
     /// An object that controls the legend.
-    pub legend: LegendOptions<'a>,
+    pub legend: LegendOptions,
 
     /// An object that controls the chart title.
-    pub title: TitleOptions<'a>,
+    pub title: TitleOptions,
 
     /// An object that controls the tooltip.
-    pub tooltip: TooltipOptions<'a>,
+    pub tooltip: TooltipOptions,
 }
 
-impl<'a> BaseOption<'a> for LineChartOptions<'a> {
+impl BaseOption for LineChartOptions {
     fn animation(&self) -> &AnimationOptions {
         &self.animation
     }
 
-    fn colors(&self) -> &Vec<Color> {
+    fn colors(&self) -> &Vec<Fill> {
         &self.colors
     }
 
-    fn title(&self) -> &TitleOptions<'a> {
+    fn title(&self) -> &TitleOptions {
         &self.title
     }
 
-    fn legend(&self) -> &LegendOptions<'a> {
+    fn legend(&self) -> &LegendOptions {
         &self.legend
     }
 
-    fn tooltip(&self) -> &TooltipOptions<'a> {
+    fn tooltip(&self) -> &TooltipOptions {
         &self.tooltip
     }
 
-    fn background(&self) -> &Color {
+    fn background(&self) -> &Fill {
         &self.background
     }
 }
 
-impl<'a> Default for LineChartOptions<'a> {
+impl Default for LineChartOptions {
     fn default() -> Self {
         Self {
             channel: LineChartSeriesOptions {
@@ -626,7 +640,7 @@ impl<'a> Default for LineChartOptions<'a> {
                     enabled: true,
                     fill_color: None,
                     line_width: 1,
-                    stroke_color: Some(color::WHITE),
+                    stroke_color: Some(Fill::Solid(color::WHITE)),
                     size: 4.,
                 },
             },
@@ -670,18 +684,18 @@ impl<'a> Default for LineChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background: color::WHITE,
+            background: Fill::Solid(color::WHITE),
             colors: vec![
-                Color::RGB(0x7c, 0xb5, 0xec),
-                Color::RGB(0x43, 0x43, 0x48),
-                Color::RGB(0x90, 0xed, 0x7d),
-                Color::RGB(0xf7, 0xa3, 0x5c),
-                Color::RGB(0x80, 0x85, 0xe9),
-                Color::RGB(0xf1, 0x5c, 0x80),
-                Color::RGB(0xe4, 0xd3, 0x54),
-                Color::RGB(0x80, 0x85, 0xe8),
-                Color::RGB(0x8d, 0x46, 0x53),
-                Color::RGB(0x91, 0xe8, 0xe1),
+                Fill::Solid(Color::rgb(0x7c, 0xb5, 0xec)),
+                Fill::Solid(Color::rgb(0x43, 0x43, 0x48)),
+                Fill::Solid(Color::rgb(0x90, 0xed, 0x7d)),
+                Fill::Solid(Color::rgb(0xf7, 0xa3, 0x5c)),
+                Fill::Solid(Color::rgb(0x80, 0x85, 0xe9)),
+                Fill::Solid(Color::rgb(0xf1, 0x5c, 0x80)),
+                Fill::Solid(Color::rgb(0xe4, 0xd3, 0x54)),
+                Fill::Solid(Color::rgb(0x80, 0x85, 0xe8)),
+                Fill::Solid(Color::rgb(0x8d, 0x46, 0x53)),
+                Fill::Solid(Color::rgb(0x91, 0xe8, 0xe1)),
             ],
             legend: LegendOptions {
                 label_formatter: None,
@@ -703,82 +717,82 @@ impl<'a> Default for LineChartOptions<'a> {
     }
 }
 
-pub struct PieChartSeriesLabelsOptions<'a> {
+pub struct PieChartSeriesLabelsOptions {
     /// bool - Whether to show the labels.
     pub enabled: bool,
 
     /// (num) -> String - A function used to format the labels.
     pub formatter: Option<ValueFormatter>,
 
-    pub style: StyleOption<'a>,
+    pub style: StyleOptions,
 }
 
-pub struct PieChartSeriesOptions<'a> {
+pub struct PieChartSeriesOptions {
     /// bool - Whether to draw the slices counterclockwise.
     pub counterclockwise: bool,
 
     /// An object that controls the channel labels.
-    pub labels: PieChartSeriesLabelsOptions<'a>,
+    pub labels: PieChartSeriesLabelsOptions,
 
     /// The start angle in degrees. Default is -90, which is 12 o'clock.
     pub start_angle: f64,
 }
 
-pub struct PieChartOptions<'a> {
+pub struct PieChartOptions {
     /// If between 0 and 1, displays a donut chart. The hole will have a
     /// radius equal to this value times the radius of the chart.
     pub pie_hole: f64,
 
     /// An object that controls the channel.
-    pub channel: PieChartSeriesOptions<'a>,
+    pub channel: PieChartSeriesOptions,
 
     /// An object that controls the animation.
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background: Color,
+    pub background: Fill,
 
     /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
-    pub colors: Vec<Color>,
+    pub colors: Vec<Fill>,
 
     /// An object that controls the legend.
-    pub legend: LegendOptions<'a>,
+    pub legend: LegendOptions,
 
     /// An object that controls the chart title.
-    pub title: TitleOptions<'a>,
+    pub title: TitleOptions,
 
     /// An object that controls the tooltip.
-    pub tooltip: TooltipOptions<'a>,
+    pub tooltip: TooltipOptions,
 }
 
-impl<'a> BaseOption<'a> for PieChartOptions<'a> {
+impl BaseOption for PieChartOptions {
     fn animation(&self) -> &AnimationOptions {
         &self.animation
     }
 
-    fn colors(&self) -> &Vec<Color> {
+    fn colors(&self) -> &Vec<Fill> {
         &self.colors
     }
 
-    fn title(&self) -> &TitleOptions<'a> {
+    fn title(&self) -> &TitleOptions {
         &self.title
     }
 
-    fn legend(&self) -> &LegendOptions<'a> {
+    fn legend(&self) -> &LegendOptions {
         &self.legend
     }
 
-    fn tooltip(&self) -> &TooltipOptions<'a> {
+    fn tooltip(&self) -> &TooltipOptions {
         &self.tooltip
     }
 
-    fn background(&self) -> &Color {
+    fn background(&self) -> &Fill {
         &self.background
     }
 }
 
-impl<'a> Default for PieChartOptions<'a> {
+impl Default for PieChartOptions {
     fn default() -> Self {
         Self {
             pie_hole: 0_f64,
@@ -796,18 +810,18 @@ impl<'a> Default for PieChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background: color::WHITE,
+            background: Fill::Solid(color::WHITE),
             colors: vec![
-                Color::RGB(0x7c, 0xb5, 0xec),
-                Color::RGB(0x43, 0x43, 0x48),
-                Color::RGB(0x90, 0xed, 0x7d),
-                Color::RGB(0xf7, 0xa3, 0x5c),
-                Color::RGB(0x80, 0x85, 0xe9),
-                Color::RGB(0xf1, 0x5c, 0x80),
-                Color::RGB(0xe4, 0xd3, 0x54),
-                Color::RGB(0x80, 0x85, 0xe8),
-                Color::RGB(0x8d, 0x46, 0x53),
-                Color::RGB(0x91, 0xe8, 0xe1),
+                Fill::Solid(Color::rgb(0x7c, 0xb5, 0xec)),
+                Fill::Solid(Color::rgb(0x43, 0x43, 0x48)),
+                Fill::Solid(Color::rgb(0x90, 0xed, 0x7d)),
+                Fill::Solid(Color::rgb(0xf7, 0xa3, 0x5c)),
+                Fill::Solid(Color::rgb(0x80, 0x85, 0xe9)),
+                Fill::Solid(Color::rgb(0xf1, 0x5c, 0x80)),
+                Fill::Solid(Color::rgb(0xe4, 0xd3, 0x54)),
+                Fill::Solid(Color::rgb(0x80, 0x85, 0xe8)),
+                Fill::Solid(Color::rgb(0x8d, 0x46, 0x53)),
+                Fill::Solid(Color::rgb(0x91, 0xe8, 0xe1)),
             ],
             legend: LegendOptions {
                 label_formatter: None,
@@ -835,20 +849,20 @@ pub struct RadarChartSeriesMarkersOptions {
 
     /// The fill color. If `null`, the stroke color of the channel
     /// will be used.
-    pub fill_color: Option<Color>,
+    pub fill_color: Option<Fill>,
 
     /// The line width of the markers.
     pub line_width: f64,
 
     /// The stroke color. If `null`, the stroke color of the channel
     /// will be used.
-    pub stroke_color: Option<Color>,
+    pub stroke_color: Option<Fill>,
 
     /// Size of the markers. To disable markers, set this to zero.
     pub size: f64,
 }
 
-pub struct RadarChartSeriesOptions<'a> {
+pub struct RadarChartSeriesOptions {
     /// The opacity of the area between a channel and the x-axis.
     pub fill_opacity: f64,
 
@@ -857,21 +871,21 @@ pub struct RadarChartSeriesOptions<'a> {
 
     /// An object that controls the channel labels.
     ///   Whether to show the labels.
-    pub labels: Option<StyleOption<'a>>,
+    pub labels: Option<StyleOptions>,
 
     /// An object that controls the markers.
     pub markers: RadarChartSeriesMarkersOptions,
 }
 
-pub struct RadarChartXAxisLabelsOptions<'a> {
+pub struct RadarChartXAxisLabelsOptions {
     /// (num value) -> String - A function that formats the labels.
     pub formatter: Option<ValueFormatter>,
 
     /// An object that controls the styling of the axis labels.
-    pub style: StyleOption<'a>,
+    pub style: StyleOptions,
 }
 
-pub struct RadarChartXAxisOptions<'a> {
+pub struct RadarChartXAxisOptions {
     /// The color of the horizontal grid lines.
     pub grid_line_color: Color,
 
@@ -879,18 +893,18 @@ pub struct RadarChartXAxisOptions<'a> {
     pub grid_line_width: f64,
 
     /// An object that controls the axis labels.
-    pub labels: RadarChartXAxisLabelsOptions<'a>,
+    pub labels: RadarChartXAxisLabelsOptions,
 }
 
-pub struct RadarChartYAxisLabelsOptions<'a> {
+pub struct RadarChartYAxisLabelsOptions {
     /// (num value) -> String - A function that formats the labels.
     pub formatter: Option<ValueFormatter>,
 
     /// An object that controls the styling of the axis labels.
-    pub style: StyleOption<'a>,
+    pub style: StyleOptions,
 }
 
-pub struct RadarChartYAxisOptions<'a> {
+pub struct RadarChartYAxisOptions {
     /// The color of the vertical grid lines.
     pub grid_line_color: Color,
 
@@ -902,70 +916,70 @@ pub struct RadarChartYAxisOptions<'a> {
     pub interval: Option<f64>,
 
     /// An object that controls the axis labels.
-    pub labels: RadarChartYAxisLabelsOptions<'a>,
+    pub labels: RadarChartYAxisLabelsOptions,
 
     /// The minimum interval. If `null`, this value is automatically
     /// calculated.
     pub min_interval: Option<f64>,
 }
 
-pub struct RadarChartOptions<'a> {
+pub struct RadarChartOptions {
     // An object that controls the channel.
-    pub channel: RadarChartSeriesOptions<'a>,
+    pub channel: RadarChartSeriesOptions,
 
     /// An object that controls the x-axis.
-    pub xaxis: RadarChartXAxisOptions<'a>,
+    pub xaxis: RadarChartXAxisOptions,
 
     /// An object that controls the y-axis.
-    pub yaxis: RadarChartYAxisOptions<'a>,
+    pub yaxis: RadarChartYAxisOptions,
 
     /// An object that controls the animation.
     pub animation: AnimationOptions,
 
     /// The background color of the chart.
-    pub background_color: Color,
+    pub background_color: Fill,
 
     /// The color list used to render the channel. If there are more channel than
     /// colors, the colors will be reused.
-    pub colors: Vec<Color>,
+    pub colors: Vec<Fill>,
 
     /// An object that controls the legend.
-    pub legend: LegendOptions<'a>,
+    pub legend: LegendOptions,
 
     /// An object that controls the chart title.
-    pub title: TitleOptions<'a>,
+    pub title: TitleOptions,
 
     /// An object that controls the tooltip.
-    pub tooltip: TooltipOptions<'a>,
+    pub tooltip: TooltipOptions,
 }
 
-impl<'a> BaseOption<'a> for RadarChartOptions<'a> {
+impl BaseOption for RadarChartOptions {
     fn animation(&self) -> &AnimationOptions {
         &self.animation
     }
 
-    fn colors(&self) -> &Vec<Color> {
+    fn colors(&self) -> &Vec<Fill> {
         &self.colors
     }
 
-    fn title(&self) -> &TitleOptions<'a> {
+    fn title(&self) -> &TitleOptions {
         &self.title
     }
 
-    fn legend(&self) -> &LegendOptions<'a> {
+    fn legend(&self) -> &LegendOptions {
         &self.legend
     }
 
-    fn tooltip(&self) -> &TooltipOptions<'a> {
+    fn tooltip(&self) -> &TooltipOptions {
         &self.tooltip
     }
 
-    fn background(&self) -> &Color {
+    fn background(&self) -> &Fill {
         &self.background_color
     }
 }
 
-impl<'a> Default for RadarChartOptions<'a> {
+impl Default for RadarChartOptions {
     fn default() -> Self {
         Self {
             channel: RadarChartSeriesOptions {
@@ -976,7 +990,7 @@ impl<'a> Default for RadarChartOptions<'a> {
                     enabled: true,
                     fill_color: None,
                     line_width: 1.,
-                    stroke_color: Some(color::WHITE),
+                    stroke_color: Some(Fill::Solid(color::WHITE)),
                     size: 4.,
                 },
             },
@@ -1003,18 +1017,18 @@ impl<'a> Default for RadarChartOptions<'a> {
                 easing: "easeOutQuint".into(),
                 on_end: None,
             },
-            background_color: color::WHITE,
+            background_color: Fill::Solid(color::WHITE),
             colors: vec![
-                Color::RGB(0x7c, 0xb5, 0xec),
-                Color::RGB(0x43, 0x43, 0x48),
-                Color::RGB(0x90, 0xed, 0x7d),
-                Color::RGB(0xf7, 0xa3, 0x5c),
-                Color::RGB(0x80, 0x85, 0xe9),
-                Color::RGB(0xf1, 0x5c, 0x80),
-                Color::RGB(0xe4, 0xd3, 0x54),
-                Color::RGB(0x80, 0x85, 0xe8),
-                Color::RGB(0x8d, 0x46, 0x53),
-                Color::RGB(0x91, 0xe8, 0xe1),
+                Fill::Solid(Color::rgb(0x7c, 0xb5, 0xec)),
+                Fill::Solid(Color::rgb(0x43, 0x43, 0x48)),
+                Fill::Solid(Color::rgb(0x90, 0xed, 0x7d)),
+                Fill::Solid(Color::rgb(0xf7, 0xa3, 0x5c)),
+                Fill::Solid(Color::rgb(0x80, 0x85, 0xe9)),
+                Fill::Solid(Color::rgb(0xf1, 0x5c, 0x80)),
+                Fill::Solid(Color::rgb(0xe4, 0xd3, 0x54)),
+                Fill::Solid(Color::rgb(0x80, 0x85, 0xe8)),
+                Fill::Solid(Color::rgb(0x8d, 0x46, 0x53)),
+                Fill::Solid(Color::rgb(0x91, 0xe8, 0xe1)),
             ],
             legend: LegendOptions {
                 label_formatter: None,
