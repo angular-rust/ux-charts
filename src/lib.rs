@@ -1,6 +1,3 @@
-// #![allow(unused_imports)]
-#![allow(clippy::needless_return)]
-
 use animate::{CanvasContext, Point};
 use dataflow::*;
 use std::fmt;

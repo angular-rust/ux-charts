@@ -2,10 +2,9 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 #![allow(
-    clippy::explicit_counter_loop,
     clippy::float_cmp,
-    clippy::unnecessary_unwrap,
-    clippy::manual_map
+    clippy::map_identity, 
+    clippy::unnecessary_unwrap
 )]
 
 use animate::{
@@ -277,22 +276,15 @@ where
             .map(|p| {
                 let x = lerp(p.old_x, p.x, percent);
                 let y = lerp(p.old_y, p.y, percent);
+                let cp1 = p.cp1.map(|value| {
+                    // lerp(p.old_cp1, value, percent)
+                    value
+                });
 
-                let cp1 = match p.cp1 {
-                    Some(value) => {
-                        // Some(lerp(p.old_cp1, value, percent))
-                        Some(value)
-                    }
-                    None => None,
-                };
-
-                let cp2 = match p.cp2 {
-                    Some(value) => {
-                        // Some(lerp(p.old_cp2, value, percent))
-                        Some(value)
-                    }
-                    None => None,
-                };
+                let cp2 = p.cp2.map(|value| {
+                    // lerp(p.old_cp2, value, percent)
+                    value
+                });
 
                 LinePoint {
                     index: p.index,

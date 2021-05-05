@@ -1,7 +1,7 @@
 #![allow(unused_assignments)]
 #![allow(unused_variables)]
 #![allow(dead_code)]
-#![allow(clippy::explicit_counter_loop, clippy::float_cmp)]
+#![allow(clippy::float_cmp)]
 
 use animate::prelude::*;
 use animate::{
@@ -422,8 +422,8 @@ where
                 }
 
                 let mut start_angle = START_ANGLE; //props.start_angle;
-                let mut idx = 0;
-                for entity in channel.entities.iter_mut() {
+
+                for (idx, entity) in channel.entities.iter_mut().enumerate() {
                     match entity.value {
                         Some(value) => {
                             let color = self.base.get_fill(idx);
@@ -442,7 +442,6 @@ where
                             println!("hole in channel data");
                         }
                     }
-                    idx += 1;
                 }
             }
         }

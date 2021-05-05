@@ -1,5 +1,5 @@
 #![allow(unused_variables)]
-#![allow(clippy::explicit_counter_loop, clippy::float_cmp)]
+#![allow(clippy::float_cmp)]
 
 use animate::easing::EasingFunction;
 use animate::{CanvasContext, Color, Point, Rect, RgbColor, Size, TextStyle, TextWeight};
@@ -141,7 +141,7 @@ where
                     }
                 }
                 Fill::Gradient(gradient)
-            },
+            }
             Fill::None => Fill::None,
         }
     }
@@ -403,22 +403,18 @@ where
     }
 
     pub fn legend_item_mouse_over(&self, e: MouseEvent) {
-        if !self.is_interactive() {
-            return;
+        if self.is_interactive() {
+            // let item = e.currentTarget as Element;
+            // focused_channel_index = item.parent.children.indexOf(item);
+            // draw_frame(null);
         }
-
-        // let item = e.currentTarget as Element;
-        // focused_channel_index = item.parent.children.indexOf(item);
-        // draw_frame(null);
     }
 
     pub fn legend_item_mouse_out(&self, e: MouseEvent) {
-        if !self.is_interactive() {
-            return;
+        if self.is_interactive() {
+            // focused_channel_index = -1;
+            // draw_frame(null);
         }
-
-        // focused_channel_index = -1;
-        // draw_frame(null);
     }
 
     /// Called when the visibility of a channel is changed.

@@ -1,7 +1,7 @@
 #![allow(unused_assignments)]
 #![allow(unused_variables)]
 #![allow(dead_code)]
-#![allow(clippy::explicit_counter_loop, clippy::needless_range_loop)]
+#![allow(clippy::needless_range_loop)]
 
 use animate::{
     easing::{get_easing, Easing},
@@ -537,15 +537,13 @@ where
         let mut focused_entity_index = self.base.props.borrow().focused_entity_index;
         focused_entity_index = -1;
 
-        let mut idx = 0;
-        for channel in channels.iter() {
+        for (idx, channel) in channels.iter().enumerate() {
             let scale = if idx as i64 != focused_channel_index {
                 1.
             } else {
                 2.
             };
 
-            idx += 1;
             if channel.state == Visibility::Hidden {
                 continue;
             }
@@ -673,8 +671,7 @@ where
         let mut channels = self.base.channels.borrow_mut();
         let props = self.props.borrow();
 
-        let mut idx = 0;
-        for channel in channels.iter_mut() {
+        for (idx, channel) in channels.iter_mut().enumerate() {
             let color = self.base.get_fill(idx);
             let highlight_color = self.base.get_highlight_color(&color);
             channel.fill = color.clone();
@@ -696,7 +693,6 @@ where
                 entity.color = color.clone();
                 entity.highlight_color = highlight_color.clone();
             }
-            idx += 1;
         }
     }
 

@@ -1,6 +1,6 @@
 #![allow(unused_assignments)]
 #![allow(unused_variables)]
-#![allow(clippy::explicit_counter_loop, clippy::float_cmp)]
+#![allow(clippy::float_cmp)]
 
 use animate::{
     easing::{get_easing, Easing},
@@ -298,10 +298,8 @@ where
     fn get_channel_lefts(&self) -> Vec<f64> {
         let mut result = Vec::new();
         let channels = self.base.channels.borrow();
-        let mut idx = 0;
-        for channel in channels.iter() {
+        for (idx, channel) in channels.iter().enumerate() {
             result.push(self.get_bar_left(idx, 0));
-            idx += 1;
         }
         result
     }
@@ -979,8 +977,8 @@ where
         let props = self.props.borrow();
 
         let mut channels = self.base.channels.borrow_mut();
-        let mut idx = 0;
-        for channel in channels.iter_mut() {
+
+        for (idx, channel) in channels.iter_mut().enumerate() {
             let mut left = *lefts.get(idx).unwrap() + props.xlabel_hop / 2.;
 
             let mut bar_width = 0.0;
@@ -1005,7 +1003,6 @@ where
                 entity.width = bar_width;
                 left += props.xlabel_hop;
             }
-            idx += 1;
         }
     }
 

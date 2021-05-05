@@ -1,6 +1,5 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
-#![allow(clippy::needless_lifetimes)]
 
 use super::StyleOptions;
 use crate::DEFAULT_FONT_FAMILY;
@@ -66,7 +65,7 @@ pub fn hyphenate(s: &str) -> String {
 }
 
 /// Returns the maximum value in a [DataTable].
-pub fn find_max_value<'a, M, D>(stream: &DataStream<M, D>) -> D
+pub fn find_max_value<M, D>(stream: &DataStream<M, D>) -> D
 where
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,
@@ -92,7 +91,7 @@ where
 }
 
 /// Returns the minimum value in a [DataTable].
-pub fn find_min_value<'a, M, D>(stream: &DataStream<M, D>) -> D
+pub fn find_min_value<M, D>(stream: &DataStream<M, D>) -> D
 where
     M: fmt::Display,
     D: fmt::Display + Copy + Into<f64> + Ord + Default,

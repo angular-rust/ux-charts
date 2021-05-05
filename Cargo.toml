@@ -27,8 +27,8 @@ dox = ["ux-animate/dox", "cairo-rs/dox"]
 [dependencies]
 log = "0.4"
 lazy_static = "1.4"
-ux-dataflow = "0.1.2"
-ux-animate = "0.1.5"
+ux-dataflow = "0.1"
+ux-animate = "0.1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 cairo-rs = "0.9"

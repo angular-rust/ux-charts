@@ -1,5 +1,5 @@
 #![allow(unused_variables)]
-#![allow(clippy::explicit_counter_loop, clippy::float_cmp)]
+#![allow(clippy::float_cmp)]
 
 use animate::prelude::*;
 use animate::{
