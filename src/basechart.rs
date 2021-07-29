@@ -2,7 +2,7 @@
 #![allow(clippy::float_cmp)]
 
 use animate::easing::EasingFunction;
-use animate::{CanvasContext, Color, Point, Rect, RgbColor, Size, TextStyle, TextWeight};
+use animate::{CanvasContext, Color, Point, Rect, RgbColor, Size, FontStyle, FontWeight};
 use dataflow::*;
 use std::{cell::RefCell, collections::HashMap, fmt};
 
@@ -269,8 +269,8 @@ where
 
             ctx.set_font(
                 fontfamily,
-                style.fontstyle.unwrap_or(TextStyle::Normal),
-                TextWeight::Normal,
+                style.fontstyle.unwrap_or(FontStyle::Normal),
+                FontWeight::Normal,
                 style.fontsize.unwrap_or(12.),
             );
             ctx.set_fill_color(title.style.color);
@@ -665,8 +665,8 @@ where
 
                 ctx.set_font(
                     fontfamily,
-                    style.fontstyle.unwrap_or(TextStyle::Normal),
-                    TextWeight::Normal,
+                    style.fontstyle.unwrap_or(FontStyle::Normal),
+                    FontWeight::Normal,
                     style.fontsize.unwrap_or(12.),
                 );
                 title_w = ctx.measure_text(text.as_str()).width.round() + 2. * TITLE_PADDING;

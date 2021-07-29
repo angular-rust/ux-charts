@@ -5,7 +5,7 @@ use animate::prelude::*;
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
-    CanvasContext, Color, Point, TextStyle, TextWeight,
+    CanvasContext, Color, Point, FontStyle, FontWeight,
 };
 use dataflow::*;
 use std::cell::RefCell;
@@ -46,7 +46,7 @@ impl<D> GaugeEntity<D> {
 
     pub fn contains_point(&self, p: Point<f64>) -> bool {
         // let p = p - center;
-        let mag = p.distance_to(Point::default()); //p.magnitude()
+        let mag = p.length(); //p.magnitude()
         if mag > self.outer_radius || mag < self.inner_radius {
             return false;
         }
@@ -181,12 +181,12 @@ where
         let y = self.center.y + 0.3 * fs1;
 
         let text1 = lerp(old_value, value, percent).round().to_string();
-        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs1);
+        ctx.set_font(family, FontStyle::Normal, FontWeight::Normal, fs1);
         let w1 = ctx.measure_text(text1.as_str()).width;
         ctx.fill_text(text1.as_str(), self.center.x - 0.5 * w1, y);
 
         let text2 = "%";
-        ctx.set_font(family, TextStyle::Normal, TextWeight::Normal, fs2);
+        ctx.set_font(family, FontStyle::Normal, FontWeight::Normal, fs2);
         // let w2 = ctx.measure_text(text2).width;
         ctx.fill_text(text2, self.center.x + 0.5 * w1 + 5., y);
     }
@@ -398,8 +398,8 @@ where
 
                         ctx.set_font(
                             fontfamily,
-                            style.fontstyle.unwrap_or(TextStyle::Normal),
-                            TextWeight::Normal,
+                            style.fontstyle.unwrap_or(FontStyle::Normal),
+                            FontWeight::Normal,
                             style.fontsize.unwrap_or(12.),
                         );
                         // ctx.set_text_align(TextAlign::Center);

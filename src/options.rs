@@ -1,6 +1,6 @@
 use super::{LabelFormatter, ValueFormatter};
 use animate::{prelude::*, Gradient};
-use animate::{Color, TextStyle};
+use animate::{Color, FontStyle};
 
 #[derive(Debug, Clone)]
 pub enum Fill {
@@ -338,7 +338,7 @@ pub struct StyleOptions {
     /// The title"s font size.
     pub fontsize: Option<f64>,
     /// The title"s font style.
-    pub fontstyle: Option<TextStyle>,
+    pub fontstyle: Option<FontStyle>,
 }
 
 impl Default for StyleOptions {
@@ -350,7 +350,7 @@ impl Default for StyleOptions {
             color: color::GRAY_9,
             fontfamily: Some("Roboto".into()),
             fontsize: Some(12_f64),
-            fontstyle: Some(TextStyle::Normal),
+            fontstyle: Some(FontStyle::Normal),
         }
     }
 }

@@ -1,3 +1,5 @@
+#![doc(html_logo_url = "https://dudochkin-victor.github.io/assets/ux-charts/logo.svg")]
+
 use animate::{CanvasContext, Point};
 use dataflow::*;
 use std::fmt;

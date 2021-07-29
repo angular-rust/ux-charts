@@ -10,7 +10,7 @@
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
-    BaseLine, CanvasContext, LineJoin, Point, Rect, Size, TextStyle, TextWeight,
+    BaseLine, CanvasContext, LineJoin, Point, Rect, Size, FontStyle, FontWeight,
 };
 use dataflow::*;
 use std::{cell::RefCell, fmt};
@@ -479,8 +479,8 @@ where
 
             ctx.set_font(
                 fontfamily,
-                style.fontstyle.unwrap_or(TextStyle::Normal),
-                TextWeight::Normal,
+                style.fontstyle.unwrap_or(FontStyle::Normal),
+                FontWeight::Normal,
                 style.fontsize.unwrap_or(12.),
             );
             xtitle_width = ctx.measure_text(text.as_str()).width.round() + 2. * TITLE_PADDING;
@@ -505,8 +505,8 @@ where
 
             ctx.set_font(
                 fontfamily,
-                style.fontstyle.unwrap_or(TextStyle::Normal),
-                TextWeight::Normal,
+                style.fontstyle.unwrap_or(FontStyle::Normal),
+                FontWeight::Normal,
                 style.fontsize.unwrap_or(12.),
             );
             ytitle_height = ctx.measure_text(text.as_str()).width.round() + 2. * TITLE_PADDING;
@@ -691,8 +691,8 @@ where
 
                 ctx.set_font(
                     fontfamily,
-                    style.fontstyle.unwrap_or(TextStyle::Normal),
-                    TextWeight::Normal,
+                    style.fontstyle.unwrap_or(FontStyle::Normal),
+                    FontWeight::Normal,
                     style.fontsize.unwrap_or(12.),
                 );
 
@@ -718,8 +718,8 @@ where
 
                 ctx.set_font(
                     fontfamily,
-                    style.fontstyle.unwrap_or(TextStyle::Normal),
-                    TextWeight::Normal,
+                    style.fontstyle.unwrap_or(FontStyle::Normal),
+                    FontWeight::Normal,
                     style.fontsize.unwrap_or(12.),
                 );
 
@@ -744,8 +744,8 @@ where
 
         ctx.set_font(
             fontfamily,
-            style.fontstyle.unwrap_or(TextStyle::Normal),
-            TextWeight::Normal,
+            style.fontstyle.unwrap_or(FontStyle::Normal),
+            FontWeight::Normal,
             style.fontsize.unwrap_or(12.),
         );
 
@@ -810,8 +810,8 @@ where
 
         ctx.set_font(
             fontfamily,
-            style.fontstyle.unwrap_or(TextStyle::Normal),
-            TextWeight::Normal,
+            style.fontstyle.unwrap_or(FontStyle::Normal),
+            FontWeight::Normal,
             style.fontsize.unwrap_or(12.),
         );
 
@@ -1121,8 +1121,8 @@ where
 
                 ctx.set_font(
                     fontfamily,
-                    label_options.fontstyle.unwrap_or(TextStyle::Normal),
-                    TextWeight::Normal,
+                    label_options.fontstyle.unwrap_or(FontStyle::Normal),
+                    FontWeight::Normal,
                     label_options.fontsize.unwrap_or(12.),
                 );
                 // ctx.set_text_align(TextAlign::Center);

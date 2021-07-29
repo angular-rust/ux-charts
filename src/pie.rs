@@ -7,7 +7,7 @@ use animate::prelude::*;
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
-    BaseLine, CanvasContext, Point, TextStyle, TextWeight,
+    BaseLine, CanvasContext, Point, FontStyle, FontWeight,
 };
 use dataflow::*;
 use std::{cell::RefCell, fmt};
@@ -47,7 +47,7 @@ impl<D> PieEntity<D> {
 
     fn contains_point(&self, p: Point<f64>) -> bool {
         // p -= center;
-        let mag = p.distance_to(Point::default()); //p.magnitude();
+        let mag = p.length(); //p.magnitude();
         if mag > self.outer_radius || mag < self.inner_radius {
             return false;
         }
@@ -382,8 +382,8 @@ where
 
         ctx.set_font(
             fontfamily,
-            labels.fontstyle.unwrap_or(TextStyle::Normal),
-            TextWeight::Normal,
+            labels.fontstyle.unwrap_or(FontStyle::Normal),
+            FontWeight::Normal,
             labels.fontsize.unwrap_or(12.),
         );
 

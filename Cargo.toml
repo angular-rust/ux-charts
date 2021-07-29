@@ -22,7 +22,8 @@ name = "charts"
 features = ["dox"]
 
 [features]
-dox = ["ux-animate/dox", "cairo-rs/dox"]
+dox = ["ux-animate/dox"]
+# , "cairo-rs/dox"
 
 [dependencies]
 log = "0.4"
@@ -30,43 +31,43 @@ lazy_static = "1.4"
 ux-dataflow = "0.1"
 ux-animate = "0.1"
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-cairo-rs = "0.9"
+# [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# cairo-rs = "0.9"
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = "0.2"
-js-sys = "0.3"
-wasm-bindgen-futures = "0.4"
-wasm-logger = "0.2"
-gloo = "0.2"
-wasm-bindgen-test = "0.3"
+# [target.'cfg(target_arch = "wasm32")'.dependencies]
+# wasm-bindgen = "0.2"
+# js-sys = "0.3"
+# wasm-bindgen-futures = "0.4"
+# wasm-logger = "0.2"
+# gloo = "0.2"
+# wasm-bindgen-test = "0.3"
 
-[target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
-version = "0.3"
-features = [
-  "KeyboardEvent",
-  "ValidityState",
-  "CustomEvent",
-  "Node",
-  "Element",
-  "HtmlElement",
-  "Window",
-  "Document",
-  "CanvasRenderingContext2d",
-  "TextMetrics",
-  "HtmlCanvasElement",
-  "HtmlImageElement",
-  "SvgImageElement",
-  "HtmlVideoElement",
-  "ImageBitmap",
-  "CanvasWindingRule",
-  "Path2d",
-  "CanvasPattern",
-  "CanvasGradient",
-  "HitRegionOptions",
-  "ImageData",
-  "DomMatrix"
-]
+# [target.'cfg(target_arch = "wasm32")'.dependencies.web-sys]
+# version = "0.3"
+# features = [
+#   "KeyboardEvent",
+#   "ValidityState",
+#   "CustomEvent",
+#   "Node",
+#   "Element",
+#   "HtmlElement",
+#   "Window",
+#   "Document",
+#   "CanvasRenderingContext2d",
+#   "TextMetrics",
+#   "HtmlCanvasElement",
+#   "HtmlImageElement",
+#   "SvgImageElement",
+#   "HtmlVideoElement",
+#   "ImageBitmap",
+#   "CanvasWindingRule",
+#   "Path2d",
+#   "CanvasPattern",
+#   "CanvasGradient",
+#   "HitRegionOptions",
+#   "ImageData",
+#   "DomMatrix"
+# ]
 
 [dev-dependencies]
 

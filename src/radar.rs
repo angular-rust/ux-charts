@@ -6,7 +6,7 @@
 use animate::{
     easing::{get_easing, Easing},
     interpolate::lerp,
-    BaseLine, CanvasContext, Point, Rect, Size, TextStyle, TextWeight,
+    BaseLine, CanvasContext, Point, Rect, Size, FontStyle, FontWeight,
 };
 use dataflow::*;
 use std::{cell::RefCell, fmt};
@@ -214,7 +214,7 @@ where
         let props = self.props.borrow();
         let p = Point::new(x - props.center.x, y - props.center.y);
 
-        if p.distance_to(Point::zero()) >= props.radius {
+        if p.length() >= props.radius {
             return -1;
         }
 
@@ -436,8 +436,8 @@ where
 
         ctx.set_font(
             fontfamily,
-            style.fontstyle.unwrap_or(TextStyle::Normal),
-            TextWeight::Normal,
+            style.fontstyle.unwrap_or(FontStyle::Normal),
+            FontWeight::Normal,
             style.fontsize.unwrap_or(12.),
         );
 
@@ -461,8 +461,8 @@ where
 
         ctx.set_font(
             fontfamily,
-            style.fontstyle.unwrap_or(TextStyle::Normal),
-            TextWeight::Normal,
+            style.fontstyle.unwrap_or(FontStyle::Normal),
+            FontWeight::Normal,
             style.fontsize.unwrap_or(12.),
         );
 

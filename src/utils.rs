@@ -3,7 +3,7 @@
 
 use super::StyleOptions;
 use crate::DEFAULT_FONT_FAMILY;
-use animate::{CanvasContext, Point, TextStyle, TextWeight};
+use animate::{CanvasContext, Point, FontStyle, FontWeight};
 use dataflow::*;
 use std::{
     f64::consts::PI,
@@ -151,8 +151,8 @@ where
 
     ctx.set_font(
         fontfamily,
-        style.fontstyle.unwrap_or(TextStyle::Normal),
-        TextWeight::Normal,
+        style.fontstyle.unwrap_or(FontStyle::Normal),
+        FontWeight::Normal,
         style.fontsize.unwrap_or(12.),
     );
 
@@ -177,8 +177,8 @@ pub fn calculate_control_points(
     p3: Point<f64>,
     t: f64,
 ) -> (Point<f64>, Point<f64>) {
-    let d21 = p2.distance_to(p1);
-    let d23 = p2.distance_to(p3);
+    let d21 = (p2 - p1).length(); // p2.distance_to(p1)
+    let d23 = (p2 - p3).length(); // p2.distance_to(p3)
     let fa = t * d21 / (d21 + d23);
     let fb = t * d23 / (d21 + d23);
     let v13 = p3 - p1;
