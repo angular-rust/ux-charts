@@ -1,6 +1,8 @@
+use animate::prelude::*;
+
+use animate::foundation::{colorspace::Color, FontStyle, Gradient};
+
 use super::{LabelFormatter, ValueFormatter};
-use animate::{prelude::*, Gradient};
-use animate::{Color, FontStyle};
 
 #[derive(Debug, Clone)]
 pub enum Fill {

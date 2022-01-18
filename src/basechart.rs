@@ -2,7 +2,7 @@
 #![allow(clippy::float_cmp)]
 
 use animate::easing::EasingFunction;
-use animate::{CanvasContext, Color, Point, Rect, RgbColor, Size, FontStyle, FontWeight};
+use animate::{prelude::CanvasContext, foundation::{colorspace::{Color, RgbColor}, Point, Rect, Size, FontStyle, FontWeight}};
 use dataflow::*;
 use std::{cell::RefCell, collections::HashMap, fmt};
 
@@ -42,7 +42,7 @@ pub struct BaseChartProperties {
 
     // mouseMoveSub: StreamSubscription,
     /// The tooltip element. To position the tooltip, change its transform CSS.
-    tooltip: Option<bool>, //Element,
+    // tooltip: Option<bool>, //Element,
     /// The function used to format channel names to display in the tooltip.
     pub tooltip_label_formatter: Option<LabelFormatter>,
 
@@ -61,7 +61,7 @@ pub struct BaseChartProperties {
 pub struct BaseChart<C, E, M, D, O>
 where
     C: CanvasContext,
-    E: Entity,
+    E: ChartEntity,
     M: fmt::Display,
     D: fmt::Display + Copy,
     O: BaseOption,
@@ -93,7 +93,7 @@ where
 impl<C, E, M, D, O> BaseChart<C, E, M, D, O>
 where
     C: CanvasContext,
-    E: Entity,
+    E: ChartEntity,
     M: fmt::Display,
     D: fmt::Display + Copy,
     O: BaseOption,
@@ -612,7 +612,7 @@ where
 impl<C, E, M, D, O> Chart<C, M, D, E> for BaseChart<C, E, M, D, O>
 where
     C: CanvasContext,
-    E: Entity,
+    E: ChartEntity,
     M: fmt::Display,
     D: fmt::Display + Copy,
     O: BaseOption,

@@ -5,8 +5,9 @@
 
 use animate::{
     easing::{get_easing, Easing},
+    foundation::{BaseLine, FontStyle, FontWeight, Point, Rect, Size},
     interpolate::lerp,
-    BaseLine, CanvasContext, Point, Rect, Size, FontStyle, FontWeight,
+    prelude::CanvasContext,
 };
 use dataflow::*;
 use std::{cell::RefCell, fmt};
@@ -80,7 +81,7 @@ where
     }
 }
 
-impl<D> Entity for PolarPoint<D> {
+impl<D> ChartEntity for PolarPoint<D> {
     fn free(&mut self) {}
 
     fn save(&self) {

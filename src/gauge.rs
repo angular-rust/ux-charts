@@ -4,8 +4,9 @@
 use animate::prelude::*;
 use animate::{
     easing::{get_easing, Easing},
+    foundation::{colorspace::Color, FontStyle, FontWeight, Point},
     interpolate::lerp,
-    CanvasContext, Color, Point, FontStyle, FontWeight,
+    prelude::CanvasContext,
 };
 use dataflow::*;
 use std::cell::RefCell;
@@ -140,7 +141,7 @@ impl<D> GaugeEntity<D> {
     }
 }
 
-impl<D> Entity for GaugeEntity<D> {
+impl<D> ChartEntity for GaugeEntity<D> {
     fn free(&mut self) {
         // chart = null;
     }

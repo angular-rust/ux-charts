@@ -4,8 +4,9 @@
 
 use animate::{
     easing::{get_easing, Easing},
+    foundation::{colorspace::Color, BaseLine, FontStyle, FontWeight, Point, Rect, Size},
     interpolate::lerp,
-    BaseLine, CanvasContext, Color, Point, Rect, Size, FontStyle, FontWeight,
+    prelude::CanvasContext,
 };
 use dataflow::*;
 use std::{cell::RefCell, fmt};
@@ -18,7 +19,7 @@ pub struct BarEntity<D> {
     highlight_color: Fill,
     formatted_value: String,
     index: usize,
-    old_value: Option<D>,
+    // old_value: Option<D>,
     value: Option<D>,
 
     old_left: f64,
@@ -68,7 +69,7 @@ where
     }
 }
 
-impl<D> Entity for BarEntity<D> {
+impl<D> ChartEntity for BarEntity<D> {
     fn free(&mut self) {}
 
     fn save(&self) {
@@ -1042,7 +1043,7 @@ where
 
         BarEntity {
             index: entity_index,
-            old_value: None,
+            // old_value: None,
             value,
             formatted_value,
             color,

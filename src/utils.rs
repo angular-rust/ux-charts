@@ -1,15 +1,20 @@
 #![allow(unused_variables)]
 #![allow(unused_imports)]
 
-use super::StyleOptions;
-use crate::DEFAULT_FONT_FAMILY;
-use animate::{CanvasContext, Point, FontStyle, FontWeight};
+use animate::{
+    foundation::{FontStyle, FontWeight, Point},
+    prelude::CanvasContext,
+};
 use dataflow::*;
 use std::{
     f64::consts::PI,
     fmt,
     ops::{Add, Mul, Sub},
 };
+
+use crate::DEFAULT_FONT_FAMILY;
+
+use super::StyleOptions;
 
 /// Converts [angle] in radians to degrees.
 pub fn rad2deg(angle: f64) -> f64 {

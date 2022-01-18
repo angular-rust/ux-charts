@@ -6,8 +6,9 @@
 use animate::prelude::*;
 use animate::{
     easing::{get_easing, Easing},
+    foundation::{BaseLine, FontStyle, FontWeight, Point},
     interpolate::lerp,
-    BaseLine, CanvasContext, Point, FontStyle, FontWeight,
+    prelude::CanvasContext,
 };
 use dataflow::*;
 use std::{cell::RefCell, fmt};
@@ -76,7 +77,7 @@ impl<D> PieEntity<D> {
     }
 }
 
-impl<D> Entity for PieEntity<D> {
+impl<D> ChartEntity for PieEntity<D> {
     fn free(&mut self) {
         // chart = null;
     }

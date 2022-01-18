@@ -1,6 +1,6 @@
 #![doc(html_logo_url = "https://dudochkin-victor.github.io/assets/ux-charts/logo.svg")]
 
-use animate::{CanvasContext, Point};
+use animate::{prelude::CanvasContext, foundation::Point};
 use dataflow::*;
 use std::fmt;
 
@@ -93,7 +93,7 @@ impl Default for Visibility {
 pub struct MouseEvent;
 
 /// A chart entity such as a point, a bar, a pie...
-pub trait Entity {
+pub trait ChartEntity {
     fn free(&mut self);
     fn save(&self);
 }
@@ -108,7 +108,7 @@ where
 #[derive(Default, Debug, Clone)]
 pub struct ChartChannel<E>
 where
-    E: Entity,
+    E: ChartEntity,
 {
     name: String,
     fill: Fill,
@@ -119,7 +119,7 @@ where
 
 impl<E> ChartChannel<E>
 where
-    E: Entity,
+    E: ChartEntity,
 {
     pub fn new(name: &str, fill: Fill, highlight: Fill, entities: Vec<E>) -> Self {
         Self {
@@ -148,7 +148,7 @@ where
 
 pub trait Chart<C, M, D, E>
 where
-    E: Entity,
+    E: ChartEntity,
     C: CanvasContext,
     M: fmt::Display,
     D: fmt::Display + Copy,

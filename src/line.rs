@@ -1,16 +1,14 @@
 #![allow(unused_assignments)]
 #![allow(unused_variables)]
 #![allow(dead_code)]
-#![allow(
-    clippy::float_cmp,
-    clippy::map_identity, 
-    clippy::unnecessary_unwrap
-)]
+#![allow(clippy::float_cmp, clippy::map_identity, clippy::unnecessary_unwrap)]
 
 use animate::{
     easing::{get_easing, Easing},
+    foundation::{BaseLine, FontStyle, FontWeight, Point, Rect, Size},
     interpolate::lerp,
-    BaseLine, CanvasContext, LineJoin, Point, Rect, Size, FontStyle, FontWeight,
+    prelude::CanvasContext,
+    prelude::LineJoin,
 };
 use dataflow::*;
 use std::{cell::RefCell, fmt};
@@ -110,7 +108,7 @@ where
     }
 }
 
-impl<D> Entity for LinePoint<D> {
+impl<D> ChartEntity for LinePoint<D> {
     fn free(&mut self) {}
 
     fn save(&self) {
